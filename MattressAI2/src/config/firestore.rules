@@ -1,0 +1,65 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isMerchant() {
+      return isAuthenticated() && request.auth.token.role == 'merchant';
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && request.auth.token.role == 'admin';
+    }
+    
+    function isSuperAdmin() {
+      return isAuthenticated() && request.auth.token.role == 'super_admin';
+    }
+    
+    function isOwner(merchantId) {
+      return isAuthenticated() && request.auth.uid == merchantId;
+    }
+
+    // Merchants collection
+    match /merchants/{merchantId} {
+      allow read: if isAuthenticated() && (isOwner(merchantId) || isAdmin() || isSuperAdmin());
+      allow write: if isAuthenticated() && (isOwner(merchantId) || isSuperAdmin());
+      
+      // Nested collections
+      match /chatbotConfigs/{configId} {
+        allow read: if isAuthenticated() && (isOwner(merchantId) || isAdmin());
+        allow write: if isAuthenticated() && isOwner(merchantId);
+      }
+      
+      match /leads/{leadId} {
+        allow read: if isAuthenticated() && (isOwner(merchantId) || isAdmin());
+        allow create: if true; // Allow public creation for website visitors
+        allow update, delete: if isAuthenticated() && isOwner(merchantId);
+      }
+      
+      match /conversations/{conversationId} {
+        allow read: if isAuthenticated() && (isOwner(merchantId) || isAdmin());
+        allow create: if true; // Allow public creation
+        allow update: if isAuthenticated() && isOwner(merchantId);
+        allow delete: if isAuthenticated() && (isOwner(merchantId) || isAdmin());
+      }
+      
+      match /analytics/{analyticsId} {
+        allow read: if isAuthenticated() && (isOwner(merchantId) || isAdmin());
+        allow write: if isAuthenticated() && isOwner(merchantId);
+      }
+    }
+
+    // Admin-only collections
+    match /system/{document=**} {
+      allow read, write: if isAuthenticated() && (isAdmin() || isSuperAdmin());
+    }
+    
+    // Super admin only collections
+    match /audit_logs/{document=**} {
+      allow read, write: if isAuthenticated() && isSuperAdmin();
+    }
+  }
+} 
