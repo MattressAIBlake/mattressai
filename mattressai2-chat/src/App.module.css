@@ -1,0 +1,29 @@
+.app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: -webkit-fill-available;
+  width: 100%;
+  overflow: hidden;
+  background: var(--gray-100);
+}
+
+@supports (-webkit-touch-callout: none) {
+  .app {
+    min-height: -webkit-fill-available;
+  }
+}
+
+/* Ensure content is centered on larger screens */
+@media (min-width: 1200px) {
+  .app {
+    padding: 2rem;
+  }
+}
+
+/* Full screen on mobile */
+@media (max-width: 768px) {
+  .app {
+    padding: 0;
+  }
+} 
