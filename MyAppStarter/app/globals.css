@@ -1,0 +1,18 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* light/dark vars */
+:root {
+  --bg: #ffffff;
+  --fg: #000000;
+}
+[data-theme="dark"] {
+  --bg: #111111;
+  --fg: #f0f0f0;
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--fg);
+} 

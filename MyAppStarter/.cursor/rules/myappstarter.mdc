@@ -1,0 +1,11 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# cursor.rules
+The repo is a SaaS that:
+1. Logs users in with X OAuth.
+2. Fetches their bookmarks.
+3. Calls OpenAI Responses API to propose an app idea and generate Cursor prompts.
+4. Shows only 50 % of the output until Stripe Checkout succeeds.
