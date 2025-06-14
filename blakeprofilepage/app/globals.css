@@ -1,0 +1,27 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  
+  body {
+    @apply bg-gradient-to-br from-sage-50 to-sky-50;
+  }
+}
+
+@layer components {
+  .mountain-hover {
+    @apply transition-all duration-300 ease-in-out hover:scale-105 hover:drop-shadow-lg cursor-pointer;
+  }
+  
+  .section-padding {
+    @apply px-6 sm:px-12 lg:px-24;
+  }
+  
+  .card-hover {
+    @apply transition-all duration-300 ease-in-out hover:scale-105 hover:shadow-xl;
+  }
+} 
