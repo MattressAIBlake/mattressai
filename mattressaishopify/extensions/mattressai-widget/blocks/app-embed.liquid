@@ -1,0 +1,12 @@
+{% schema %}
+{
+  "name": "MattressAI – Personal Shopper",
+  "target": "body",
+  "settings": [
+    { "type": "checkbox", "id": "auto_open", "label": "Auto open on first visit", "default": false }
+  ]
+}
+{% endschema %}
+
+<script src="{{ shop.url }}/apps/mattressai/widget.js" data-tenant="{{ shop.permanent_domain | escape }}"></script>
+<link rel="stylesheet" href="{{ 'widget.css' | asset_url }}">

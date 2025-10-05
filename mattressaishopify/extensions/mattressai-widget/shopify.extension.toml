@@ -1,0 +1,6 @@
+name = "mattressai-widget"
+type = "theme"
+
+[[extensions]]
+type = "theme_app_extension"
+name = "MattressAI App Embed"
