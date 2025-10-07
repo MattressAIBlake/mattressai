@@ -47,3 +47,6 @@ redirect_urls = [
 url = "https://mattressai-fvn85offs-blake-austins-projects.vercel.app/apps/mattressai"
 subpath = "mattressai"
 prefix = "apps"
+
+[build]
+automatically_update_urls_on_dev = true
