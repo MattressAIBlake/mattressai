@@ -7,15 +7,20 @@ import {
 import { PrismaSessionStorage } from "@shopify/shopify-app-session-storage-prisma";
 import prisma from "./db.server";
 
+// Construct app URL from environment variables
+const appUrl = process.env.SHOPIFY_APP_URL || 
+  (process.env.HOST ? `https://${process.env.HOST}` : "");
+
 const shopify = shopifyApp({
   apiKey: process.env.SHOPIFY_API_KEY,
   apiSecretKey: process.env.SHOPIFY_API_SECRET || "",
   apiVersion: ApiVersion.Unstable,
   scopes: process.env.SCOPES?.split(","),
-  appUrl: process.env.SHOPIFY_APP_URL || "",
+  appUrl: appUrl,
   authPathPrefix: "/auth",
   sessionStorage: new PrismaSessionStorage(prisma),
   distribution: AppDistribution.AppStore,
+  isEmbeddedApp: true,
   future: {
     unstable_newEmbeddedAuthStrategy: true,
     removeRest: true,
@@ -25,9 +30,19 @@ const shopify = shopifyApp({
     : {}),
 });
 
+// Wrapper to allow iframe embedding in Shopify admin
+const addDocumentResponseHeadersWrapper = (request, headers) => {
+  shopify.addDocumentResponseHeaders(request, headers);
+  // Remove X-Frame-Options to allow embedding
+  headers.delete("X-Frame-Options");
+  // Set proper CSP for Shopify admin
+  headers.set("Content-Security-Policy", "frame-ancestors https://*.myshopify.com https://admin.shopify.com;");
+  return headers;
+};
+
 export default shopify;
 export const apiVersion = ApiVersion.January25;
-export const addDocumentResponseHeaders = shopify.addDocumentResponseHeaders;
+export const addDocumentResponseHeaders = addDocumentResponseHeadersWrapper;
 export const authenticate = shopify.authenticate;
 export const unauthenticated = shopify.unauthenticated;
 export const login = shopify.login;
