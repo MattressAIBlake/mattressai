@@ -1,6 +1,8 @@
+import { json } from "@remix-run/node";
+
 export const loader = async () => {
-  // Only allow in non-production or with specific debug key
-  return Response.json({
+  // Debug endpoint to check environment variables
+  return json({
     SHOPIFY_API_KEY: process.env.SHOPIFY_API_KEY ? "✅ SET" : "❌ MISSING",
     SHOPIFY_API_SECRET: process.env.SHOPIFY_API_SECRET ? "✅ SET" : "❌ MISSING",
     SHOPIFY_APP_URL: process.env.SHOPIFY_APP_URL || "❌ MISSING",
