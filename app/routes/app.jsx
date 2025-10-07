@@ -34,5 +34,9 @@ export function ErrorBoundary() {
 }
 
 export const headers = (headersArgs) => {
-  return boundary.headers(headersArgs);
+  const headers = boundary.headers(headersArgs);
+  // Allow embedding in Shopify admin iframe
+  headers.delete("X-Frame-Options");
+  headers.set("Content-Security-Policy", "frame-ancestors https://*.myshopify.com https://admin.shopify.com;");
+  return headers;
 };
