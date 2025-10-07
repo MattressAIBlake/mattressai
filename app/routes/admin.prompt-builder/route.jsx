@@ -21,7 +21,6 @@ import {
 } from '@shopify/polaris';
 import { authenticate } from '~/shopify.server';
 import { createCompiledPrompt } from '~/lib/domain/runtimeRules';
-import { handleAuthError, authenticatedFetch } from '~/lib/shopify/auth.client.js';
 
 // Step definitions
 const STEPS = [
@@ -206,7 +205,7 @@ export default function PromptBuilder() {
     form.append('step', 'compile');
 
     try {
-      const response = await authenticatedFetch(window.location.pathname, {
+      const response = await fetch(window.location.pathname, {
         method: 'POST',
         body: form
       });
@@ -218,17 +217,9 @@ export default function PromptBuilder() {
         setShowPreview(true);
       } else {
         console.error('Compilation failed:', result.error);
-        if (result.error === 'Session expired or invalid') {
-          // Auth error handled by authenticatedFetch
-          return;
-        }
       }
     } catch (error) {
       console.error('Error compiling preview:', error);
-      if (!handleAuthError(error)) {
-        // Handle other errors
-        console.error('Unexpected error:', error);
-      }
     }
   };
 
@@ -247,7 +238,7 @@ export default function PromptBuilder() {
     form.append('step', 'activate');
 
     try {
-      const response = await authenticatedFetch(window.location.pathname, {
+      const response = await fetch(window.location.pathname, {
         method: 'POST',
         body: form
       });
@@ -258,17 +249,9 @@ export default function PromptBuilder() {
       } else {
         const errorData = await response.json().catch(() => ({}));
         console.error('Activation failed:', errorData.error);
-
-        if (errorData.error === 'Session expired or invalid') {
-          // Auth error handled by authenticatedFetch
-          return;
-        }
       }
     } catch (error) {
       console.error('Error activating prompt:', error);
-      if (!handleAuthError(error)) {
-        console.error('Unexpected error:', error);
-      }
     } finally {
       setIsActivating(false);
     }
