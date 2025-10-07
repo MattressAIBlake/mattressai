@@ -1,6 +1,9 @@
 name = "mattressai-widget"
+uid = "78ad7021-e7ab-3ad0-3bbf-d4da6b7a1e67e56ab847"
 type = "theme"
+handle = "mattressai-widget"
 
 [[extensions]]
 type = "theme_app_extension"
 name = "MattressAI App Embed"
+handle = "mattressai-app-embed"

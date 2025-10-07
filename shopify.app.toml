@@ -1,52 +1,49 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
-client_id = "YOUR_CLIENT_ID"
-name = "shop-chat-agent"
-handle = "shop-chat-agent"
-application_url = "https://shop-chat-agent.com"
+client_id = "6b1ed5786311fcaad075b3a7cc5f348e"
+name = "MattressAI"
+application_url = "https://maishopdash.web.app/"
 embedded = true
 
-[build]
-include_config_on_deploy = true
-
 [webhooks]
-api_version = "2025-04"
+api_version = "2025-10"
+
+  [[webhooks.subscriptions]]
+  topics = [
+  "products/update",
+  "shop/update",
+  "orders/create",
+  "inventory_levels/update",
+  "customers/delete",
+  "orders/updated",
+  "app/uninstalled",
+  "app_subscriptions/update",
+  "orders/paid",
+  "products/create",
+  "orders/cancelled",
+  "customers/create",
+  "customers/update",
+  "orders/fulfilled",
+  "products/delete"
+]
+  uri = "https://us-central1-mattressai2.cloudfunctions.net/api"
+  compliance_topics = [ "customers/data_request", "customers/redact", "shop/redact" ]
+
+[access.admin]
+direct_api_mode = "online"
+embedded_app_direct_api_access = true
 
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
-scopes = "customer_read_customers,customer_read_orders,customer_read_store_credit_account_transactions,customer_read_store_credit_accounts,unauthenticated_read_product_listings"
+scopes = "read_customers,read_inventory,read_orders,read_products"
 
 [auth]
-redirect_urls = [ "https://shop-chat-agent.com/api/auth" ]
-
-[pos]
-embedded = false
-
-[mcp.customer_authentication]
-redirect_uris = [
-  "https://shop-chat-agent.com/callback"
+redirect_urls = [
+  "https://us-central1-mattressai2.cloudfunctions.net/api",
+  "http://localhost:5174/auth/callback"
 ]
 
 [app_proxy]
-url = "https://shop-chat-agent.com"
-subpath = "apps/mattressai"
+url = "https://maishopdash.web.app/api"
+subpath = "proxy"
 prefix = "apps"
-
-[webhooks]
-api_version = "2025-04"
-[[webhooks.subscriptions]]
-uri = "/webhooks/customers/data_request"
-topic = "customers/data_request"
-[[webhooks.subscriptions]]
-uri = "/webhooks/customers/redact"
-topic = "customers/redact"
-[[webhooks.subscriptions]]
-uri = "/webhooks/shop/redact"
-topic = "shop/redact"
-
-[[extensions]]
-name = "mattressai-widget"
-type = "theme"
-[[extensions.target]]
-type = "theme_app_extension"
-name = "MattressAI App Embed"
