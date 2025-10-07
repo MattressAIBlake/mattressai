@@ -1,13 +1,7 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
 
-// Note that some adapters may set a maximum length for the String type by default, please ensure your strings are long
-// enough when changing adapters.
-// See https://www.prisma.io/docs/orm/reference/prisma-schema-reference#string for more information
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
@@ -32,58 +26,58 @@ model Session {
 }
 
 model CustomerToken {
-  id              String    @id
-  conversationId  String
-  accessToken     String
-  refreshToken    String?
-  expiresAt       DateTime
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id             String   @id
+  conversationId String
+  accessToken    String
+  refreshToken   String?
+  expiresAt      DateTime
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   @@index([conversationId])
 }
 
 model CodeVerifier {
-  id              String    @id
-  state           String    @unique
-  verifier        String
-  createdAt       DateTime  @default(now())
-  expiresAt       DateTime
+  id        String   @id
+  state     String   @unique
+  verifier  String
+  createdAt DateTime @default(now())
+  expiresAt DateTime
 
   @@index([state])
 }
 
 model Conversation {
   id        String    @id
-  messages  Message[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
+  messages  Message[]
 }
 
 model Message {
   id             String       @id @default(cuid())
   conversationId String
-  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  role           String       // "user" or "assistant"
+  role           String
   content        String
   createdAt      DateTime     @default(now())
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 
   @@index([conversationId])
 }
 
 model CustomerAccountUrl {
-  id             String    @id @default(cuid())
-  conversationId String    @unique
+  id             String   @id @default(cuid())
+  conversationId String   @unique
   url            String
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 }
 
 model PromptVersion {
   id             String   @id @default(cuid())
-  tenant         String   // shop domain (e.g., 'mystore.myshopify.com')
-  compiledPrompt String   // human-readable prompt summary
-  runtimeRules   String   // JSON string of validated runtime rules
+  tenant         String
+  compiledPrompt String
+  runtimeRules   String
   isActive       Boolean  @default(false)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
@@ -93,32 +87,23 @@ model PromptVersion {
 }
 
 model IndexJob {
-  id           String   @id @default(cuid())
-  tenant       String   // shop domain (e.g., 'mystore.myshopify.com')
-  status       String   // "pending", "running", "completed", "failed", "cancelled"
-  startedAt    DateTime @default(now())
-  finishedAt   DateTime?
-
-  // Progress tracking
-  totalProducts    Int     @default(0)
-  processedProducts Int    @default(0)
-  failedProducts   Int    @default(0)
-
-  // Cost tracking
-  tokensUsed   Int     @default(0)
-  costEstimate Float   @default(0.0)
-  actualCost   Float?
-
-  // Job metadata
-  operationId  String?  // Shopify bulk operation ID
-  errorMessage String?
-
-  // Configuration
-  useAIEnrichment   Boolean @default(true)
-  confidenceThreshold Float @default(0.7)
-
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id                  String    @id @default(cuid())
+  tenant              String
+  status              String
+  startedAt           DateTime  @default(now())
+  finishedAt          DateTime?
+  totalProducts       Int       @default(0)
+  processedProducts   Int       @default(0)
+  failedProducts      Int       @default(0)
+  tokensUsed          Int       @default(0)
+  costEstimate        Float     @default(0.0)
+  actualCost          Float?
+  operationId         String?
+  errorMessage        String?
+  useAIEnrichment     Boolean   @default(true)
+  confidenceThreshold Float     @default(0.7)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 
   @@index([tenant])
   @@index([status])
@@ -126,68 +111,56 @@ model IndexJob {
 }
 
 model ProductProfile {
-  id               String   @id @default(cuid())
-  tenant           String   // shop domain (e.g., 'mystore.myshopify.com')
-  shopifyProductId String   // Shopify product ID
-  title            String
-  body             String?  // Product description
-  vendor           String?
-  productType      String?
-  tags             String?  // JSON array of tags
-
-  // Enriched mattress-specific attributes
-  firmness         String?  // e.g., "soft", "medium", "firm"
-  height           String?  // e.g., "12 inches"
-  material         String?  // e.g., "memory foam", "hybrid"
-  certifications   String?  // JSON array of certifications
-  features         String?  // JSON array of features
-  supportFeatures  String?  // JSON array of support features
-
-  // Enriched metadata
-  enrichedAt       DateTime @default(now())
-  enrichmentMethod String   // "mapping", "heuristic", "llm"
-  confidence       Float    // 0.0 to 1.0
-  sourceEvidence   String?  // JSON array of evidence sources
-  modelVersion     String?  // LLM model version if used
-
-  // Content hash for change detection
-  contentHash      String   @unique
-
-  // Manual override flags
-  lockedFirmness        Boolean @default(false)
-  lockedHeight          Boolean @default(false)
-  lockedMaterial        Boolean @default(false)
-  lockedCertifications  Boolean @default(false)
-  lockedFeatures        Boolean @default(false)
-  lockedSupportFeatures Boolean @default(false)
-
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  id                    String   @id @default(cuid())
+  tenant                String
+  shopifyProductId      String
+  title                 String
+  body                  String?
+  vendor                String?
+  productType           String?
+  tags                  String?
+  firmness              String?
+  height                String?
+  material              String?
+  certifications        String?
+  features              String?
+  supportFeatures       String?
+  enrichedAt            DateTime @default(now())
+  enrichmentMethod      String
+  confidence            Float
+  sourceEvidence        String?
+  modelVersion          String?
+  contentHash           String   @unique
+  lockedFirmness        Boolean  @default(false)
+  lockedHeight          Boolean  @default(false)
+  lockedMaterial        Boolean  @default(false)
+  lockedCertifications  Boolean  @default(false)
+  lockedFeatures        Boolean  @default(false)
+  lockedSupportFeatures Boolean  @default(false)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 
   @@index([tenant])
   @@index([shopifyProductId])
   @@index([contentHash])
 }
 
-// Phase 4: Chat Sessions, Leads, Alerts, Analytics
 model ChatSession {
-  id            String    @id @default(cuid())
-  tenantId      String
-  conversationId String?  // Link to existing Conversation model
-  startedAt     DateTime  @default(now())
-  endedAt       DateTime?
-  endReason     String?   // explicit_close | idle_timeout | completed | converted | post_conversion
-  intentScore   Int?      // 0-100
-  promptVersion String?
-  variantId     String?   // Phase 5: A/B testing variant assignment
-  summary       String?   // JSON string: LLM-generated summary
-  consent       Boolean?  // Snapshot at end
-  lastActivityAt DateTime @default(now())
-  
-  // Relations
-  leads         Lead[]
-  events        Event[]
-  alerts        Alert[]
+  id             String    @id @default(cuid())
+  tenantId       String
+  conversationId String?
+  startedAt      DateTime  @default(now())
+  endedAt        DateTime?
+  endReason      String?
+  intentScore    Int?
+  promptVersion  String?
+  variantId      String?
+  summary        String?
+  consent        Boolean?
+  lastActivityAt DateTime  @default(now())
+  alerts         Alert[]
+  events         Event[]
+  leads          Lead[]
 
   @@index([tenantId])
   @@index([conversationId])
@@ -200,18 +173,18 @@ model Lead {
   id                String      @id @default(cuid())
   tenantId          String
   sessionId         String
-  session           ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   email             String?
   phone             String?
   name              String?
   zip               String?
   consent           Boolean     @default(false)
   shopifyCustomerId String?
-  variantId         String?     // Phase 5: A/B testing attribution
-  status            String      @default("new") // new|contacted|won|lost
-  tags              String?     // JSON array of tags
+  variantId         String?
+  status            String      @default("new")
+  tags              String?
   createdAt         DateTime    @default(now())
   updatedAt         DateTime    @updatedAt
+  session           ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   @@index([tenantId])
   @@index([sessionId])
@@ -221,18 +194,18 @@ model Lead {
 }
 
 model Alert {
-  id         String      @id @default(cuid())
-  tenantId   String
-  sessionId  String?
-  session    ChatSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
-  type       String      // chat_end|lead_captured|high_intent|abandoned|post_conversion
-  channel    String      // email|sms|slack|webhook
-  payload    String      // JSON string
-  status     String      @default("queued") // queued|sent|failed|skipped
-  attempts   Int         @default(0)
-  error      String?
-  createdAt  DateTime    @default(now())
-  sentAt     DateTime?
+  id        String       @id @default(cuid())
+  tenantId  String
+  sessionId String?
+  type      String
+  channel   String
+  payload   String
+  status    String       @default("queued")
+  attempts  Int          @default(0)
+  error     String?
+  createdAt DateTime     @default(now())
+  sentAt    DateTime?
+  session   ChatSession? @relation(fields: [sessionId], references: [id])
 
   @@index([tenantId])
   @@index([sessionId])
@@ -241,15 +214,15 @@ model Alert {
 }
 
 model Event {
-  id         String      @id @default(cuid())
-  tenantId   String
-  sessionId  String?
-  session    ChatSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
-  type       String      // widget_viewed|opened|first_message|data_point_captured|recommendation_shown|recommendation_clicked|add_to_cart|checkout_started|order_placed
-  timestamp  DateTime    @default(now())
-  metadata   String      // JSON string
-  clickId    String?     // Attribution tracking
-  variantId  String?     // Phase 5: A/B testing attribution
+  id        String       @id @default(cuid())
+  tenantId  String
+  sessionId String?
+  type      String
+  timestamp DateTime     @default(now())
+  metadata  String
+  clickId   String?
+  variantId String?
+  session   ChatSession? @relation(fields: [sessionId], references: [id])
 
   @@index([tenantId])
   @@index([sessionId])
@@ -260,30 +233,29 @@ model Event {
 }
 
 model AlertSettings {
-  id            String   @id @default(cuid())
-  tenantId      String   @unique
-  triggers      String   // JSON: { all:false, lead_captured:true, ... }
-  channels      String   // JSON: { email:{to:""}, sms:{to:""}, slack:{url:""}, webhook:{url:""} }
-  quietHours    String?  // JSON: { start:"22:00", end:"07:00", tz:"America/Chicago" }
-  throttles     String   // JSON: { perHour:20, perSession:2 }
-  digest        String?  // JSON: { enabled:true, time:"09:00", day:"Monday" }
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id         String   @id @default(cuid())
+  tenantId   String   @unique
+  triggers   String
+  channels   String
+  quietHours String?
+  throttles  String
+  digest     String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   @@index([tenantId])
 }
 
-// Phase 5: A/B Testing & Billing
 model Experiment {
   id        String    @id @default(cuid())
   tenantId  String
   name      String
-  status    String    // active|paused|completed
+  status    String
   startAt   DateTime  @default(now())
   endAt     DateTime?
-  variants  Variant[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
+  variants  Variant[]
 
   @@index([tenantId])
   @@index([status])
@@ -293,26 +265,26 @@ model Experiment {
 model Variant {
   id                String     @id @default(cuid())
   experimentId      String
-  experiment        Experiment @relation(fields: [experimentId], references: [id], onDelete: Cascade)
   name              String
-  splitPercent      Int        // 0..100
-  promptVersionId   String?    // Optional pointer to existing prompt version
-  rulesOverrideJson String?    // JSON string for runtime rule overrides
+  splitPercent      Int
+  promptVersionId   String?
+  rulesOverrideJson String?
   createdAt         DateTime   @default(now())
   updatedAt         DateTime   @updatedAt
+  experiment        Experiment @relation(fields: [experimentId], references: [id], onDelete: Cascade)
 
   @@index([experimentId])
 }
 
 model Tenant {
-  id          String   @id
-  shop        String   @unique
-  planName    String   @default("starter") // starter|pro|enterprise
-  billingId   String?  // Shopify recurring charge ID
+  id          String    @id
+  shop        String    @unique
+  planName    String    @default("starter")
+  billingId   String?
   trialEndsAt DateTime?
-  quotas      String?  // JSON: { tokens: 100000, alertsPerHour: 20, ... }
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  quotas      String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   @@index([shop])
   @@index([planName])
@@ -320,9 +292,9 @@ model Tenant {
 
 model Plan {
   id        String   @id @default(cuid())
-  name      String   @unique // starter|pro|enterprise
-  price     Float    // Monthly price in USD
-  features  String   // JSON: { tokens: 100000, alertsPerHour: 20, smsEnabled: false, ... }
+  name      String   @unique
+  price     Float
+  features  String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
