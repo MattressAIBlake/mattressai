@@ -1,6 +1,6 @@
 import { json } from '@remix-run/node';
 import { PrismaClient } from '@prisma/client';
-import { verifyWebhookHmac } from '~/lib/shopify/verifyWebhookHmac.ts';
+import { verifyWebhookHmac } from '~/lib/shopify/verifyWebhookHmac';
 import { getVectorStoreProvider } from '~/lib/ports/provider-registry';
 import { enrichProductProfile } from '~/lib/enrichment/product-enrichment.service';
 import { getEmbeddingProvider } from '~/lib/ports/provider-registry';

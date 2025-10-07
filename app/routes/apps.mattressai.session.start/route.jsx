@@ -1,5 +1,5 @@
 import { json } from '@remix-run/node';
-import { verifyProxyHmac } from '~/lib/shopify/verifyProxyHmac.ts';
+import { verifyProxyHmac } from '~/lib/shopify/verifyProxyHmac';
 import { createOrGetSession } from '~/lib/session/session-orchestrator.service';
 
 export const action = async ({ request }) => {
