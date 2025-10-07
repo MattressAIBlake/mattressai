@@ -1,0 +1,73 @@
+{
+  "en": {
+    "chat": {
+      "title": "Find Your Perfect Mattress",
+      "subtitle": "Let's find the perfect mattress for you",
+      "placeholder": "Type your message...",
+      "send": "Send",
+      "close": "Close chat",
+      "minimize": "Minimize",
+      "typing": "Typing...",
+      "error": "Something went wrong. Please try again.",
+      "restart": "Start over"
+    },
+    "stepper": {
+      "step": "Step {{current}} of {{total}}",
+      "next": "Next",
+      "back": "Back",
+      "skip": "Skip"
+    },
+    "recommendations": {
+      "title": "Recommended for You",
+      "compare": "Compare",
+      "viewDetails": "View Details",
+      "addToCart": "Add to Cart",
+      "save": "Save for Later",
+      "whyItFits": "Why it fits",
+      "fitScore": "{{score}}% match",
+      "loading": "Finding your perfect matches...",
+      "noResults": "No matches found",
+      "tryAgain": "Let's try different preferences"
+    },
+    "compare": {
+      "title": "Compare Mattresses",
+      "close": "Close comparison",
+      "firmness": "Firmness",
+      "height": "Height",
+      "construction": "Construction",
+      "cooling": "Cooling Features",
+      "motionIsolation": "Motion Isolation",
+      "edgeSupport": "Edge Support",
+      "certifications": "Certifications",
+      "trial": "Trial Period",
+      "warranty": "Warranty",
+      "price": "Price",
+      "selectToCompare": "Select up to 3 mattresses to compare"
+    },
+    "specs": {
+      "firmness": "Firmness Level",
+      "height": "Height",
+      "material": "Material",
+      "cooling": "Cooling Technology",
+      "motion": "Motion Isolation",
+      "edge": "Edge Support",
+      "organic": "Organic Materials",
+      "certifications": "Certifications",
+      "trial": "Trial Period",
+      "warranty": "Warranty"
+    },
+    "actions": {
+      "loading": "Loading...",
+      "added": "Added to cart",
+      "saved": "Saved",
+      "error": "Action failed"
+    },
+    "accessibility": {
+      "openChat": "Open chat assistant",
+      "closeModal": "Press Escape to close",
+      "quickReply": "Quick reply option",
+      "productCard": "Product recommendation card"
+    }
+  }
+}
+

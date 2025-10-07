@@ -3,10 +3,25 @@
   "name": "MattressAI – Personal Shopper",
   "target": "body",
   "settings": [
-    { "type": "checkbox", "id": "auto_open", "label": "Auto open on first visit", "default": false }
+    { "type": "checkbox", "id": "auto_open", "label": "Auto open on first visit", "default": false },
+    { "type": "checkbox", "id": "show_compare", "label": "Enable product comparison", "default": true },
+    { "type": "checkbox", "id": "guided_mode", "label": "Enable guided question mode", "default": true },
+    { "type": "color", "id": "primary_color", "label": "Primary color", "default": "#2c5f2d" }
   ]
 }
 {% endschema %}
 
-<script src="{{ shop.url }}/apps/mattressai/widget.js" data-tenant="{{ shop.permanent_domain | escape }}"></script>
+<!-- MattressAI Widget Root -->
+<div 
+  id="mattressai-root" 
+  data-tenant="{{ shop.permanent_domain | escape }}"
+  data-auto-open="{{ block.settings.auto_open }}"
+  data-show-compare="{{ block.settings.show_compare }}"
+  data-guided-mode="{{ block.settings.guided_mode }}"
+  data-primary-color="{{ block.settings.primary_color }}"
+></div>
+
+<!-- Widget Assets -->
+<script src="{{ 'tracking.js' | asset_url }}" data-tenant="{{ shop.permanent_domain | escape }}" defer></script>
+<script src="{{ shop.url }}/apps/mattressai/widget.js" data-tenant="{{ shop.permanent_domain | escape }}" defer></script>
 <link rel="stylesheet" href="{{ 'widget.css' | asset_url }}">
