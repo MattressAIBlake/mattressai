@@ -24,10 +24,10 @@ console.log('🔧 SHOPIFY CONFIG:', {
 });
 
 const shopify = shopifyApp({
-  apiKey: process.env.SHOPIFY_API_KEY,
-  apiSecretKey: process.env.SHOPIFY_API_SECRET || "",
+  apiKey: process.env.SHOPIFY_API_KEY || "placeholder",
+  apiSecretKey: process.env.SHOPIFY_API_SECRET || "placeholder",
   apiVersion: ApiVersion.Unstable,
-  scopes: process.env.SCOPES?.split(","),
+  scopes: process.env.SCOPES?.split(",") || ["read_products"],
   appUrl: appUrl,
   authPathPrefix: "/auth",
   sessionStorage: new PrismaSessionStorage(prisma),
