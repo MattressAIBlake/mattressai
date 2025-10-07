@@ -21,7 +21,7 @@ import {
 } from '@shopify/polaris';
 import { authenticate } from '~/shopify.server';
 import { createCompiledPrompt } from '~/lib/domain/runtimeRules';
-import { handleAuthError, authenticatedFetch } from '~/lib/shopify/auth.client';
+import { handleAuthError, authenticatedFetch } from '~/lib/shopify/auth.client.js';
 
 // Step definitions
 const STEPS = [
