@@ -17,8 +17,10 @@ export async function seedPlans() {
   }
 }
 
-// Run if executed directly
-if (require.main === module) {
+// Run if executed directly (ES module compatible)
+import { fileURLToPath } from 'url';
+const __filename = fileURLToPath(import.meta.url);
+if (process.argv[1] === __filename) {
   seedPlans()
     .then(() => process.exit(0))
     .catch(() => process.exit(1));
