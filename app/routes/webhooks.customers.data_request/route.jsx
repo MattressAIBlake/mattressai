@@ -1,5 +1,5 @@
 import { json } from '@remix-run/node';
-import { verifyWebhookHmac } from '~/lib/shopify/verifyWebhookHmac';
+import { verifyWebhookHmac } from '~/lib/shopify/verifyWebhookHmac.ts';
 
 export const action = async ({ request }) => {
   // Verify webhook HMAC
