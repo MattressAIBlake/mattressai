@@ -1,0 +1,10 @@
+{
+  "app-embed": {
+    "name": "MattressAI – Personal Shopper",
+    "settings": {
+      "auto_open": {
+        "label": "Auto open on first visit"
+      }
+    }
+  }
+}
