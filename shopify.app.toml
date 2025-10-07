@@ -2,7 +2,7 @@
 
 client_id = "6b1ed5786311fcaad075b3a7cc5f348e"
 name = "MattressAI"
-application_url = "https://maishopdash.web.app/"
+application_url = "https://mattressai-fvn85offs-blake-austins-projects.vercel.app/"
 embedded = true
 
 [webhooks]
@@ -26,7 +26,7 @@ api_version = "2025-10"
   "orders/fulfilled",
   "products/delete"
 ]
-  uri = "https://us-central1-mattressai2.cloudfunctions.net/api"
+  uri = "https://mattressai-fvn85offs-blake-austins-projects.vercel.app/api/webhooks"
   compliance_topics = [ "customers/data_request", "customers/redact", "shop/redact" ]
 
 [access.admin]
@@ -39,11 +39,11 @@ scopes = "read_customers,read_inventory,read_orders,read_products"
 
 [auth]
 redirect_urls = [
-  "https://us-central1-mattressai2.cloudfunctions.net/api",
+  "https://mattressai-fvn85offs-blake-austins-projects.vercel.app/auth/callback",
   "http://localhost:5174/auth/callback"
 ]
 
 [app_proxy]
-url = "https://maishopdash.web.app/api"
-subpath = "proxy"
+url = "https://mattressai-fvn85offs-blake-austins-projects.vercel.app/apps/mattressai"
+subpath = "mattressai"
 prefix = "apps"
