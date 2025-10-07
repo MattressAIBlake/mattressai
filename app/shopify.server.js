@@ -9,17 +9,19 @@ import prisma from "./db.server";
 
 // Construct app URL from environment variables
 const appUrl = process.env.SHOPIFY_APP_URL || 
-  (process.env.HOST ? `https://${process.env.HOST}` : "");
+  (process.env.HOST ? `https://${process.env.HOST}` : "") ||
+  "https://placeholder.com"; // Fallback to prevent crash
 
-// Log environment variables for debugging (remove in production)
-if (!appUrl) {
-  console.error('❌ SHOPIFY CONFIG ERROR:', {
-    SHOPIFY_APP_URL: process.env.SHOPIFY_APP_URL || 'MISSING',
-    HOST: process.env.HOST || 'MISSING',
-    NODE_ENV: process.env.NODE_ENV,
-  });
-  throw new Error('SHOPIFY_APP_URL and HOST are both missing. Please set environment variables in Vercel.');
-}
+// Log environment variables for debugging
+console.log('🔧 SHOPIFY CONFIG:', {
+  SHOPIFY_APP_URL: process.env.SHOPIFY_APP_URL || '❌ MISSING',
+  HOST: process.env.HOST || '❌ MISSING',
+  SHOPIFY_API_KEY: process.env.SHOPIFY_API_KEY || '❌ MISSING',
+  SHOPIFY_API_SECRET: process.env.SHOPIFY_API_SECRET ? '✅ SET' : '❌ MISSING',
+  SCOPES: process.env.SCOPES || '❌ MISSING',
+  NODE_ENV: process.env.NODE_ENV,
+  appUrl: appUrl,
+});
 
 const shopify = shopifyApp({
   apiKey: process.env.SHOPIFY_API_KEY,
