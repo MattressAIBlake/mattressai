@@ -1,5 +1,5 @@
 import { json } from '@remix-run/node';
-import { verifyProxyHmac } from '~/lib/shopify/verifyProxyHmac.ts';
+import { verifyProxyHmac } from '~/lib/shopify/verifyProxyHmac.server';
 import { trackEvent } from '~/lib/analytics/analytics.service';
 
 export const action = async ({ request }) => {
