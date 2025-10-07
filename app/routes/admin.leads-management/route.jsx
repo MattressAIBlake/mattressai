@@ -13,9 +13,7 @@ import {
   Text,
   ButtonGroup,
   Filters,
-  Icon
 } from '@shopify/polaris';
-import { DownloadIcon, SearchIcon } from '@shopify/polaris-icons';
 import { authenticate } from '~/shopify.server';
 
 export const loader = async ({ request }) => {
@@ -109,7 +107,6 @@ export default function LeadsManagement() {
       subtitle={`${total} total leads`}
       primaryAction={{
         content: 'Export CSV',
-        icon: DownloadIcon,
         onAction: handleExport
       }}
     >
@@ -125,7 +122,6 @@ export default function LeadsManagement() {
                     value={searchValue}
                     onChange={setSearchValue}
                     placeholder="Search by name, email, or phone"
-                    prefix={<Icon source={SearchIcon} />}
                     autoComplete="off"
                   />
                 </div>
