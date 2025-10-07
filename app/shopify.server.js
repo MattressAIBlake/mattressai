@@ -11,6 +11,16 @@ import prisma from "./db.server";
 const appUrl = process.env.SHOPIFY_APP_URL || 
   (process.env.HOST ? `https://${process.env.HOST}` : "");
 
+// Log environment variables for debugging (remove in production)
+if (!appUrl) {
+  console.error('❌ SHOPIFY CONFIG ERROR:', {
+    SHOPIFY_APP_URL: process.env.SHOPIFY_APP_URL || 'MISSING',
+    HOST: process.env.HOST || 'MISSING',
+    NODE_ENV: process.env.NODE_ENV,
+  });
+  throw new Error('SHOPIFY_APP_URL and HOST are both missing. Please set environment variables in Vercel.');
+}
+
 const shopify = shopifyApp({
   apiKey: process.env.SHOPIFY_API_KEY,
   apiSecretKey: process.env.SHOPIFY_API_SECRET || "",
