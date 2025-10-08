@@ -811,16 +811,17 @@ export const loader = async ({ request }) => {
       box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
     }
     
-    /* Icon sizing */
-    .mattressai-bubble-icon {
+    /* Icon SVG sizing */
+    .mattressai-icon-svg {
       width: calc(var(--mattress-bubble-size, 64px) * 0.42);
       height: calc(var(--mattress-bubble-size, 64px) * 0.42);
       flex-shrink: 0;
     }
     
-    /* Text sizing - responsive to bubble height */
-    .mattressai-bubble-text {
+    /* Text span sizing - responsive to bubble height */
+    .mattressai-bubble-text-span {
       font-size: clamp(14px, calc(var(--mattress-bubble-size, 64px) * 0.24), 18px);
+      font-weight: 600;
       line-height: 1.2;
     }
     
