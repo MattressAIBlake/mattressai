@@ -5,21 +5,28 @@
   "settings": [
     { 
       "type": "header",
-      "content": "Widget Appearance"
+      "content": "Widget Text & Branding"
     },
     { 
       "type": "text", 
       "id": "widget_title", 
       "label": "Widget title", 
       "default": "MattressAI Assistant",
-      "info": "Main heading shown in the chat widget"
+      "info": "Main heading shown in the chat widget header"
     },
     { 
       "type": "text", 
       "id": "widget_subtitle", 
       "label": "Widget subtitle", 
       "default": "Find your perfect mattress",
-      "info": "Subtitle shown below the title"
+      "info": "Subtitle shown below the title in header"
+    },
+    { 
+      "type": "textarea", 
+      "id": "welcome_message", 
+      "label": "Welcome message", 
+      "default": "Hi! I'm here to help you find the perfect mattress. What type of sleeper are you?",
+      "info": "First message displayed to grab shopper attention"
     },
     { 
       "type": "color", 
@@ -27,6 +34,103 @@
       "label": "Primary color", 
       "default": "#2c5f2d",
       "info": "Color for buttons, header, and chat bubble"
+    },
+    { 
+      "type": "header",
+      "content": "Chat Bubble"
+    },
+    { 
+      "type": "select", 
+      "id": "bubble_style", 
+      "label": "Bubble style", 
+      "options": [
+        { "value": "icon", "label": "Icon only" },
+        { "value": "text", "label": "Text only" },
+        { "value": "icon_text", "label": "Icon + Text" }
+      ],
+      "default": "icon",
+      "info": "What to display on the chat bubble"
+    },
+    { 
+      "type": "text", 
+      "id": "bubble_text", 
+      "label": "Bubble text", 
+      "default": "Chat",
+      "info": "Text shown on bubble (if text style selected)"
+    },
+    { 
+      "type": "range", 
+      "id": "bubble_size", 
+      "label": "Bubble size", 
+      "min": 48,
+      "max": 80,
+      "step": 4,
+      "unit": "px",
+      "default": 56,
+      "info": "Size of the chat bubble button"
+    },
+    { 
+      "type": "header",
+      "content": "Widget Position"
+    },
+    { 
+      "type": "select", 
+      "id": "position_horizontal", 
+      "label": "Horizontal position", 
+      "options": [
+        { "value": "left", "label": "Left" },
+        { "value": "right", "label": "Right" }
+      ],
+      "default": "right",
+      "info": "Which side of the screen to show the widget"
+    },
+    { 
+      "type": "range", 
+      "id": "position_bottom", 
+      "label": "Bottom spacing", 
+      "min": 10,
+      "max": 100,
+      "step": 5,
+      "unit": "px",
+      "default": 20,
+      "info": "Distance from bottom of screen"
+    },
+    { 
+      "type": "range", 
+      "id": "position_side", 
+      "label": "Side spacing", 
+      "min": 10,
+      "max": 100,
+      "step": 5,
+      "unit": "px",
+      "default": 20,
+      "info": "Distance from left or right edge"
+    },
+    { 
+      "type": "header",
+      "content": "Widget Size"
+    },
+    { 
+      "type": "range", 
+      "id": "widget_width", 
+      "label": "Widget width", 
+      "min": 300,
+      "max": 500,
+      "step": 20,
+      "unit": "px",
+      "default": 360,
+      "info": "Width of the chat widget (desktop)"
+    },
+    { 
+      "type": "range", 
+      "id": "widget_height", 
+      "label": "Widget height", 
+      "min": 400,
+      "max": 700,
+      "step": 25,
+      "unit": "px",
+      "default": 550,
+      "info": "Height of the chat widget (desktop)"
     },
     { 
       "type": "header",
@@ -64,9 +168,18 @@
   data-primary-color="{{ block.settings.primary_color }}"
   data-widget-title="{{ block.settings.widget_title | escape }}"
   data-widget-subtitle="{{ block.settings.widget_subtitle | escape }}"
+  data-welcome-message="{{ block.settings.welcome_message | escape }}"
+  data-bubble-style="{{ block.settings.bubble_style }}"
+  data-bubble-text="{{ block.settings.bubble_text | escape }}"
+  data-bubble-size="{{ block.settings.bubble_size }}"
+  data-position-horizontal="{{ block.settings.position_horizontal }}"
+  data-position-bottom="{{ block.settings.position_bottom }}"
+  data-position-side="{{ block.settings.position_side }}"
+  data-widget-width="{{ block.settings.widget_width }}"
+  data-widget-height="{{ block.settings.widget_height }}"
 ></div>
 
 <!-- Widget Assets -->
 <script src="{{ 'tracking.js' | asset_url }}" data-tenant="{{ shop.permanent_domain | escape }}" defer></script>
-<script src="{{ shop.url }}/apps/mattressai/widget.js?v=7" data-tenant="{{ shop.permanent_domain | escape }}" defer></script>
+<script src="{{ shop.url }}/apps/mattressai/widget.js?v=8" data-tenant="{{ shop.permanent_domain | escape }}" defer></script>
 <link rel="stylesheet" href="{{ 'widget.css' | asset_url }}">

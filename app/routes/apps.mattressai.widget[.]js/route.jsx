@@ -58,11 +58,28 @@ export const loader = async ({ request }) => {
         guidedMode: root.dataset.guidedMode === 'true',
         primaryColor: root.dataset.primaryColor || '#2c5f2d',
         widgetTitle: root.dataset.widgetTitle || 'MattressAI Assistant',
-        widgetSubtitle: root.dataset.widgetSubtitle || 'Find your perfect mattress'
+        widgetSubtitle: root.dataset.widgetSubtitle || 'Find your perfect mattress',
+        welcomeMessage: root.dataset.welcomeMessage || 'Hi! I\'m here to help you find the perfect mattress. What type of sleeper are you?',
+        bubbleStyle: root.dataset.bubbleStyle || 'icon',
+        bubbleText: root.dataset.bubbleText || 'Chat',
+        bubbleSize: parseInt(root.dataset.bubbleSize || '56', 10),
+        positionHorizontal: root.dataset.positionHorizontal || 'right',
+        positionBottom: parseInt(root.dataset.positionBottom || '20', 10),
+        positionSide: parseInt(root.dataset.positionSide || '20', 10),
+        widgetWidth: parseInt(root.dataset.widgetWidth || '360', 10),
+        widgetHeight: parseInt(root.dataset.widgetHeight || '550', 10)
       };
       
       // Set CSS custom properties
       document.documentElement.style.setProperty('--mattress-primary', this.config.primaryColor);
+      document.documentElement.style.setProperty('--mattress-bubble-size', this.config.bubbleSize + 'px');
+      document.documentElement.style.setProperty('--mattress-position-bottom', this.config.positionBottom + 'px');
+      document.documentElement.style.setProperty('--mattress-position-side', this.config.positionSide + 'px');
+      document.documentElement.style.setProperty('--mattress-widget-width', this.config.widgetWidth + 'px');
+      document.documentElement.style.setProperty('--mattress-widget-height', this.config.widgetHeight + 'px');
+      
+      // Set position classes
+      document.body.classList.add('mattressai-position-' + this.config.positionHorizontal);
       
       // Restore widget state
       this.restoreState();
@@ -186,12 +203,24 @@ export const loader = async ({ request }) => {
     createChatBubble: function() {
       const bubble = document.createElement('button');
       bubble.id = 'mattressai-chat-bubble';
-      bubble.className = 'mattressai-chat-bubble';
-      bubble.innerHTML = \`
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      bubble.className = 'mattressai-chat-bubble mattressai-bubble-' + this.config.bubbleStyle;
+      
+      // Build bubble content based on style
+      let bubbleContent = '';
+      const icon = \`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mattressai-bubble-icon">
           <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-        </svg>
-      \`;
+        </svg>\`;
+      const text = \`<span class="mattressai-bubble-text">\${this.config.bubbleText}</span>\`;
+      
+      if (this.config.bubbleStyle === 'icon') {
+        bubbleContent = icon;
+      } else if (this.config.bubbleStyle === 'text') {
+        bubbleContent = text;
+      } else if (this.config.bubbleStyle === 'icon_text') {
+        bubbleContent = icon + text;
+      }
+      
+      bubble.innerHTML = bubbleContent;
       bubble.setAttribute('aria-label', 'Open chat assistant');
       bubble.addEventListener('click', () => this.openChat());
       
@@ -272,7 +301,7 @@ export const loader = async ({ request }) => {
           <div class="mattressai-message mattressai-message--assistant">
             <div class="mattressai-message__avatar">AI</div>
             <div class="mattressai-message__content">
-              Hi! I'm here to help you find the perfect mattress. What type of sleeper are you?
+              \${this.config.welcomeMessage}
             </div>
           </div>
           <div class="mattressai-quick-replies" id="mattressai-quick-replies">
@@ -724,10 +753,9 @@ export const loader = async ({ request }) => {
     /* Chat Bubble */
     .mattressai-chat-bubble {
       position: fixed;
-      bottom: 20px;
-      right: 20px;
-      width: 56px;
-      height: 56px;
+      bottom: var(--mattress-position-bottom, 20px);
+      width: var(--mattress-bubble-size, 56px);
+      height: var(--mattress-bubble-size, 56px);
       border-radius: 50%;
       background: var(--mattress-primary, #2c5f2d);
       color: white;
@@ -737,9 +765,37 @@ export const loader = async ({ request }) => {
       display: flex;
       align-items: center;
       justify-content: center;
+      gap: 6px;
       transition: transform 0.2s ease, box-shadow 0.2s ease;
       z-index: 9999;
       animation: slideUp 0.3s ease;
+      padding: 0 12px;
+      font-size: 14px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    
+    /* Position left */
+    .mattressai-position-left .mattressai-chat-bubble {
+      left: var(--mattress-position-side, 20px);
+      right: auto;
+    }
+    
+    /* Position right */
+    .mattressai-position-right .mattressai-chat-bubble {
+      right: var(--mattress-position-side, 20px);
+      left: auto;
+    }
+    
+    /* Bubble styles */
+    .mattressai-bubble-icon {
+      border-radius: 50%;
+    }
+    
+    .mattressai-bubble-text,
+    .mattressai-bubble-icon_text {
+      border-radius: 28px;
+      padding: 0 16px;
     }
     
     @media (prefers-reduced-motion: reduce) {
@@ -753,9 +809,14 @@ export const loader = async ({ request }) => {
       box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
     }
     
-    .mattressai-chat-bubble svg {
-      width: 24px;
-      height: 24px;
+    .mattressai-bubble-icon {
+      width: calc(var(--mattress-bubble-size, 56px) * 0.4);
+      height: calc(var(--mattress-bubble-size, 56px) * 0.4);
+      flex-shrink: 0;
+    }
+    
+    .mattressai-bubble-text {
+      font-size: calc(var(--mattress-bubble-size, 56px) * 0.25);
     }
     
     /* Unread Badge */
@@ -780,11 +841,10 @@ export const loader = async ({ request }) => {
     /* Chat Widget */
     .mattressai-widget {
       position: fixed;
-      bottom: 20px;
-      right: 20px;
-      width: 360px;
+      bottom: var(--mattress-position-bottom, 20px);
+      width: var(--mattress-widget-width, 360px);
       max-width: calc(100vw - 40px);
-      height: 550px;
+      height: var(--mattress-widget-height, 550px);
       max-height: calc(100vh - 100px);
       background: var(--mattress-bg, white);
       border-radius: var(--mattress-radius, 12px);
@@ -796,6 +856,18 @@ export const loader = async ({ request }) => {
       transform: translateY(calc(100% + 40px));
       opacity: 0;
       transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+    }
+    
+    /* Position left */
+    .mattressai-position-left .mattressai-widget {
+      left: var(--mattress-position-side, 20px);
+      right: auto;
+    }
+    
+    /* Position right */
+    .mattressai-position-right .mattressai-widget {
+      right: var(--mattress-position-side, 20px);
+      left: auto;
     }
     
     @media (prefers-reduced-motion: reduce) {
@@ -1242,20 +1314,25 @@ export const loader = async ({ request }) => {
     @media (max-width: 768px) {
       .mattressai-chat-bubble {
         bottom: calc(16px + env(safe-area-inset-bottom));
-        right: 16px;
-        width: 52px;
-        height: 52px;
       }
       
-      .mattressai-chat-bubble svg {
+      .mattressai-position-left .mattressai-chat-bubble {
+        left: 16px;
+      }
+      
+      .mattressai-position-right .mattressai-chat-bubble {
+        right: 16px;
+      }
+      
+      .mattressai-bubble-icon {
         width: 22px;
         height: 22px;
       }
       
       .mattressai-widget {
-        bottom: 0;
-        right: 0;
-        left: 0;
+        bottom: 0 !important;
+        right: 0 !important;
+        left: 0 !important;
         top: 0;
         width: 100%;
         max-width: 100%;
