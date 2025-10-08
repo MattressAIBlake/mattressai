@@ -71,23 +71,38 @@ const FIELD_OPTIONS = [
 
 // Loader function
 export async function loader({ request }) {
-  const { session } = await authenticate.admin(request);
-  return json({
-    steps: STEPS,
-    toneOptions: TONE_OPTIONS,
-    positionOptions: POSITION_OPTIONS,
-    fieldOptions: FIELD_OPTIONS,
-    shop: session.shop
-  });
+  try {
+    const { session } = await authenticate.admin(request);
+    
+    if (!session?.shop) {
+      throw new Error('No session found');
+    }
+    
+    return json({
+      steps: STEPS,
+      toneOptions: TONE_OPTIONS,
+      positionOptions: POSITION_OPTIONS,
+      fieldOptions: FIELD_OPTIONS,
+      shop: session.shop
+    });
+  } catch (error) {
+    console.error('Error in prompt builder loader:', error);
+    throw error; // Let Remix handle the redirect
+  }
 }
 
 // Action function
 export async function action({ request }) {
-  const { session } = await authenticate.admin(request);
+  try {
+    const { session } = await authenticate.admin(request);
 
-  if (request.method === 'POST') {
-    const formData = await request.formData();
-    const step = formData.get('step');
+    if (!session?.shop) {
+      return json({ error: 'No session found' }, { status: 401 });
+    }
+
+    if (request.method === 'POST') {
+      const formData = await request.formData();
+      const step = formData.get('step');
 
     if (step === 'compile') {
       // Compile and return preview
@@ -196,6 +211,13 @@ export async function action({ request }) {
   }
 
   return json({ error: 'Invalid request' }, { status: 400 });
+  } catch (authError) {
+    console.error('Authentication error in prompt builder:', authError);
+    return json(
+      { error: 'Authentication failed. Please refresh and try again.' },
+      { status: 401 }
+    );
+  }
 }
 
 // Main component
