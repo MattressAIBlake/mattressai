@@ -1,6 +1,5 @@
 {
   "buildCommand": "npm run build",
-  "framework": "remix",
   "headers": [
     {
       "source": "/(.*)",
@@ -14,6 +13,21 @@
           "value": "frame-ancestors https://*.myshopify.com https://admin.shopify.com;"
         }
       ]
+    },
+    {
+      "source": "/build/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/api/index"
     }
   ]
 }
