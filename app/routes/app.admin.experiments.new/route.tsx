@@ -152,8 +152,8 @@ export default function NewExperimentPage() {
 
   return (
     <Page
-      title="Create A/B Test Experiment"
-      subtitle="Compare different prompts and recommendation strategies"
+      title="Create A/B Test"
+      subtitle="Compare different prompts and recommendation strategies to optimize performance"
       primaryAction={{
         content: 'Create Experiment',
         onAction: handleSubmit
@@ -178,7 +178,7 @@ export default function NewExperimentPage() {
               {/* Experiment Details */}
               <Card>
                 <BlockStack gap="400">
-                  <Text as="h2" variant="headingMd">
+                  <Text as="h2" variant="headingMd" fontWeight="semibold">
                     Experiment Details
                   </Text>
                   <FormLayout>
@@ -206,8 +206,8 @@ export default function NewExperimentPage() {
               <Card>
                 <BlockStack gap="400">
                   <InlineStack align="space-between">
-                    <Text as="h2" variant="headingMd">
-                      Variants
+                    <Text as="h2" variant="headingMd" fontWeight="semibold">
+                      Test Variants
                     </Text>
                     <Button
                       onClick={handleAddVariant}
@@ -266,7 +266,7 @@ export default function NewExperimentPage() {
 
                   <Card>
                     <BlockStack gap="200">
-                      <Text as="p" variant="bodySm" tone="subdued">
+                      <Text as="p" variant="bodySm" tone={totalSplit !== 100 ? "critical" : "subdued"}>
                         Total Traffic Split: {totalSplit}% {totalSplit !== 100 && '(Must equal 100%)'}
                       </Text>
                     </BlockStack>

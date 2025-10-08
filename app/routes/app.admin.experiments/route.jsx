@@ -79,12 +79,12 @@ export default function ExperimentsPage() {
 
   return (
     <Page
-      title="A/B Testing Experiments"
+      title="A/B Testing"
       primaryAction={{
         content: 'Create Experiment',
         onAction: handleCreateExperiment
       }}
-      subtitle="Test different prompts and recommendation strategies"
+      subtitle="Test different prompts and recommendation strategies to optimize conversions"
     >
       <Layout>
         <Layout.Section>

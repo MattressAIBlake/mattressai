@@ -73,8 +73,8 @@ export default function AnalyticsDashboard() {
 
   return (
     <Page
-      title="Analytics"
-      subtitle="Track your chat funnel performance and product insights"
+      title="Analytics Dashboard"
+      subtitle="Track conversion funnel performance and product insights"
     >
       <Layout>
         <Layout.Section>
@@ -149,7 +149,7 @@ export default function AnalyticsDashboard() {
         <Layout.Section>
           <Card>
             <div style={{ padding: '16px' }}>
-              <Text variant="headingMd" as="h2">Conversion Funnel</Text>
+              <Text variant="headingMd" as="h2" fontWeight="semibold">Conversion Funnel</Text>
               <div style={{ marginTop: '24px' }}>
                 {funnelSteps.length > 0 ? (
                   <BlockStack gap="400">
@@ -181,7 +181,7 @@ export default function AnalyticsDashboard() {
         <Layout.Section>
           <Card>
             <div style={{ padding: '16px' }}>
-              <Text variant="headingMd" as="h2">Top Products</Text>
+              <Text variant="headingMd" as="h2" fontWeight="semibold">Top Products</Text>
               <div style={{ marginTop: '16px' }}>
                 {productRows.length > 0 ? (
                   <DataTable
@@ -215,7 +215,7 @@ export default function AnalyticsDashboard() {
           <Layout.Section>
             <Card>
               <div style={{ padding: '16px' }}>
-                <Text variant="headingMd" as="h2">Session End Reasons</Text>
+                <Text variant="headingMd" as="h2" fontWeight="semibold">Session End Reasons</Text>
                 <div style={{ marginTop: '16px' }}>
                   <BlockStack gap="300">
                     {Object.entries(sessions.endReasons).map(([reason, count]) => (

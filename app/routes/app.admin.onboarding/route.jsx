@@ -1,6 +1,6 @@
 import { json } from '@remix-run/node';
 import { authenticate } from '~/shopify.server';
-import { Card, Page, Layout, Button, Text } from '@shopify/polaris';
+import { Card, Page, Layout, Button, Text, BlockStack, List, Divider } from '@shopify/polaris';
 
 export const loader = async ({ request }) => {
   await authenticate.admin(request);
@@ -19,45 +19,42 @@ export default function Onboarding() {
       <Layout>
         <Layout.Section>
           <Card>
-            <div>
-              <Text variant="headingMd" as="h2">
-                Setup Complete!
+            <BlockStack gap="400">
+              <Text variant="headingLg" as="h2" fontWeight="bold">
+                Setup Complete
               </Text>
-              <br />
-              <Text variant="bodyMd" as="p">
+              <Text variant="bodyLg" as="p" tone="subdued">
                 Your MattressAI app has been installed successfully. To start helping customers on your storefront,
-                you need to activate the App Embed block.
+                you need to activate the App Embed block in your theme.
               </Text>
-            </div>
-            <div>
               <Button
-                primary
+                variant="primary"
                 size="large"
                 onClick={handleActivateEmbed}
               >
                 Activate Storefront App Embed
               </Button>
-            </div>
+            </BlockStack>
           </Card>
         </Layout.Section>
 
         <Layout.Section>
           <Card>
-            <div>
-              <Text variant="headingMd" as="h3">
+            <BlockStack gap="400">
+              <Text variant="headingMd" as="h3" fontWeight="semibold">
                 Next Steps
               </Text>
-              <br />
-              <Text variant="bodyMd" as="p">
+              <Divider />
+              <Text variant="bodyMd" as="p" tone="subdued">
                 After activating the App Embed:
               </Text>
-              <ul style={{ marginLeft: '20px' }}>
-                <li>• The MattressAI widget will appear on your storefront</li>
-                <li>• Customers can start conversations with your AI assistant</li>
-                <li>• Configure widget settings in Theme Customizer</li>
-                <li>• Monitor conversations in your admin dashboard</li>
-              </ul>
-            </div>
+              <List>
+                <List.Item>The MattressAI widget will appear on your storefront</List.Item>
+                <List.Item>Customers can start conversations with your AI assistant</List.Item>
+                <List.Item>Configure widget settings in Theme Customizer</List.Item>
+                <List.Item>Monitor conversations in your admin dashboard</List.Item>
+              </List>
+            </BlockStack>
           </Card>
         </Layout.Section>
       </Layout>

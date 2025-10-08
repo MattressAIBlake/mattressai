@@ -111,8 +111,8 @@ export default function PlansPage() {
 
   return (
     <Page
-      title="Plans & Usage"
-      subtitle="Manage your subscription and monitor usage"
+      title="Plans & Billing"
+      subtitle="Manage your subscription and monitor usage metrics"
     >
       <Layout>
         {/* Current Plan & Trial */}
@@ -121,7 +121,7 @@ export default function PlansPage() {
             <BlockStack gap="400">
               <InlineStack align="space-between" blockAlign="center">
                 <BlockStack gap="200">
-                  <Text as="h2" variant="headingLg">
+                  <Text as="h2" variant="headingLg" fontWeight="bold">
                     Current Plan: {currentPlan.charAt(0).toUpperCase() + currentPlan.slice(1)}
                   </Text>
                   {inTrial && (
@@ -147,7 +147,7 @@ export default function PlansPage() {
         <Layout.Section>
           <Card>
             <BlockStack gap="500">
-              <Text as="h2" variant="headingMd">
+              <Text as="h2" variant="headingMd" fontWeight="semibold">
                 Current Usage (This Month)
               </Text>
 
@@ -244,7 +244,7 @@ export default function PlansPage() {
 
         {/* Plan Comparison */}
         <Layout.Section>
-          <Text as="h2" variant="headingLg">
+          <Text as="h2" variant="headingLg" fontWeight="semibold">
             Available Plans
           </Text>
         </Layout.Section>

@@ -103,8 +103,8 @@ export default function LeadsManagement() {
 
   return (
     <Page
-      title="Leads"
-      subtitle={`${total} total leads`}
+      title="Lead Management"
+      subtitle={`${total} total leads captured`}
       primaryAction={{
         content: 'Export CSV',
         onAction: handleExport
@@ -194,7 +194,7 @@ export default function LeadsManagement() {
         <Layout.Section variant="oneThird">
           <Card>
             <div style={{ padding: '16px' }}>
-              <Text variant="headingMd" as="h2">About Leads</Text>
+              <Text variant="headingMd" as="h2" fontWeight="semibold">About Leads</Text>
               <div style={{ marginTop: '12px' }}>
                 <Text variant="bodyMd" as="p">
                   Leads are captured when customers submit their contact information through the chat widget.

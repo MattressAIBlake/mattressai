@@ -288,7 +288,7 @@ export default function PromptBuilder() {
             <FormLayout>
               <div className="space-y-6">
                 <div>
-                  <Text variant="headingMd" as="h3">
+                  <Text variant="headingMd" as="h3" fontWeight="semibold">
                     Question Limit: {formData.questionLimit}
                   </Text>
                   <div className="mt-2">
@@ -435,7 +435,7 @@ export default function PromptBuilder() {
   return (
     <Page
       title="Prompt Builder"
-      subtitle="Configure your AI assistant's behavior"
+      subtitle="Configure your AI assistant's behavior and conversation flow"
       breadcrumbs={[
         { content: 'Home', url: '/app' }
       ]}
@@ -480,7 +480,7 @@ export default function PromptBuilder() {
           <Card>
             <div>
               <div className="mb-6">
-                <Text variant="headingLg" as="h2">
+                <Text variant="headingLg" as="h2" fontWeight="semibold">
                   {steps[currentStep].title}
                 </Text>
                 <Text variant="bodyMd" as="p" color="subdued">

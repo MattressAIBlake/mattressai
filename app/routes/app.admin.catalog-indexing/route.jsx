@@ -152,7 +152,7 @@ export default function CatalogIndexing() {
   return (
     <Page
       title="Catalog Indexing"
-      subtitle="Index your product catalog for AI-powered recommendations"
+      subtitle="Index your product catalog for AI-powered search and recommendations"
       breadcrumbs={[
         { content: 'Home', url: '/app' }
       ]}
@@ -162,7 +162,7 @@ export default function CatalogIndexing() {
         <Layout.Section>
           <Card>
             <div>
-              <Text variant="headingMd" as="h2">
+              <Text variant="headingMd" as="h2" fontWeight="semibold">
                 Indexing Configuration
               </Text>
               <div className="mt-4 space-y-4">
@@ -204,7 +204,7 @@ export default function CatalogIndexing() {
           <Card>
             <div>
               <div className="flex justify-between items-center mb-4">
-                <Text variant="headingMd" as="h2">
+                <Text variant="headingMd" as="h2" fontWeight="semibold">
                   Current Status
                 </Text>
                 <div className="flex gap-2">
@@ -340,7 +340,7 @@ export default function CatalogIndexing() {
         <Layout.Section>
           <Card>
             <div>
-              <Text variant="headingMd" as="h2">
+              <Text variant="headingMd" as="h2" fontWeight="semibold">
                 Recent Jobs
               </Text>
 
@@ -396,7 +396,7 @@ export default function CatalogIndexing() {
         <Layout.Section>
           <Card>
             <div>
-              <Text variant="headingMd" as="h2">
+              <Text variant="headingMd" as="h2" fontWeight="semibold">
                 About Catalog Indexing
               </Text>
               <div className="mt-4 space-y-3">
