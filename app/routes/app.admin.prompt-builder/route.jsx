@@ -226,6 +226,7 @@ export default function PromptBuilder() {
   const actionData = useActionData();
   const navigation = useNavigation();
   const fetcher = useFetcher();
+  const activateFetcher = useFetcher();
 
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState({
@@ -240,11 +241,10 @@ export default function PromptBuilder() {
   });
   const [compiledPrompt, setCompiledPrompt] = useState('');
   const [showPreview, setShowPreview] = useState(false);
-  const [isActivating, setIsActivating] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [newQuestion, setNewQuestion] = useState('');
 
-  // Handle fetcher response
+  // Handle compile fetcher response
   useEffect(() => {
     if (fetcher.data && fetcher.data.success && fetcher.data.compiledPrompt) {
       setCompiledPrompt(fetcher.data.compiledPrompt);
@@ -253,6 +253,19 @@ export default function PromptBuilder() {
       console.error('Compilation failed:', fetcher.data.error);
     }
   }, [fetcher.data]);
+
+  // Handle activation fetcher response
+  useEffect(() => {
+    if (activateFetcher.data) {
+      if (activateFetcher.data.success) {
+        // Success - reload the page
+        window.location.reload();
+      } else {
+        console.error('Activation failed:', activateFetcher.data.error);
+        alert(`Activation failed: ${activateFetcher.data.error}`);
+      }
+    }
+  }, [activateFetcher.data]);
 
   // Handle form input changes
   const handleInputChange = (field, value) => {
@@ -318,9 +331,7 @@ export default function PromptBuilder() {
   };
 
   // Activate prompt
-  const handleActivate = async () => {
-    setIsActivating(true);
-
+  const handleActivate = () => {
     const form = new FormData();
     Object.entries(formData).forEach(([key, value]) => {
       if (key === 'customQuestions') {
@@ -334,24 +345,7 @@ export default function PromptBuilder() {
     });
     form.append('step', 'activate');
 
-    try {
-      const response = await fetch(window.location.pathname, {
-        method: 'POST',
-        body: form
-      });
-
-      if (response.ok) {
-        // Success - redirect or show success message
-        window.location.reload();
-      } else {
-        const errorData = await response.json().catch(() => ({}));
-        console.error('Activation failed:', errorData.error);
-      }
-    } catch (error) {
-      console.error('Error activating prompt:', error);
-    } finally {
-      setIsActivating(false);
-    }
+    activateFetcher.submit(form, { method: 'POST' });
   };
 
   // Render step content
@@ -699,7 +693,7 @@ export default function PromptBuilder() {
                     primary
                     size="large"
                     onClick={handleActivate}
-                    loading={isActivating}
+                    loading={activateFetcher.state === 'submitting' || activateFetcher.state === 'loading'}
                   >
                     Save & Activate
                   </Button>
