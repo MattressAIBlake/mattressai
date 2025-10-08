@@ -37,6 +37,41 @@
     },
     { 
       "type": "header",
+      "content": "Assistant Avatar"
+    },
+    { 
+      "type": "select", 
+      "id": "avatar_style", 
+      "label": "Avatar style", 
+      "options": [
+        { "value": "text", "label": "Text/Initials" },
+        { "value": "image", "label": "Custom image" }
+      ],
+      "default": "text",
+      "info": "Choose text initials or upload a custom avatar image"
+    },
+    { 
+      "type": "text", 
+      "id": "avatar_text", 
+      "label": "Avatar text", 
+      "default": "AI",
+      "info": "1-2 characters shown in avatar (if text style selected)"
+    },
+    { 
+      "type": "image_picker", 
+      "id": "avatar_image", 
+      "label": "Avatar image", 
+      "info": "Upload a square image for the avatar (if image style selected)"
+    },
+    { 
+      "type": "color", 
+      "id": "avatar_background", 
+      "label": "Avatar background color", 
+      "default": "#0F172A",
+      "info": "Background color for text-style avatars"
+    },
+    { 
+      "type": "header",
       "content": "Chat Bubble"
     },
     { 
@@ -143,6 +178,10 @@
   data-widget-title="{{ block.settings.widget_title | escape }}"
   data-widget-subtitle="{{ block.settings.widget_subtitle | escape }}"
   data-welcome-message="{{ block.settings.welcome_message | escape }}"
+  data-avatar-style="{{ block.settings.avatar_style }}"
+  data-avatar-text="{{ block.settings.avatar_text | escape }}"
+  data-avatar-image="{{ block.settings.avatar_image | img_url: '72x72', crop: 'center' }}"
+  data-avatar-background="{{ block.settings.avatar_background }}"
   data-bubble-style="{{ block.settings.bubble_style }}"
   data-bubble-text="{{ block.settings.bubble_text | escape }}"
   data-bubble-size="{{ block.settings.bubble_size }}"
@@ -153,5 +192,5 @@
 
 <!-- Widget Assets -->
 <script src="{{ 'tracking.js' | asset_url }}" data-tenant="{{ shop.permanent_domain | escape }}" defer></script>
-<script src="{{ shop.url }}/apps/mattressai/widget.js?v=14" data-tenant="{{ shop.permanent_domain | escape }}" defer></script>
+<script src="{{ shop.url }}/apps/mattressai/widget.js?v=15" data-tenant="{{ shop.permanent_domain | escape }}" defer></script>
 <link rel="stylesheet" href="{{ 'widget.css' | asset_url }}">

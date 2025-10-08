@@ -60,6 +60,10 @@ export const loader = async ({ request }) => {
         widgetTitle: root.dataset.widgetTitle || 'Chat with us',
         widgetSubtitle: root.dataset.widgetSubtitle || 'We\\'re here to help',
         welcomeMessage: root.dataset.welcomeMessage || 'Hi! How can we help you today?',
+        avatarStyle: root.dataset.avatarStyle || 'text',
+        avatarText: root.dataset.avatarText || 'AI',
+        avatarImage: root.dataset.avatarImage || '',
+        avatarBackground: root.dataset.avatarBackground || '#0F172A',
         bubbleStyle: root.dataset.bubbleStyle || 'icon',
         bubbleText: root.dataset.bubbleText || 'Chat',
         bubbleSize: parseInt(root.dataset.bubbleSize || '64', 10),
@@ -70,6 +74,7 @@ export const loader = async ({ request }) => {
       
       // Set CSS custom properties
       document.documentElement.style.setProperty('--mattress-primary', this.config.primaryColor);
+      document.documentElement.style.setProperty('--mattress-avatar-bg', this.config.avatarBackground);
       document.documentElement.style.setProperty('--mattress-bubble-size', this.config.bubbleSize + 'px');
       document.documentElement.style.setProperty('--mattress-position-bottom', this.config.positionBottom + 'px');
       document.documentElement.style.setProperty('--mattress-position-side', this.config.positionSide + 'px');
@@ -155,6 +160,14 @@ export const loader = async ({ request }) => {
         bubble.removeAttribute('data-badge');
       }
       this.saveState();
+    },
+    
+    getAvatarHTML: function() {
+      if (this.config.avatarStyle === 'image' && this.config.avatarImage) {
+        return \`<img src="\${this.config.avatarImage}" alt="Assistant" class="mattressai-message__avatar-image" />\`;
+      } else {
+        return \`<span class="mattressai-message__avatar-text">\${this.config.avatarText}</span>\`;
+      }
     },
     
     startSession: async function() {
@@ -295,7 +308,7 @@ export const loader = async ({ request }) => {
         
         <div class="mattressai-widget__messages" id="mattressai-messages" aria-live="polite" aria-relevant="additions">
           <div class="mattressai-message mattressai-message--assistant">
-            <div class="mattressai-message__avatar">AI</div>
+            <div class="mattressai-message__avatar">\${this.getAvatarHTML()}</div>
             <div class="mattressai-message__content">\${this.config.welcomeMessage}</div>
           </div>
           <div class="mattressai-quick-replies" id="mattressai-quick-replies">
@@ -572,7 +585,7 @@ export const loader = async ({ request }) => {
       
       if (role === 'assistant') {
         messageDiv.innerHTML = \`
-          <div class="mattressai-message__avatar">AI</div>
+          <div class="mattressai-message__avatar">\${this.getAvatarHTML()}</div>
           <div class="mattressai-message__wrapper">
             <div class="mattressai-message__content">\${content}</div>
             <div class="mattressai-message__meta">\${timestamp}</div>
@@ -605,7 +618,7 @@ export const loader = async ({ request }) => {
       loadingDiv.id = loadingId;
       loadingDiv.className = 'mattressai-message mattressai-message--assistant';
       loadingDiv.innerHTML = \`
-        <div class="mattressai-message__avatar">AI</div>
+        <div class="mattressai-message__avatar">\${this.getAvatarHTML()}</div>
         <div class="mattressai-message__content">
           <div class="mattressai-loading">
             <span></span><span></span><span></span>
@@ -1048,7 +1061,7 @@ export const loader = async ({ request }) => {
       width: 36px;
       height: 36px;
       border-radius: 50%;
-      background: var(--mattress-primary, #2c5f2d);
+      background: var(--mattress-avatar-bg, var(--mattress-primary, #0F172A));
       color: white;
       display: flex;
       align-items: center;
@@ -1056,6 +1069,17 @@ export const loader = async ({ request }) => {
       font-size: 12px;
       font-weight: 600;
       flex-shrink: 0;
+      overflow: hidden;
+    }
+    
+    .mattressai-message__avatar-image {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    
+    .mattressai-message__avatar-text {
+      text-transform: uppercase;
     }
     
     .mattressai-message__wrapper {
