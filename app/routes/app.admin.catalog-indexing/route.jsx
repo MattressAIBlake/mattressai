@@ -173,7 +173,7 @@ export default function CatalogIndexing() {
   return (
     <Page
       title="Catalog Indexing"
-      subtitle="Index your product catalog for AI-powered search and recommendations"
+      subtitle="Index your mattress catalog for AI-powered recommendations and search"
       breadcrumbs={[
         { content: 'Home', url: '/app' }
       ]}
@@ -221,11 +221,11 @@ export default function CatalogIndexing() {
                     
                     <BlockStack gap="200" align="center">
                       <Text variant="headingLg" as="h3" alignment="center">
-                        Ready to Index Your Catalog
+                        Ready to Index Your Mattress Catalog
                       </Text>
                       <div className="max-w-lg">
                         <Text variant="bodyMd" as="p" alignment="center" tone="subdued">
-                          Your product catalog hasn't been indexed yet. Start indexing to enable AI-powered product recommendations for your customers.
+                          Your mattress catalog hasn't been indexed yet. Start indexing to enable AI-powered mattress recommendations for your customers.
                         </Text>
                       </div>
                     </BlockStack>
@@ -239,10 +239,10 @@ export default function CatalogIndexing() {
                             </div>
                             <BlockStack gap="100">
                               <Text variant="headingSm" as="h4">
-                                Step 1: Ensure you have products in your Shopify store
+                                Step 1: Ensure you have mattresses in your Shopify store
                               </Text>
                               <Text variant="bodyMd" as="p" tone="subdued">
-                                Make sure your products are properly configured with titles, descriptions, and relevant details.
+                                Make sure your mattresses are properly configured with titles, descriptions, specifications, and relevant details like firmness, size, and materials.
                               </Text>
                             </BlockStack>
                           </div>
@@ -258,7 +258,7 @@ export default function CatalogIndexing() {
                                 Step 2: Click "Start Indexing" above
                               </Text>
                               <Text variant="bodyMd" as="p" tone="subdued">
-                                Our AI will automatically process your entire catalog using optimal settings (AI enrichment enabled with 70% confidence threshold).
+                                Our AI will automatically analyze your entire mattress catalog, extracting key attributes like firmness, materials, support type, and sleep position compatibility using optimal settings.
                               </Text>
                             </BlockStack>
                           </div>
@@ -274,7 +274,7 @@ export default function CatalogIndexing() {
                                 Step 3: Monitor progress
                               </Text>
                               <Text variant="bodyMd" as="p" tone="subdued">
-                                The indexing typically processes 50-100 products per minute. You can leave this page and come back to check progress.
+                                The indexing typically processes 50-100 mattresses per minute. You can leave this page and come back to check progress anytime.
                               </Text>
                             </BlockStack>
                           </div>
@@ -315,7 +315,7 @@ export default function CatalogIndexing() {
                     <div>
                       <div className="flex justify-between mb-2">
                         <Text variant="bodyMd" as="p">
-                          Progress: {currentJob.processedProducts || 0} / {currentJob.totalProducts} products
+                          Progress: {currentJob.processedProducts || 0} / {currentJob.totalProducts} mattresses
                         </Text>
                         <Text variant="bodyMd" as="p">
                           {((currentJob.progress || 0) * 100).toFixed(1)}%
@@ -401,7 +401,7 @@ export default function CatalogIndexing() {
               {data.recentJobs.length === 0 ? (
                 <div className="mt-4">
                   <Text variant="bodyMd" color="subdued">
-                    No indexing jobs yet. Start your first indexing job above.
+                    No indexing jobs yet. Start your first indexing job above to analyze your mattress catalog.
                   </Text>
                 </div>
               ) : (
@@ -423,7 +423,7 @@ export default function CatalogIndexing() {
                             </Badge>
                             <div>
                               <Text variant="bodyMd" as="p">
-                                {job.totalProducts} products • {formatCost(job.actualCost || job.costEstimate)}
+                                {job.totalProducts} mattresses • {formatCost(job.actualCost || job.costEstimate)}
                               </Text>
                               <Text variant="bodySm" color="subdued">
                                 {job.startedAt && new Date(job.startedAt).toLocaleString()}
@@ -455,7 +455,7 @@ export default function CatalogIndexing() {
               </Text>
               
               <Text variant="bodyMd" as="p">
-                Catalog indexing processes your Shopify products and creates vector embeddings for AI-powered recommendations. Our system automatically uses optimal settings to ensure the best results.
+                Catalog indexing analyzes your mattress catalog and creates intelligent embeddings for AI-powered recommendations. Our system automatically extracts key mattress attributes and uses optimal settings to ensure the best customer experience.
               </Text>
 
               <BlockStack gap="200">
@@ -463,33 +463,33 @@ export default function CatalogIndexing() {
                   What happens during indexing:
                 </Text>
                 <List>
-                  <List.Item>Extract product information from Shopify</List.Item>
-                  <List.Item>Enrich products with mattress-specific attributes using AI</List.Item>
-                  <List.Item>Generate vector embeddings for semantic search</List.Item>
-                  <List.Item>Store embeddings in your vector database</List.Item>
+                  <List.Item>Extract mattress information from your Shopify catalog</List.Item>
+                  <List.Item>AI analyzes descriptions to identify firmness, materials, support type, and sleep position compatibility</List.Item>
+                  <List.Item>Generate vector embeddings for intelligent mattress matching</List.Item>
+                  <List.Item>Store embeddings for instant recommendation delivery</List.Item>
                 </List>
               </BlockStack>
 
               <BlockStack gap="200">
                 <Text variant="headingSm" as="h3">
-                  Optimized for you:
+                  Optimized for mattress retail:
                 </Text>
                 <List>
                   <List.Item>
-                    <strong>AI Enrichment:</strong> Automatically enabled to extract detailed mattress attributes from product descriptions
+                    <strong>AI Enrichment:</strong> Automatically extracts firmness levels, materials, support types, cooling features, and sleep position compatibility
                   </List.Item>
                   <List.Item>
                     <strong>Confidence Threshold:</strong> Set to 70% for optimal balance between coverage and accuracy
                   </List.Item>
                   <List.Item>
-                    <strong>Processing Speed:</strong> Typically 50-100 products per minute
+                    <strong>Processing Speed:</strong> Typically 50-100 mattresses per minute
                   </List.Item>
                 </List>
               </BlockStack>
 
               <Banner tone="info">
                 <p>
-                  <strong>Pro Tip:</strong> Re-index your catalog periodically (e.g., monthly) to keep your AI recommendations up-to-date with new products and changes.
+                  <strong>Pro Tip:</strong> Re-index your catalog periodically (e.g., monthly) to keep your AI recommendations up-to-date with new mattresses, pricing changes, and updated descriptions.
                 </p>
               </Banner>
             </BlockStack>
