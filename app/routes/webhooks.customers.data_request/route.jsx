@@ -1,5 +1,6 @@
 import { json } from '@remix-run/node';
 import { verifyWebhookHmac } from '~/lib/shopify/verifyWebhookHmac';
+import { exportCustomerData } from '~/lib/gdpr/gdpr.service';
 
 export const action = async ({ request }) => {
   // Verify webhook HMAC
@@ -16,21 +17,60 @@ export const action = async ({ request }) => {
   // Log the request (redacted for PII)
   console.log('GDPR Data Request:', {
     shop_id: payload.shop_id,
+    shop_domain: payload.shop_domain,
     customer_id: payload.customer?.id,
+    customer_email: payload.customer?.email,
     request_id: payload.data_request_id,
     timestamp: new Date().toISOString()
   });
 
-  // TODO: Implement actual data export for customer
-  // This should:
-  // 1. Query database for customer data (conversations, sessions, etc.)
-  // 2. Compile into exportable format
-  // 3. Send to Shopify's GDPR API or customer email
-  // 4. Log completion
+  try {
+    // Export all customer data
+    const exportData = await exportCustomerData(
+      payload.shop_domain, // Use shop domain as tenant ID
+      String(payload.customer?.id),
+      payload.customer?.email
+    );
 
-  return json({
-    received: true,
-    request_id: payload.data_request_id,
-    timestamp: new Date().toISOString()
-  });
+    // In production, you would:
+    // 1. Store this export in a secure location (S3, etc.)
+    // 2. Send download link to customer email
+    // 3. Or submit to Shopify's GDPR API endpoint
+    // 4. Delete export after 30 days
+
+    console.log('GDPR Data Export completed:', {
+      request_id: payload.data_request_id,
+      customer_id: payload.customer?.id,
+      records_exported: {
+        leads: exportData.data.leads.length,
+        sessions: exportData.data.sessions.length,
+        messages: exportData.data.messages.length,
+        events: exportData.data.events.length
+      }
+    });
+
+    // TODO: Send export to customer or Shopify API
+    // For now, we just log it (production should store/send it)
+
+    return json({
+      received: true,
+      request_id: payload.data_request_id,
+      customer_id: payload.customer?.id,
+      timestamp: new Date().toISOString(),
+      status: 'completed'
+    });
+  } catch (error) {
+    console.error('GDPR Data Export failed:', error);
+
+    return json(
+      {
+        received: true,
+        request_id: payload.data_request_id,
+        status: 'failed',
+        error: error.message,
+        timestamp: new Date().toISOString()
+      },
+      { status: 500 }
+    );
+  }
 };

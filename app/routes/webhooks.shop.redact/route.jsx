@@ -1,5 +1,6 @@
 import { json } from '@remix-run/node';
 import { verifyWebhookHmac } from '~/lib/shopify/verifyWebhookHmac';
+import { redactShopData } from '~/lib/gdpr/gdpr.service';
 
 export const action = async ({ request }) => {
   // Verify webhook HMAC
@@ -21,16 +22,39 @@ export const action = async ({ request }) => {
     timestamp: new Date().toISOString()
   });
 
-  // TODO: Implement actual shop data deletion
-  // This should:
-  // 1. Delete all data associated with the shop
-  // 2. Remove shop-specific configurations
-  // 3. Clean up any cached data
-  // 4. Log completion
+  try {
+    // Delete ALL data for the shop
+    const result = await redactShopData(payload.shop_domain);
 
-  return json({
-    received: true,
-    shop_id: payload.shop_id,
-    timestamp: new Date().toISOString()
-  });
+    console.log('GDPR Shop Redaction completed:', {
+      request_id: payload.data_request_id,
+      shop_id: payload.shop_id,
+      shop_domain: payload.shop_domain,
+      records_deleted: result.summary
+    });
+
+    return json({
+      received: true,
+      shop_id: payload.shop_id,
+      shop_domain: payload.shop_domain,
+      request_id: payload.data_request_id,
+      timestamp: new Date().toISOString(),
+      status: 'completed',
+      summary: result.summary
+    });
+  } catch (error) {
+    console.error('GDPR Shop Redaction failed:', error);
+
+    return json(
+      {
+        received: true,
+        request_id: payload.data_request_id,
+        shop_id: payload.shop_id,
+        status: 'failed',
+        error: error.message,
+        timestamp: new Date().toISOString()
+      },
+      { status: 500 }
+    );
+  }
 };
