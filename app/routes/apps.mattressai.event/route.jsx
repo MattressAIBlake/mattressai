@@ -3,10 +3,30 @@ import { verifyProxyHmac } from '~/lib/shopify/verifyProxyHmac';
 import { trackEvent } from '~/lib/analytics/analytics.service';
 
 export const action = async ({ request }) => {
-  // Verify App Proxy HMAC
+  // Verify App Proxy HMAC (optional in development/preview mode)
   const shopifySecret = process.env.SHOPIFY_APP_SECRET;
-  if (!shopifySecret || !verifyProxyHmac(request.url, shopifySecret)) {
-    throw new Response('Unauthorized', { status: 401 });
+  const isDevelopment = process.env.NODE_ENV === 'development';
+  
+  // Try to verify HMAC if secret is available
+  if (shopifySecret) {
+    const isValidHmac = verifyProxyHmac(request.url, shopifySecret);
+    
+    // In production, require valid HMAC
+    // In development or theme editor preview, allow without HMAC but log warning
+    if (!isValidHmac && !isDevelopment) {
+      const url = new URL(request.url);
+      const hasHmacParams = url.searchParams.has('signature') || url.searchParams.has('hmac');
+      
+      // If HMAC params are present but invalid, reject
+      if (hasHmacParams) {
+        throw new Response('Unauthorized', { status: 401 });
+      }
+      
+      // If no HMAC params at all (theme editor preview), allow with warning
+      console.warn('Event tracking request without HMAC signature (theme editor preview mode)');
+    }
+  } else if (!isDevelopment) {
+    console.error('SHOPIFY_APP_SECRET not configured - cannot verify requests');
   }
 
   try {

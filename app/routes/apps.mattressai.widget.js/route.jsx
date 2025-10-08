@@ -4,9 +4,26 @@
  * 
  * In production, this would be a pre-built bundle from Vite/Rollup.
  * For development, this is a placeholder that serves a basic initialization script.
+ * 
+ * NOTE: This route is public and does NOT require HMAC verification
+ * because it serves a public JavaScript file that needs to be accessible
+ * from the storefront without authentication.
  */
 
 export const loader = async ({ request }) => {
+  // Allow CORS for storefront access
+  const headers = {
+    'Content-Type': 'application/javascript; charset=utf-8',
+    'Cache-Control': 'public, max-age=3600',
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type'
+  };
+
+  // Handle OPTIONS request for CORS
+  if (request.method === 'OPTIONS') {
+    return new Response(null, { status: 200, headers });
+  }
   // Widget initialization script
   const widgetScript = `
 (function() {
@@ -231,10 +248,5 @@ export const loader = async ({ request }) => {
 })();
   `;
 
-  return new Response(widgetScript, {
-    headers: {
-      'Content-Type': 'application/javascript; charset=utf-8',
-      'Cache-Control': 'public, max-age=3600'
-    }
-  });
+  return new Response(widgetScript, { headers });
 };
