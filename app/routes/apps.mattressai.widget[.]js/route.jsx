@@ -36,6 +36,10 @@ export const loader = async ({ request }) => {
     sessionId: null,
     variantId: null,
     compareList: [],
+    unreadCount: 0,
+    isOpen: false,
+    stickToBottom: true,
+    lastDayLabel: null,
     
     init: function() {
       if (this.initialized) return;
@@ -60,6 +64,9 @@ export const loader = async ({ request }) => {
       // Set CSS custom properties
       document.documentElement.style.setProperty('--mattress-primary', this.config.primaryColor);
       
+      // Restore widget state
+      this.restoreState();
+      
       // Initialize session
       this.startSession();
       
@@ -68,6 +75,73 @@ export const loader = async ({ request }) => {
       
       this.initialized = true;
       console.log('MattressAI Widget initialized', this.config);
+    },
+    
+    restoreState: function() {
+      const wasOpen = sessionStorage.getItem('mattressai_widget_open') === 'true';
+      const unread = parseInt(sessionStorage.getItem('mattressai_unread') || '0', 10);
+      this.unreadCount = unread;
+      this.isOpen = wasOpen;
+    },
+    
+    saveState: function() {
+      sessionStorage.setItem('mattressai_widget_open', String(this.isOpen));
+      sessionStorage.setItem('mattressai_unread', String(this.unreadCount));
+    },
+    
+    formatTime: function(date = new Date()) {
+      return date.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
+    },
+    
+    formatDay: function(date = new Date()) {
+      const today = new Date();
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+      
+      if (date.toDateString() === today.toDateString()) return 'Today';
+      if (date.toDateString() === yesterday.toDateString()) return 'Yesterday';
+      return date.toLocaleDateString([], {month: 'short', day: 'numeric'});
+    },
+    
+    ensureDayDivider: function(date = new Date()) {
+      const label = this.formatDay(date);
+      if (label !== this.lastDayLabel) {
+        this.lastDayLabel = label;
+        const messagesContainer = document.querySelector('#mattressai-messages');
+        if (messagesContainer) {
+          const div = document.createElement('div');
+          div.className = 'mattressai-daydivider';
+          div.textContent = label;
+          messagesContainer.appendChild(div);
+        }
+      }
+    },
+    
+    setTyping: function(isTyping) {
+      const typing = document.querySelector('.mattressai-typing');
+      if (typing) {
+        typing.style.opacity = isTyping ? '1' : '0';
+      }
+    },
+    
+    bumpUnread: function() {
+      if (!this.isOpen) {
+        this.unreadCount++;
+        const bubble = document.getElementById('mattressai-chat-bubble');
+        if (bubble) {
+          bubble.setAttribute('data-badge', String(this.unreadCount));
+        }
+        this.saveState();
+      }
+    },
+    
+    clearUnread: function() {
+      this.unreadCount = 0;
+      const bubble = document.getElementById('mattressai-chat-bubble');
+      if (bubble) {
+        bubble.removeAttribute('data-badge');
+      }
+      this.saveState();
     },
     
     startSession: async function() {
@@ -121,16 +195,27 @@ export const loader = async ({ request }) => {
       bubble.setAttribute('aria-label', 'Open chat assistant');
       bubble.addEventListener('click', () => this.openChat());
       
+      // Restore unread badge if needed
+      if (this.unreadCount > 0) {
+        bubble.setAttribute('data-badge', String(this.unreadCount));
+      }
+      
       document.body.appendChild(bubble);
       
-      // Auto-open if configured
-      if (this.config.autoOpen && !sessionStorage.getItem('mattressai_visited')) {
+      // Auto-open if configured and state indicates it should be open
+      if (this.isOpen) {
+        setTimeout(() => this.openChat(), 100);
+      } else if (this.config.autoOpen && !sessionStorage.getItem('mattressai_visited')) {
         setTimeout(() => this.openChat(), 2000);
         sessionStorage.setItem('mattressai_visited', 'true');
       }
     },
     
     openChat: function() {
+      this.isOpen = true;
+      this.clearUnread();
+      this.saveState();
+      
       // Track event
       this.trackEvent('opened');
       
@@ -138,10 +223,21 @@ export const loader = async ({ request }) => {
       this.createChatWidget();
     },
     
+    closeChat: function() {
+      this.isOpen = false;
+      this.saveState();
+      const widget = document.getElementById('mattressai-chat-widget');
+      if (widget) {
+        widget.classList.remove('mattressai-widget--open');
+      }
+    },
+    
     createChatWidget: function() {
       // Check if widget already exists
       if (document.getElementById('mattressai-chat-widget')) {
         document.getElementById('mattressai-chat-widget').classList.add('mattressai-widget--open');
+        const input = document.querySelector('#mattressai-input');
+        if (input) input.focus();
         return;
       }
       
@@ -149,12 +245,22 @@ export const loader = async ({ request }) => {
       const widget = document.createElement('div');
       widget.id = 'mattressai-chat-widget';
       widget.className = 'mattressai-widget mattressai-widget--open';
+      widget.setAttribute('role', 'dialog');
+      widget.setAttribute('aria-modal', 'true');
+      widget.setAttribute('aria-labelledby', 'mattressai-title');
+      
       widget.innerHTML = \`
         <div class="mattressai-widget__header">
           <div class="mattressai-widget__header-content">
-            <h3 class="mattressai-widget__title">\${this.config.widgetTitle}</h3>
+            <h3 id="mattressai-title" class="mattressai-widget__title">\${this.config.widgetTitle}</h3>
             <p class="mattressai-widget__subtitle">\${this.config.widgetSubtitle}</p>
           </div>
+          <div class="mattressai-typing" aria-hidden="true">
+            <span></span><span></span><span></span>
+          </div>
+          <button class="mattressai-newchip" id="mattressai-newchip" style="display: none;">
+            New messages ↓
+          </button>
           <button class="mattressai-widget__close" aria-label="Close chat">
             <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M12 4L4 12M4 4l8 8" stroke-linecap="round"/>
@@ -162,12 +268,20 @@ export const loader = async ({ request }) => {
           </button>
         </div>
         
-        <div class="mattressai-widget__messages" id="mattressai-messages">
+        <div class="mattressai-widget__messages" id="mattressai-messages" aria-live="polite" aria-relevant="additions">
           <div class="mattressai-message mattressai-message--assistant">
             <div class="mattressai-message__avatar">AI</div>
             <div class="mattressai-message__content">
-              <p>Hi! I'm here to help you find the perfect mattress. What type of sleeper are you?</p>
+              Hi! I'm here to help you find the perfect mattress. What type of sleeper are you?
             </div>
+          </div>
+          <div class="mattressai-quick-replies" id="mattressai-quick-replies">
+            <button class="mattressai-quick-reply" data-message="I'm a side sleeper">Side sleeper</button>
+            <button class="mattressai-quick-reply" data-message="I'm a back sleeper">Back sleeper</button>
+            <button class="mattressai-quick-reply" data-message="I'm a stomach sleeper">Stomach sleeper</button>
+            <button class="mattressai-quick-reply" data-message="I have back pain">Back pain</button>
+            <button class="mattressai-quick-reply" data-message="Show me mattresses under $1000">Under $1000</button>
+            <button class="mattressai-quick-reply" data-message="I want organic materials">Organic materials</button>
           </div>
         </div>
         
@@ -177,11 +291,13 @@ export const loader = async ({ request }) => {
             class="mattressai-widget__input"
             placeholder="Type your message..."
             rows="1"
+            aria-label="Message input"
           ></textarea>
           <button 
             id="mattressai-send"
             class="mattressai-widget__send-btn"
             aria-label="Send message"
+            disabled
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" stroke-linecap="round" stroke-linejoin="round"/>
@@ -192,53 +308,139 @@ export const loader = async ({ request }) => {
       
       document.body.appendChild(widget);
       
-      // Add event listeners
-      widget.querySelector('.mattressai-widget__close').addEventListener('click', () => {
-        widget.classList.remove('mattressai-widget--open');
-      });
+      // Setup event listeners
+      this.setupWidgetListeners(widget);
       
+      // Focus input
+      const input = widget.querySelector('#mattressai-input');
+      if (input) input.focus();
+    },
+    
+    setupWidgetListeners: function(widget) {
       const input = widget.querySelector('#mattressai-input');
       const sendBtn = widget.querySelector('#mattressai-send');
+      const closeBtn = widget.querySelector('.mattressai-widget__close');
+      const messagesContainer = widget.querySelector('#mattressai-messages');
+      const newChip = widget.querySelector('#mattressai-newchip');
       
-      const sendMessage = () => this.sendMessage(input.value.trim());
+      // Close button
+      closeBtn.addEventListener('click', () => this.closeChat());
       
-      sendBtn.addEventListener('click', () => {
-        if (input.value.trim()) {
+      // Quick replies
+      const quickReplies = widget.querySelectorAll('.mattressai-quick-reply');
+      quickReplies.forEach(btn => {
+        btn.addEventListener('click', () => {
+          const message = btn.getAttribute('data-message');
+          if (message) {
+            input.value = message;
+            this.sendMessage(message);
+            // Hide quick replies after first use
+            const container = document.getElementById('mattressai-quick-replies');
+            if (container) container.style.display = 'none';
+          }
+        });
+      });
+      
+      // Send message function
+      const sendMessage = () => {
+        const message = input.value.trim();
+        if (message) {
+          this.sendMessage(message);
+        }
+      };
+      
+      // Send button
+      sendBtn.addEventListener('click', sendMessage);
+      
+      // Input handling
+      input.addEventListener('input', () => {
+        // Auto-resize
+        input.style.height = 'auto';
+        input.style.height = Math.min(input.scrollHeight, 120) + 'px';
+        
+        // Enable/disable send button
+        sendBtn.disabled = !input.value.trim();
+      });
+      
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          sendMessage();
+        }
+        if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+          e.preventDefault();
           sendMessage();
         }
       });
       
-      input.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-          e.preventDefault();
-          if (input.value.trim()) {
-            sendMessage();
-          }
+      // Autoscroll guard
+      messagesContainer.addEventListener('scroll', () => {
+        const nearBottom = messagesContainer.scrollHeight - messagesContainer.scrollTop - messagesContainer.clientHeight < 40;
+        this.stickToBottom = nearBottom;
+        if (newChip) {
+          newChip.style.display = nearBottom ? 'none' : 'inline-flex';
         }
       });
       
-      // Auto-resize textarea
-      input.addEventListener('input', () => {
-        input.style.height = 'auto';
-        input.style.height = Math.min(input.scrollHeight, 120) + 'px';
-      });
+      // New messages chip
+      if (newChip) {
+        newChip.addEventListener('click', () => {
+          messagesContainer.scrollTop = messagesContainer.scrollHeight;
+          newChip.style.display = 'none';
+        });
+      }
       
-      // Focus input
-      input.focus();
+      // Focus trap
+      this.setupFocusTrap(widget);
+      
+      // Keyboard shortcuts
+      widget.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          this.closeChat();
+        }
+      });
+    },
+    
+    setupFocusTrap: function(widget) {
+      const focusableElements = () => widget.querySelectorAll(
+        'button:not([disabled]), [href], textarea, input, select, [tabindex]:not([tabindex="-1"])'
+      );
+      
+      widget.addEventListener('keydown', (e) => {
+        if (e.key !== 'Tab') return;
+        
+        const nodes = Array.from(focusableElements());
+        if (!nodes.length) return;
+        
+        const firstNode = nodes[0];
+        const lastNode = nodes[nodes.length - 1];
+        
+        if (e.shiftKey && document.activeElement === firstNode) {
+          e.preventDefault();
+          lastNode.focus();
+        } else if (!e.shiftKey && document.activeElement === lastNode) {
+          e.preventDefault();
+          firstNode.focus();
+        }
+      });
     },
     
     sendMessage: async function(message) {
       if (!message) return;
       
       const input = document.querySelector('#mattressai-input');
-      const messagesContainer = document.querySelector('#mattressai-messages');
+      const sendBtn = document.querySelector('#mattressai-send');
       
-      // Clear input
+      // Clear input and disable send
       input.value = '';
       input.style.height = 'auto';
+      if (sendBtn) sendBtn.disabled = true;
       
       // Add user message to UI
       this.addMessage('user', message);
+      
+      // Show typing indicator
+      this.setTyping(true);
       
       // Add loading indicator
       const loadingId = this.addLoadingMessage();
@@ -271,7 +473,8 @@ export const loader = async ({ request }) => {
       } catch (error) {
         console.error('Error sending message:', error);
         this.removeLoadingMessage(loadingId);
-        this.addMessage('assistant', 'Sorry, I encountered an error. Please try again.');
+        this.setTyping(false);
+        this.addMessage('assistant', 'Sorry, I encountered an error. Please try again.', 'failed');
       }
     },
     
@@ -282,59 +485,89 @@ export const loader = async ({ request }) => {
       let currentMessage = '';
       let currentMessageElement = null;
       
-      while (true) {
-        const { done, value } = await reader.read();
-        
-        if (done) break;
-        
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\\n');
-        buffer = lines.pop() || '';
-        
-        for (const line of lines) {
-          if (!line.trim() || line.startsWith(':')) continue;
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
           
-          if (line.startsWith('data: ')) {
-            try {
-              const data = JSON.parse(line.slice(6));
-              
-              if (data.type === 'chunk') {
-                // Add/update assistant message
-                if (!currentMessageElement) {
-                  currentMessageElement = this.addMessage('assistant', data.chunk, true);
-                } else {
-                  currentMessage += data.chunk;
-                  currentMessageElement.querySelector('.mattressai-message__content').textContent = currentMessage;
-                  this.scrollToBottom();
+          if (done) break;
+          
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\\n');
+          buffer = lines.pop() || '';
+          
+          for (const line of lines) {
+            if (!line.trim() || line.startsWith(':')) continue;
+            
+            if (line.startsWith('data: ')) {
+              try {
+                const data = JSON.parse(line.slice(6));
+                
+                if (data.type === 'chunk') {
+                  // Add/update assistant message
+                  if (!currentMessageElement) {
+                    currentMessageElement = this.addMessage('assistant', data.chunk, 'sent', true);
+                    currentMessage = data.chunk;
+                  } else {
+                    currentMessage += data.chunk;
+                    const contentEl = currentMessageElement.querySelector('.mattressai-message__content');
+                    if (contentEl) contentEl.textContent = currentMessage;
+                    this.scrollToBottom();
+                  }
+                } else if (data.type === 'product_results') {
+                  // Display product recommendations
+                  this.displayProducts(data.products);
+                } else if (data.type === 'end_turn') {
+                  this.setTyping(false);
+                  currentMessage = '';
+                  currentMessageElement = null;
+                  
+                  // Bump unread if not open
+                  if (!this.isOpen) {
+                    this.bumpUnread();
+                  }
                 }
-              } else if (data.type === 'product_results') {
-                // Display product recommendations
-                this.displayProducts(data.products);
-              } else if (data.type === 'end_turn') {
-                currentMessage = '';
-                currentMessageElement = null;
+              } catch (e) {
+                console.error('Error parsing SSE data:', e);
               }
-            } catch (e) {
-              console.error('Error parsing SSE data:', e);
             }
           }
         }
+      } finally {
+        this.setTyping(false);
       }
     },
     
-    addMessage: function(role, content, isStreaming = false) {
+    addMessage: function(role, content, deliveryState = 'sent', isStreaming = false) {
       const messagesContainer = document.querySelector('#mattressai-messages');
+      
+      // Ensure day divider
+      this.ensureDayDivider();
+      
       const messageDiv = document.createElement('div');
       messageDiv.className = \`mattressai-message mattressai-message--\${role}\`;
+      messageDiv.setAttribute('data-delivery', deliveryState);
+      
+      const timestamp = this.formatTime();
       
       if (role === 'assistant') {
         messageDiv.innerHTML = \`
           <div class="mattressai-message__avatar">AI</div>
-          <div class="mattressai-message__content">\${content}</div>
+          <div class="mattressai-message__wrapper">
+            <div class="mattressai-message__content">\${content}</div>
+            <div class="mattressai-message__meta">\${timestamp}</div>
+          </div>
         \`;
       } else {
         messageDiv.innerHTML = \`
-          <div class="mattressai-message__content">\${content}</div>
+          <div class="mattressai-message__wrapper">
+            <div class="mattressai-message__content">\${content}</div>
+            <div class="mattressai-message__meta">
+              \${timestamp}
+              <span class="mattressai-message__status">
+                \${deliveryState === 'sending' ? '⏱' : deliveryState === 'sent' ? '✓' : deliveryState === 'failed' ? '✗' : ''}
+              </span>
+            </div>
+          </div>
         \`;
       }
       
@@ -372,7 +605,7 @@ export const loader = async ({ request }) => {
     
     scrollToBottom: function() {
       const messagesContainer = document.querySelector('#mattressai-messages');
-      if (messagesContainer) {
+      if (messagesContainer && this.stickToBottom) {
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
       }
     },
@@ -465,6 +698,29 @@ export const loader = async ({ request }) => {
   // Add comprehensive CSS
   const style = document.createElement('style');
   style.textContent = \`
+    /* CSS Variables / Theming */
+    :root {
+      --mattress-primary: #2c5f2d;
+      --mattress-bg: #ffffff;
+      --mattress-surface: #f9fafb;
+      --mattress-text: #111827;
+      --mattress-text-light: #6b7280;
+      --mattress-border: #e5e7eb;
+      --mattress-radius: 12px;
+      --mattress-shadow: 0 5px 40px rgba(0, 0, 0, 0.16);
+    }
+    
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --mattress-bg: #1f2937;
+        --mattress-surface: #111827;
+        --mattress-text: #f9fafb;
+        --mattress-text-light: #9ca3af;
+        --mattress-border: #374151;
+        --mattress-shadow: 0 5px 40px rgba(0, 0, 0, 0.4);
+      }
+    }
+    
     /* Chat Bubble */
     .mattressai-chat-bubble {
       position: fixed;
@@ -486,6 +742,12 @@ export const loader = async ({ request }) => {
       animation: slideUp 0.3s ease;
     }
     
+    @media (prefers-reduced-motion: reduce) {
+      .mattressai-chat-bubble {
+        animation: none;
+      }
+    }
+    
     .mattressai-chat-bubble:hover {
       transform: scale(1.05);
       box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
@@ -494,6 +756,25 @@ export const loader = async ({ request }) => {
     .mattressai-chat-bubble svg {
       width: 24px;
       height: 24px;
+    }
+    
+    /* Unread Badge */
+    .mattressai-chat-bubble[data-badge]::after {
+      content: attr(data-badge);
+      position: absolute;
+      top: -4px;
+      right: -4px;
+      min-width: 18px;
+      height: 18px;
+      padding: 0 5px;
+      background: #ef4444;
+      color: #fff;
+      border-radius: 999px;
+      font-size: 11px;
+      line-height: 18px;
+      text-align: center;
+      box-shadow: 0 0 0 2px var(--mattress-bg, #fff);
+      font-weight: 600;
     }
     
     /* Chat Widget */
@@ -505,9 +786,9 @@ export const loader = async ({ request }) => {
       max-width: calc(100vw - 40px);
       height: 550px;
       max-height: calc(100vh - 100px);
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 5px 40px rgba(0, 0, 0, 0.16);
+      background: var(--mattress-bg, white);
+      border-radius: var(--mattress-radius, 12px);
+      box-shadow: var(--mattress-shadow, 0 5px 40px rgba(0, 0, 0, 0.16));
       display: flex;
       flex-direction: column;
       z-index: 10000;
@@ -515,6 +796,12 @@ export const loader = async ({ request }) => {
       transform: translateY(calc(100% + 40px));
       opacity: 0;
       transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+    }
+    
+    @media (prefers-reduced-motion: reduce) {
+      .mattressai-widget {
+        transition: none;
+      }
     }
     
     .mattressai-widget--open {
@@ -527,22 +814,88 @@ export const loader = async ({ request }) => {
       padding: 16px 20px;
       background: var(--mattress-primary, #2c5f2d);
       color: white;
-      border-radius: 12px 12px 0 0;
+      border-radius: var(--mattress-radius, 12px) var(--mattress-radius, 12px) 0 0;
       display: flex;
       justify-content: space-between;
       align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    
+    .mattressai-widget__header-content {
+      flex: 1;
+      min-width: 0;
     }
     
     .mattressai-widget__title {
       margin: 0;
       font-size: 16px;
       font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     
     .mattressai-widget__subtitle {
       margin: 2px 0 0;
       font-size: 12px;
       opacity: 0.9;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    
+    /* Typing Indicator */
+    .mattressai-typing {
+      display: flex;
+      gap: 4px;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    
+    .mattressai-typing span {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.9);
+      animation: typingBounce 1.2s infinite;
+    }
+    
+    .mattressai-typing span:nth-child(2) {
+      animation-delay: 0.15s;
+    }
+    
+    .mattressai-typing span:nth-child(3) {
+      animation-delay: 0.3s;
+    }
+    
+    @keyframes typingBounce {
+      0%, 60%, 100% {
+        transform: translateY(0);
+        opacity: 0.7;
+      }
+      30% {
+        transform: translateY(-8px);
+        opacity: 1;
+      }
+    }
+    
+    /* New Messages Chip */
+    .mattressai-newchip {
+      margin-left: auto;
+      font-size: 12px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+      cursor: pointer;
+      transition: background 0.2s;
+      white-space: nowrap;
+    }
+    
+    .mattressai-newchip:hover {
+      background: rgba(255, 255, 255, 0.2);
     }
     
     .mattressai-widget__close {
@@ -556,6 +909,7 @@ export const loader = async ({ request }) => {
       justify-content: center;
       border-radius: 8px;
       transition: background 0.2s ease;
+      flex-shrink: 0;
     }
     
     .mattressai-widget__close:hover {
@@ -572,10 +926,11 @@ export const loader = async ({ request }) => {
       flex: 1;
       overflow-y: auto;
       padding: 16px;
-      background: #f9fafb;
+      background: var(--mattress-surface, #f9fafb);
       display: flex;
       flex-direction: column;
       gap: 12px;
+      scroll-behavior: smooth;
     }
     
     .mattressai-widget__messages::-webkit-scrollbar {
@@ -587,8 +942,20 @@ export const loader = async ({ request }) => {
     }
     
     .mattressai-widget__messages::-webkit-scrollbar-thumb {
-      background: #d1d5db;
+      background: var(--mattress-border, #d1d5db);
       border-radius: 3px;
+    }
+    
+    /* Day Divider */
+    .mattressai-daydivider {
+      align-self: center;
+      font-size: 12px;
+      color: var(--mattress-text-light, #6b7280);
+      margin: 8px 0;
+      padding: 4px 12px;
+      background: var(--mattress-bg, white);
+      border-radius: 12px;
+      font-weight: 500;
     }
     
     /* Messages */
@@ -617,11 +984,17 @@ export const loader = async ({ request }) => {
       flex-shrink: 0;
     }
     
+    .mattressai-message__wrapper {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      max-width: 240px;
+    }
+    
     .mattressai-message__content {
-      background: white;
+      background: var(--mattress-bg, white);
       padding: 10px 14px;
       border-radius: 12px;
-      max-width: 240px;
       word-wrap: break-word;
       word-break: normal;
       overflow-wrap: break-word;
@@ -629,7 +1002,7 @@ export const loader = async ({ request }) => {
       box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
       line-height: 1.5;
       font-size: 14px;
-      color: #374151;
+      color: var(--mattress-text, #374151);
       white-space: pre-wrap;
     }
     
@@ -637,6 +1010,51 @@ export const loader = async ({ request }) => {
       background: var(--mattress-primary, #2c5f2d);
       color: white;
       word-break: normal;
+    }
+    
+    .mattressai-message__meta {
+      font-size: 11px;
+      color: var(--mattress-text-light, #9ca3af);
+      padding: 0 4px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    
+    .mattressai-message--user .mattressai-message__meta {
+      align-self: flex-end;
+    }
+    
+    .mattressai-message__status {
+      font-size: 10px;
+      opacity: 0.8;
+    }
+    
+    /* Quick Replies */
+    .mattressai-quick-replies {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    
+    .mattressai-quick-reply {
+      padding: 8px 14px;
+      background: var(--mattress-bg, white);
+      border: 1px solid var(--mattress-border, #e5e7eb);
+      border-radius: 999px;
+      font-size: 13px;
+      color: var(--mattress-text, #374151);
+      cursor: pointer;
+      transition: all 0.2s;
+      font-weight: 500;
+    }
+    
+    .mattressai-quick-reply:hover {
+      background: var(--mattress-primary, #2c5f2d);
+      color: white;
+      border-color: var(--mattress-primary, #2c5f2d);
+      transform: translateY(-1px);
     }
     
     /* Loading Animation */
@@ -746,8 +1164,8 @@ export const loader = async ({ request }) => {
     /* Input Container */
     .mattressai-widget__input-container {
       padding: 16px;
-      background: white;
-      border-top: 1px solid #e5e7eb;
+      background: var(--mattress-bg, white);
+      border-top: 1px solid var(--mattress-border, #e5e7eb);
       display: flex;
       gap: 12px;
       align-items: flex-end;
@@ -755,7 +1173,7 @@ export const loader = async ({ request }) => {
     
     .mattressai-widget__input {
       flex: 1;
-      border: 1px solid #d1d5db;
+      border: 1px solid var(--mattress-border, #d1d5db);
       border-radius: 12px;
       padding: 10px 14px;
       font-size: 14px;
@@ -765,10 +1183,17 @@ export const loader = async ({ request }) => {
       min-height: 42px;
       outline: none;
       transition: border-color 0.2s ease;
+      background: var(--mattress-surface, #f9fafb);
+      color: var(--mattress-text, #374151);
+    }
+    
+    .mattressai-widget__input::placeholder {
+      color: var(--mattress-text-light, #9ca3af);
     }
     
     .mattressai-widget__input:focus {
       border-color: var(--mattress-primary, #2c5f2d);
+      background: var(--mattress-bg, white);
     }
     
     .mattressai-widget__send-btn {
@@ -783,11 +1208,17 @@ export const loader = async ({ request }) => {
       justify-content: center;
       cursor: pointer;
       flex-shrink: 0;
-      transition: background 0.2s ease;
+      transition: all 0.2s ease;
     }
     
-    .mattressai-widget__send-btn:hover {
+    .mattressai-widget__send-btn:hover:not(:disabled) {
       background: #1e4620;
+      transform: scale(1.05);
+    }
+    
+    .mattressai-widget__send-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
     }
     
     .mattressai-widget__send-btn svg {
@@ -810,7 +1241,7 @@ export const loader = async ({ request }) => {
     /* Mobile Responsive */
     @media (max-width: 768px) {
       .mattressai-chat-bubble {
-        bottom: 16px;
+        bottom: calc(16px + env(safe-area-inset-bottom));
         right: 16px;
         width: 52px;
         height: 52px;
@@ -828,24 +1259,37 @@ export const loader = async ({ request }) => {
         top: 0;
         width: 100%;
         max-width: 100%;
-        height: 100%;
-        max-height: 100%;
+        height: 100dvh;
+        max-height: 100dvh;
         border-radius: 0;
+        padding-bottom: env(safe-area-inset-bottom);
       }
       
       .mattressai-widget__header {
         border-radius: 0;
-        padding: 14px 16px;
+        padding: calc(14px + env(safe-area-inset-top)) 16px 14px;
       }
       
       .mattressai-widget__messages {
         padding: 12px;
       }
       
-      .mattressai-message__content {
+      .mattressai-widget__input-container {
+        padding: 16px 16px calc(16px + env(safe-area-inset-bottom));
+      }
+      
+      .mattressai-message__wrapper {
         max-width: 80%;
+      }
+      
+      .mattressai-message__content {
         word-break: normal;
         overflow-wrap: break-word;
+      }
+      
+      .mattressai-quick-reply {
+        font-size: 12px;
+        padding: 6px 12px;
       }
     }
   \`;
