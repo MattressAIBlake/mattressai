@@ -1,6 +1,6 @@
 import { json, redirect } from '@remix-run/node';
 import { useState, useEffect } from 'react';
-import { useLoaderData, useActionData, useNavigation, Form } from '@remix-run/react';
+import { useLoaderData, useActionData, useNavigation, useFetcher } from '@remix-run/react';
 import {
   Page,
   Layout,
@@ -69,18 +69,19 @@ const FIELD_OPTIONS = [
 
 // Loader function
 export async function loader({ request }) {
-  await authenticate.admin(request);
+  const { session } = await authenticate.admin(request);
   return json({
     steps: STEPS,
     toneOptions: TONE_OPTIONS,
     positionOptions: POSITION_OPTIONS,
-    fieldOptions: FIELD_OPTIONS
+    fieldOptions: FIELD_OPTIONS,
+    shop: session.shop
   });
 }
 
 // Action function
 export async function action({ request }) {
-  const auth = await authenticate.admin(request);
+  const { session } = await authenticate.admin(request);
 
   if (request.method === 'POST') {
     const formData = await request.formData();
@@ -151,6 +152,7 @@ export default function PromptBuilder() {
   const { steps, toneOptions, positionOptions, fieldOptions } = useLoaderData();
   const actionData = useActionData();
   const navigation = useNavigation();
+  const fetcher = useFetcher();
 
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState({
@@ -165,6 +167,16 @@ export default function PromptBuilder() {
   const [compiledPrompt, setCompiledPrompt] = useState('');
   const [showPreview, setShowPreview] = useState(false);
   const [isActivating, setIsActivating] = useState(false);
+
+  // Handle fetcher response
+  useEffect(() => {
+    if (fetcher.data && fetcher.data.success && fetcher.data.compiledPrompt) {
+      setCompiledPrompt(fetcher.data.compiledPrompt);
+      setShowPreview(true);
+    } else if (fetcher.data && !fetcher.data.success) {
+      console.error('Compilation failed:', fetcher.data.error);
+    }
+  }, [fetcher.data]);
 
   // Handle form input changes
   const handleInputChange = (field, value) => {
@@ -193,7 +205,7 @@ export default function PromptBuilder() {
   };
 
   // Compile preview
-  const handleCompilePreview = async () => {
+  const handleCompilePreview = () => {
     const form = new FormData();
     Object.entries(formData).forEach(([key, value]) => {
       if (Array.isArray(value)) {
@@ -204,23 +216,7 @@ export default function PromptBuilder() {
     });
     form.append('step', 'compile');
 
-    try {
-      const response = await fetch(window.location.pathname, {
-        method: 'POST',
-        body: form
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        setCompiledPrompt(result.compiledPrompt);
-        setShowPreview(true);
-      } else {
-        console.error('Compilation failed:', result.error);
-      }
-    } catch (error) {
-      console.error('Error compiling preview:', error);
-    }
+    fetcher.submit(form, { method: 'POST' });
   };
 
   // Activate prompt
@@ -404,7 +400,7 @@ export default function PromptBuilder() {
                     primary 
                     size="large"
                     onClick={handleCompilePreview} 
-                    loading={navigation.state === 'submitting'}
+                    loading={fetcher.state === 'submitting' || fetcher.state === 'loading'}
                   >
                     Generate Preview
                   </Button>
