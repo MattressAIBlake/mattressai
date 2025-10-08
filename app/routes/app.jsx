@@ -40,3 +40,4 @@ export const headers = (headersArgs) => {
   headers.set("Content-Security-Policy", "frame-ancestors https://*.myshopify.com https://admin.shopify.com;");
   return headers;
 };
+// Force rebuild Tue Oct  7 21:41:03 CDT 2025
