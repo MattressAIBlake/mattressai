@@ -300,9 +300,7 @@ export const loader = async ({ request }) => {
         <div class="mattressai-widget__messages" id="mattressai-messages" aria-live="polite" aria-relevant="additions">
           <div class="mattressai-message mattressai-message--assistant">
             <div class="mattressai-message__avatar">AI</div>
-            <div class="mattressai-message__content">
-              \${this.config.welcomeMessage}
-            </div>
+            <div class="mattressai-message__content">\${this.config.welcomeMessage}</div>
           </div>
           <div class="mattressai-quick-replies" id="mattressai-quick-replies">
             <button class="mattressai-quick-reply" data-message="I'm a side sleeper">Side sleeper</button>
@@ -852,7 +850,9 @@ export const loader = async ({ request }) => {
       display: flex;
       flex-direction: column;
       z-index: 10000;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
       transform: translateY(calc(100% + 40px));
       opacity: 0;
       transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
@@ -1072,10 +1072,12 @@ export const loader = async ({ request }) => {
       overflow-wrap: break-word;
       hyphens: none;
       box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-      line-height: 1.5;
-      font-size: 14px;
+      line-height: 1.6;
+      font-size: 15px;
       color: var(--mattress-text, #374151);
-      white-space: pre-wrap;
+      white-space: normal;
+      font-weight: 400;
+      letter-spacing: 0.01em;
     }
     
     .mattressai-message--user .mattressai-message__content {
