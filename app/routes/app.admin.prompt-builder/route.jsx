@@ -300,18 +300,20 @@ export default function PromptBuilder() {
                         : 'border-gray-200 hover:border-blue-200 hover:bg-gray-50'
                     }`}
                   >
-                    <div className="flex items-center gap-4">
-                      <RadioButton
-                        label=""
-                        checked={formData.tone === option.value}
-                        onChange={() => handleInputChange('tone', option.value)}
-                      />
+                    <div className="flex items-start gap-4">
+                      <div className="pt-1">
+                        <RadioButton
+                          label=""
+                          checked={formData.tone === option.value}
+                          onChange={() => handleInputChange('tone', option.value)}
+                        />
+                      </div>
                       <div className="flex-1">
-                        <div className="flex items-baseline gap-3">
-                          <Text variant="headingMd" as="h4" fontWeight="semibold">
-                            {option.label}
-                          </Text>
-                          <Text variant="bodyMd" as="span" tone="subdued">
+                        <Text variant="headingMd" as="h4" fontWeight="semibold">
+                          {option.label}
+                        </Text>
+                        <div className="mt-1">
+                          <Text variant="bodyMd" as="p" tone="subdued">
                             {option.description}
                           </Text>
                         </div>
@@ -366,20 +368,23 @@ export default function PromptBuilder() {
 
               <div className="mt-8">
                 <div className="mb-5">
-                  <button
-                    type="button"
-                    onClick={() => setShowAdvanced(!showAdvanced)}
-                    className="flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium"
-                  >
-                    <span>{showAdvanced ? '▼' : '▶'}</span>
-                    <Text variant="headingSm" as="h4" fontWeight="semibold">
-                      Advanced: Custom Questions
-                    </Text>
-                  </button>
-                  <div className="mt-2">
-                    <Text variant="bodyMd" as="p" tone="subdued">
-                      Add your own specific questions for the AI to ask customers
-                    </Text>
+                  <div className="flex items-start gap-3">
+                    <div className="flex-1">
+                      <Text variant="headingSm" as="h4" fontWeight="semibold">
+                        Advanced: Custom Questions
+                      </Text>
+                      <div className="mt-1">
+                        <Text variant="bodyMd" as="p" tone="subdued">
+                          Add your own specific questions for the AI to ask customers
+                        </Text>
+                      </div>
+                    </div>
+                    <Button
+                      onClick={() => setShowAdvanced(!showAdvanced)}
+                      disclosure={showAdvanced ? 'up' : 'down'}
+                    >
+                      {showAdvanced ? 'Hide' : 'Show'}
+                    </Button>
                   </div>
                 </div>
 
