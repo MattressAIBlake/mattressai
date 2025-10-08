@@ -80,6 +80,9 @@ export default function ExperimentsPage() {
   return (
     <Page
       title="A/B Testing"
+      breadcrumbs={[
+        { content: 'Home', url: '/app' }
+      ]}
       primaryAction={{
         content: 'Create Experiment',
         onAction: handleCreateExperiment

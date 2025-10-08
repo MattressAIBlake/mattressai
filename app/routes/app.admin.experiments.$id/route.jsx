@@ -147,6 +147,10 @@ export default function ExperimentDetailPage() {
       title={experiment.name}
       titleMetadata={getStatusBadge(experiment.status)}
       subtitle={`Started ${new Date(experiment.startAt).toLocaleDateString()}`}
+      breadcrumbs={[
+        { content: 'Home', url: '/app' },
+        { content: 'A/B Testing', url: '/app/admin/experiments' }
+      ]}
       primaryAction={primaryAction()}
       secondaryActions={secondaryActions()}
     >

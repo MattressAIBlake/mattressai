@@ -154,6 +154,10 @@ export default function NewExperimentPage() {
     <Page
       title="Create A/B Test"
       subtitle="Compare different prompts and recommendation strategies to optimize performance"
+      breadcrumbs={[
+        { content: 'Home', url: '/app' },
+        { content: 'A/B Testing', url: '/app/admin/experiments' }
+      ]}
       primaryAction={{
         content: 'Create Experiment',
         onAction: handleSubmit

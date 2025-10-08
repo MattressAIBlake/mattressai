@@ -214,6 +214,9 @@ export default function PlansPage() {
     <Page
       title="Plans & Billing"
       subtitle="Manage your subscription and monitor usage metrics"
+      breadcrumbs={[
+        { content: 'Home', url: '/app' }
+      ]}
     >
       <Layout>
         {/* Current Plan & Trial */}

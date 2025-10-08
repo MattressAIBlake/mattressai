@@ -15,7 +15,12 @@ export default function Onboarding() {
   };
 
   return (
-    <Page title="Welcome to MattressAI">
+    <Page 
+      title="Welcome to MattressAI"
+      breadcrumbs={[
+        { content: 'Home', url: '/app' }
+      ]}
+    >
       <Layout>
         <Layout.Section>
           <Card>

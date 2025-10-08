@@ -121,7 +121,13 @@ export default function AlertsManagement() {
   });
 
   return (
-    <Page title="Alert Settings" subtitle="Configure notifications for chat events">
+    <Page 
+      title="Alert Settings" 
+      subtitle="Configure notifications for chat events"
+      breadcrumbs={[
+        { content: 'Home', url: '/app' }
+      ]}
+    >
       <Layout>
         {settingsFetcher.data?.success && (
           <Layout.Section>

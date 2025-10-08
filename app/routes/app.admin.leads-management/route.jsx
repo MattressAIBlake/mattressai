@@ -105,6 +105,9 @@ export default function LeadsManagement() {
     <Page
       title="Lead Management"
       subtitle={`${total} total leads captured`}
+      breadcrumbs={[
+        { content: 'Home', url: '/app' }
+      ]}
       primaryAction={{
         content: 'Export CSV',
         onAction: handleExport

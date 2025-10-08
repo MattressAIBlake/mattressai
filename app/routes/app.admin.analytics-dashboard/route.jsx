@@ -75,6 +75,9 @@ export default function AnalyticsDashboard() {
     <Page
       title="Analytics Dashboard"
       subtitle="Track conversion funnel performance and product insights"
+      breadcrumbs={[
+        { content: 'Home', url: '/app' }
+      ]}
     >
       <Layout>
         <Layout.Section>
