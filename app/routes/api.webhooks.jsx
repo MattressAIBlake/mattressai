@@ -12,8 +12,13 @@ export const action = async ({ request }) => {
         await db.session.deleteMany({where: {shop}});
       }
       break;
+    case 'APP_SUBSCRIPTIONS_UPDATE':
+      // App subscription updates are handled by dedicated route
+      console.log('App subscription update - see webhooks.app_subscriptions.update');
+      break;
     default:
-      throw new Response('Unhandled webhook topic', {status: 404});
+      console.log(`Unhandled webhook topic: ${topic}`);
+      break;
   }
 
   return new Response();

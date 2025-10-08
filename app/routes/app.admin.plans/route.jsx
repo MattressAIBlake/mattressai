@@ -44,7 +44,7 @@ export const loader = async ({ request }) => {
 };
 
 export const action = async ({ request }) => {
-  const { session, billing } = await authenticate.admin(request);
+  const { admin, session } = await authenticate.admin(request);
   const shop = session.shop;
 
   const formData = await request.formData();
@@ -52,9 +52,6 @@ export const action = async ({ request }) => {
   const planName = formData.get('planName');
 
   if (action === 'upgrade') {
-    // In production, this would create a Shopify billing charge
-    // For now, we'll simulate it
-    
     // Get plan config
     const planConfigs = {
       pro: { price: 49, name: 'Pro Plan' },
@@ -68,20 +65,82 @@ export const action = async ({ request }) => {
     }
 
     try {
-      // Create Shopify billing charge
-      const billingResponse = await billing.request({
-        plan: planConfig.name,
-        price: planConfig.price,
-        currencyCode: 'USD',
-        interval: billing.BillingInterval.Every30Days,
-        returnUrl: `https://${shop}/admin/apps/mattressai/admin/plans`
-      });
+      // Get the app URL from environment
+      const appUrl = process.env.SHOPIFY_APP_URL || process.env.HOST || 'mattressaishopify.vercel.app';
+      const returnUrl = `https://${appUrl}/app/admin/plans`;
+      
+      // Create app subscription using GraphQL Admin API
+      const response = await admin.graphql(
+        `#graphql
+          mutation AppSubscriptionCreate($name: String!, $returnUrl: URL!, $test: Boolean, $lineItems: [AppSubscriptionLineItemInput!]!) {
+            appSubscriptionCreate(
+              name: $name
+              returnUrl: $returnUrl
+              test: $test
+              lineItems: $lineItems
+            ) {
+              userErrors {
+                field
+                message
+              }
+              confirmationUrl
+              appSubscription {
+                id
+                status
+              }
+            }
+          }`,
+        {
+          variables: {
+            name: planConfig.name,
+            returnUrl: returnUrl,
+            test: process.env.NODE_ENV !== 'production',
+            lineItems: [
+              {
+                plan: {
+                  appRecurringPricingDetails: {
+                    price: { amount: planConfig.price, currencyCode: 'USD' },
+                    interval: 'EVERY_30_DAYS'
+                  }
+                }
+              }
+            ]
+          }
+        }
+      );
+
+      const data = await response.json();
+      const result = data.data.appSubscriptionCreate;
+
+      // Check for errors
+      if (result.userErrors && result.userErrors.length > 0) {
+        console.error('Subscription creation errors:', result.userErrors);
+        return json({ 
+          error: 'Failed to create subscription',
+          details: result.userErrors.map(e => e.message).join(', ')
+        }, { status: 400 });
+      }
 
       // Redirect to Shopify confirmation page
-      return redirect(billingResponse.confirmationUrl);
+      if (result.confirmationUrl) {
+        return redirect(result.confirmationUrl);
+      }
+
+      // If no confirmation URL, subscription might already be active
+      return json({ success: true, message: 'Subscription already active' });
     } catch (error) {
       console.error('Billing error:', error);
-      return json({ error: 'Failed to create billing charge' }, { status: 500 });
+      console.error('Error details:', {
+        message: error.message,
+        stack: error.stack,
+        shop,
+        planName,
+        planConfig
+      });
+      return json({ 
+        error: 'Failed to create billing charge', 
+        details: error.message 
+      }, { status: 500 });
     }
   }
 
