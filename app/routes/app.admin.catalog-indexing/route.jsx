@@ -16,7 +16,12 @@ import {
   Spinner,
   Icon,
   BlockStack,
-  InlineStack
+  InlineStack,
+  Modal,
+  TextField,
+  RadioButton,
+  Toast,
+  Frame
 } from '@shopify/polaris';
 import {
   DatabaseIcon,
@@ -24,6 +29,9 @@ import {
   AlertCircleIcon
 } from '@shopify/polaris-icons';
 import { authenticate } from '~/shopify.server';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
 
 /**
  * Loader function - get current indexing status
@@ -46,13 +54,47 @@ export async function loader({ request }) {
 }
 
 /**
- * Action function - handle start/stop indexing
+ * Action function - handle start/stop indexing and save fallback preferences
  */
 export async function action({ request }) {
   const { session } = await authenticate.admin(request);
 
   const formData = await request.formData();
   const actionType = formData.get('action');
+
+  if (actionType === 'saveFallback') {
+    // Save fallback message preferences
+    const fallbackMessageType = formData.get('fallbackMessageType');
+    const fallbackContactInfo = formData.get('fallbackContactInfo');
+
+    try {
+      // Ensure tenant exists or update it
+      await prisma.tenant.upsert({
+        where: { shop: session.shop },
+        update: {
+          fallbackMessageType,
+          fallbackContactInfo
+        },
+        create: {
+          id: session.shop,
+          shop: session.shop,
+          fallbackMessageType,
+          fallbackContactInfo
+        }
+      });
+
+      return json({
+        success: true,
+        message: 'Fallback preferences saved successfully'
+      });
+    } catch (error) {
+      console.error('Failed to save fallback preferences:', error);
+      return json(
+        { error: 'Failed to save preferences' },
+        { status: 500 }
+      );
+    }
+  }
 
   if (actionType === 'start') {
     // Start indexing job with hardcoded optimal settings
@@ -100,8 +142,14 @@ export async function action({ request }) {
 export default function CatalogIndexing() {
   const data = useLoaderData();
   const fetcher = useFetcher();
+  const fallbackFetcher = useFetcher();
 
   const [isStarting, setIsStarting] = useState(false);
+  const [showNoMattressesModal, setShowNoMattressesModal] = useState(false);
+  const [fallbackMessageType, setFallbackMessageType] = useState('call_store');
+  const [fallbackContactInfo, setFallbackContactInfo] = useState('');
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
 
   // Poll for status updates when indexing is active
   useEffect(() => {
@@ -120,6 +168,25 @@ export default function CatalogIndexing() {
       setIsStarting(false);
     }
   }, [fetcher.state, isStarting]);
+
+  // Check if indexing completed with 0 mattresses
+  useEffect(() => {
+    if (fetcher.data?.currentJob?.status === 'completed' && 
+        fetcher.data?.currentJob?.errorMessage === 'NO_MATTRESSES_FOUND') {
+      setToastMessage('Our AI found 0 mattresses in your catalog');
+      setShowToast(true);
+      setShowNoMattressesModal(true);
+    }
+  }, [fetcher.data]);
+
+  // Handle fallback preferences save success
+  useEffect(() => {
+    if (fallbackFetcher.data?.success) {
+      setToastMessage('Fallback message preferences saved successfully!');
+      setShowToast(true);
+      setShowNoMattressesModal(false);
+    }
+  }, [fallbackFetcher.data]);
 
   // Handle start indexing
   const handleStartIndexing = () => {
@@ -142,6 +209,16 @@ export default function CatalogIndexing() {
     formData.append('action', 'stop');
 
     await fetcher.submit(formData, { method: 'POST' });
+  };
+
+  // Handle save fallback preferences
+  const handleSaveFallbackPreferences = () => {
+    const formData = new FormData();
+    formData.append('action', 'saveFallback');
+    formData.append('fallbackMessageType', fallbackMessageType);
+    formData.append('fallbackContactInfo', fallbackContactInfo);
+
+    fallbackFetcher.submit(formData, { method: 'POST' });
   };
 
   // Format duration
@@ -496,6 +573,92 @@ export default function CatalogIndexing() {
           </Card>
         </Layout.Section>
       </Layout>
+
+      {/* No Mattresses Modal */}
+      <Modal
+        open={showNoMattressesModal}
+        onClose={() => setShowNoMattressesModal(false)}
+        title="No Mattresses Found"
+        primaryAction={{
+          content: 'Save Preferences',
+          onAction: handleSaveFallbackPreferences,
+          loading: fallbackFetcher.state === 'submitting'
+        }}
+        secondaryActions={[
+          {
+            content: 'Close',
+            onAction: () => setShowNoMattressesModal(false)
+          }
+        ]}
+      >
+        <Modal.Section>
+          <BlockStack gap="400">
+            <Banner tone="warning">
+              <p>
+                Our AI didn't find any mattresses in your Shopify catalog. Please add mattresses to your store to enable AI-powered recommendations.
+              </p>
+            </Banner>
+
+            <BlockStack gap="200">
+              <Text variant="headingSm" as="h3">
+                In the meantime, what would you like to tell shoppers?
+              </Text>
+              <Text variant="bodyMd" as="p" tone="subdued">
+                Choose what message the AI widget should show at the end of conversations when no mattresses are indexed:
+              </Text>
+            </BlockStack>
+
+            <BlockStack gap="300">
+              <RadioButton
+                label="Call your store"
+                helpText="The AI will suggest customers call your store for assistance"
+                checked={fallbackMessageType === 'call_store'}
+                id="call_store"
+                name="fallbackMessageType"
+                onChange={() => setFallbackMessageType('call_store')}
+              />
+              
+              {fallbackMessageType === 'call_store' && (
+                <div className="ml-8">
+                  <TextField
+                    label="Store phone number"
+                    value={fallbackContactInfo}
+                    onChange={setFallbackContactInfo}
+                    placeholder="(555) 123-4567"
+                    autoComplete="tel"
+                  />
+                </div>
+              )}
+
+              <RadioButton
+                label="Generic mattress shopping guidance"
+                helpText="The AI will provide general advice about mattress shopping"
+                checked={fallbackMessageType === 'generic_guidance'}
+                id="generic_guidance"
+                name="fallbackMessageType"
+                onChange={() => setFallbackMessageType('generic_guidance')}
+              />
+            </BlockStack>
+
+            <Banner tone="info">
+              <p>
+                <strong>Next steps:</strong> Add mattresses to your Shopify store and run the indexing again to enable personalized recommendations.
+              </p>
+            </Banner>
+          </BlockStack>
+        </Modal.Section>
+      </Modal>
+
+      {/* Toast notification */}
+      {showToast && (
+        <Frame>
+          <Toast
+            content={toastMessage}
+            onDismiss={() => setShowToast(false)}
+            duration={4000}
+          />
+        </Frame>
+      )}
     </Page>
   );
 }

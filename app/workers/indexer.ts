@@ -48,16 +48,37 @@ export class ProductIndexer {
       // Poll for bulk operation completion
       const bulkData = await this.pollBulkOperation(operationId, session.accessToken);
 
+      // Filter for mattress products only
+      const mattresses = this.filterMattresses(bulkData.products);
+
+      // Check if we found any mattresses
+      if (mattresses.length === 0) {
+        await this.updateJobProgress({ 
+          totalProducts: 0,
+          processedProducts: 0
+        });
+        await prisma.indexJob.update({
+          where: { id: this.jobId },
+          data: {
+            status: 'completed',
+            finishedAt: new Date(),
+            errorMessage: 'NO_MATTRESSES_FOUND'
+          }
+        });
+        console.log(`No mattresses found for tenant ${this.tenant}`);
+        return;
+      }
+
       // Update job with total product count
-      await this.updateJobProgress({ totalProducts: bulkData.products.length });
+      await this.updateJobProgress({ totalProducts: mattresses.length });
 
       // Process products in batches
       const batchSize = 50;
       let processedCount = 0;
       let failedCount = 0;
 
-      for (let i = 0; i < bulkData.products.length; i += batchSize) {
-        const batch = bulkData.products.slice(i, i + batchSize);
+      for (let i = 0; i < mattresses.length; i += batchSize) {
+        const batch = mattresses.slice(i, i + batchSize);
 
         try {
           const results = await this.processBatch(batch, embeddingProvider, vectorStoreProvider);
@@ -95,6 +116,28 @@ export class ProductIndexer {
       await this.failJob(error.message);
       throw error;
     }
+  }
+
+  /**
+   * Filter products to only include mattresses
+   */
+  private filterMattresses(products: any[]): any[] {
+    return products.filter(product => {
+      const title = product.title?.toLowerCase() || '';
+      const description = product.description?.toLowerCase() || '';
+      const productType = product.productType?.toLowerCase() || '';
+      const tags = product.tags?.map((tag: string) => tag.toLowerCase()) || [];
+
+      // Check if product is a mattress based on various signals
+      const isMattress = 
+        title.includes('mattress') ||
+        description.includes('mattress') ||
+        productType.includes('mattress') ||
+        productType.includes('bed') ||
+        tags.some((tag: string) => tag.includes('mattress'));
+
+      return isMattress;
+    });
   }
 
   /**

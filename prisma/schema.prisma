@@ -278,14 +278,16 @@ model Variant {
 }
 
 model Tenant {
-  id          String    @id
-  shop        String    @unique
-  planName    String    @default("starter")
-  billingId   String?
-  trialEndsAt DateTime?
-  quotas      String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id                  String    @id
+  shop                String    @unique
+  planName            String    @default("starter")
+  billingId           String?
+  trialEndsAt         DateTime?
+  quotas              String?
+  fallbackMessageType String?
+  fallbackContactInfo String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 
   @@index([shop])
   @@index([planName])

@@ -355,7 +355,7 @@ export default function Index() {
                 <List.Item>Make sure the theme extension is properly enabled</List.Item>
               </List>
               <Text variant="bodyMd" as="p">
-                Contact support if you need additional assistance: <strong>support@mattressai.com</strong>
+                Contact support if you need additional assistance: <strong>system@themattressai.com</strong>
               </Text>
             </BlockStack>
           </BlockStack>

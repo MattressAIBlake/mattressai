@@ -50,3 +50,10 @@ redirect_urls = [
 url = "https://mattressaishopify.vercel.app/apps/mattressai"
 subpath = "mattressai"
 prefix = "apps"
+
+# App Store Listing URLs
+[privacy_compliance]
+privacy_policy_url = "https://www.themattressai.com/privacy"
+terms_of_service_url = "https://www.themattressai.com/terms"
+support_url = "https://www.themattressai.com/support"
+support_email = "system@themattressai.com"
