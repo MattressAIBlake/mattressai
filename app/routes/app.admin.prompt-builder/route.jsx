@@ -20,7 +20,8 @@ import {
   Badge
 } from '@shopify/polaris';
 import { authenticate } from '~/shopify.server';
-import { createCompiledPrompt } from '~/lib/domain/runtimeRules';
+import { createCompiledPrompt, validateRuntimeRules } from '~/lib/domain/runtimeRules';
+import { createPromptVersion } from '~/lib/domain/promptVersion.server';
 
 // Step definitions
 const STEPS = [
@@ -120,28 +121,70 @@ export async function action({ request }) {
     }
 
     if (step === 'activate') {
-      // Redirect to activation endpoint
-      const activationUrl = new URL('/app/admin/prompt/activate', request.url);
+      // Handle activation directly
+      try {
+        const runtimeRulesData = {
+          tone: formData.get('tone'),
+          questionLimit: parseInt(formData.get('questionLimit')),
+          earlyExit: formData.get('earlyExit') === 'true',
+          leadCapture: {
+            enabled: formData.get('leadCaptureEnabled') === 'true',
+            position: formData.get('leadCapturePosition'),
+            fields: formData.getAll('leadCaptureFields')
+          },
+          maxRecommendations: parseInt(formData.get('maxRecommendations'))
+        };
 
-      // Forward all form data to the activation endpoint
-      const form = new FormData();
-      for (const [key, value] of formData.entries()) {
-        if (key !== 'step') {
-          form.append(key, value);
+        // Validate the runtime rules
+        const runtimeRules = validateRuntimeRules(runtimeRulesData);
+
+        // Create compiled prompt
+        const compiledPrompt = createCompiledPrompt(runtimeRules);
+
+        // Create and activate the prompt version
+        const promptVersion = await createPromptVersion({
+          tenant: shop,
+          runtimeRules,
+          isActive: true
+        });
+
+        return json({
+          success: true,
+          message: 'Prompt activated successfully',
+          promptVersion: {
+            id: promptVersion.id,
+            compiledPrompt: promptVersion.compiledPrompt,
+            runtimeRules: promptVersion.runtimeRules,
+            isActive: promptVersion.isActive,
+            createdAt: promptVersion.createdAt
+          }
+        });
+      } catch (error) {
+        console.error('Error activating prompt:', error);
+        
+        if (error.issues) {
+          // Zod validation error
+          return json(
+            {
+              success: false,
+              error: 'Validation failed',
+              details: error.issues.map(issue => ({
+                field: issue.path.join('.'),
+                message: issue.message
+              }))
+            },
+            { status: 422 }
+          );
         }
+
+        return json(
+          { 
+            success: false,
+            error: error.message || 'Failed to activate prompt' 
+          },
+          { status: 500 }
+        );
       }
-
-      // This will be handled by the activation endpoint
-      const response = await fetch(activationUrl, {
-        method: 'POST',
-        body: form,
-        headers: {
-          'Authorization': request.headers.get('Authorization'),
-          'X-Shopify-Shop-Domain': request.headers.get('X-Shopify-Shop-Domain')
-        }
-      });
-
-      return response;
     }
   }
 
