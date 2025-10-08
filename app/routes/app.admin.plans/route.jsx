@@ -110,14 +110,30 @@ export const action = async ({ request }) => {
       );
 
       const data = await response.json();
-      const result = data.data.appSubscriptionCreate;
+      
+      // Log the full response for debugging
+      console.log('GraphQL Response:', JSON.stringify(data, null, 2));
+      
+      const result = data.data?.appSubscriptionCreate;
 
       // Check for errors
-      if (result.userErrors && result.userErrors.length > 0) {
+      if (result?.userErrors && result.userErrors.length > 0) {
         console.error('Subscription creation errors:', result.userErrors);
+        const errorDetails = result.userErrors.map(e => `${e.field}: ${e.message}`).join(', ');
         return json({ 
           error: 'Failed to create subscription',
-          details: result.userErrors.map(e => e.message).join(', ')
+          details: errorDetails,
+          userErrors: result.userErrors
+        }, { status: 400 });
+      }
+      
+      // Check if data is missing
+      if (!result) {
+        console.error('No result from GraphQL:', data);
+        return json({
+          error: 'GraphQL request failed',
+          details: 'No subscription data returned',
+          response: data
         }, { status: 400 });
       }
 
