@@ -243,6 +243,7 @@ export default function PromptBuilder() {
   const [showPreview, setShowPreview] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [newQuestion, setNewQuestion] = useState('');
+  const [activationSuccess, setActivationSuccess] = useState(false);
 
   // Handle compile fetcher response
   useEffect(() => {
@@ -258,8 +259,8 @@ export default function PromptBuilder() {
   useEffect(() => {
     if (activateFetcher.data) {
       if (activateFetcher.data.success) {
-        // Success - reload the page
-        window.location.reload();
+        // Success - show success message
+        setActivationSuccess(true);
       } else {
         console.error('Activation failed:', activateFetcher.data.error);
         alert(`Activation failed: ${activateFetcher.data.error}`);
@@ -598,9 +599,15 @@ export default function PromptBuilder() {
               </div>
             ) : (
               <>
-                <Banner tone="success">
-                  <p><strong>Configuration Ready!</strong> Review your settings below and activate when ready.</p>
-                </Banner>
+                {activationSuccess ? (
+                  <Banner tone="success">
+                    <p><strong>✓ Prompt Activated Successfully!</strong> Your AI assistant is now using the new configuration. Changes are live for all customer conversations.</p>
+                  </Banner>
+                ) : (
+                  <Banner tone="info">
+                    <p><strong>Configuration Ready!</strong> Review your settings below and activate when ready.</p>
+                  </Banner>
+                )}
 
                 <Card>
                   <div className="p-8">
@@ -685,19 +692,38 @@ export default function PromptBuilder() {
                   </div>
                 </Card>
 
-                <div className="flex gap-4 justify-end">
-                  <Button onClick={() => goToStep(2)} size="large">
-                    Back to Settings
-                  </Button>
-                  <Button
-                    primary
-                    size="large"
-                    onClick={handleActivate}
-                    loading={activateFetcher.state === 'submitting' || activateFetcher.state === 'loading'}
-                  >
-                    Save & Activate
-                  </Button>
-                </div>
+                {activationSuccess ? (
+                  <div className="flex gap-4 justify-end">
+                    <Button onClick={() => window.location.href = '/app'} size="large">
+                      Back to Dashboard
+                    </Button>
+                    <Button
+                      primary
+                      size="large"
+                      onClick={() => {
+                        setActivationSuccess(false);
+                        setShowPreview(false);
+                        setCurrentStep(0);
+                      }}
+                    >
+                      Create New Version
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex gap-4 justify-end">
+                    <Button onClick={() => goToStep(2)} size="large">
+                      Back to Settings
+                    </Button>
+                    <Button
+                      primary
+                      size="large"
+                      onClick={handleActivate}
+                      loading={activateFetcher.state === 'submitting' || activateFetcher.state === 'loading'}
+                    >
+                      Save & Activate
+                    </Button>
+                  </div>
+                )}
               </>
             )}
           </div>
