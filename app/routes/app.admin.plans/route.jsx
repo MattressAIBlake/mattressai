@@ -1,5 +1,6 @@
 import { json, redirect } from '@remix-run/node';
-import { useLoaderData, useSubmit } from '@remix-run/react';
+import { useLoaderData, useSubmit, useActionData, useNavigation } from '@remix-run/react';
+import { useEffect } from 'react';
 import {
   Page,
   Layout,
@@ -137,9 +138,12 @@ export const action = async ({ request }) => {
         }, { status: 400 });
       }
 
-      // Redirect to Shopify confirmation page
+      // Return confirmation URL to client for App Bridge redirect
       if (result.confirmationUrl) {
-        return redirect(result.confirmationUrl);
+        return json({ 
+          confirmationUrl: result.confirmationUrl,
+          redirectToShopify: true 
+        });
       }
 
       // If no confirmation URL, subscription might already be active
@@ -166,6 +170,17 @@ export const action = async ({ request }) => {
 export default function PlansPage() {
   const { currentPlan, inTrial, trialDaysLeft, usage, plans, quotas } = useLoaderData();
   const submit = useSubmit();
+  const actionData = useActionData();
+  const navigation = useNavigation();
+
+  // Handle redirect to Shopify billing confirmation
+  useEffect(() => {
+    if (actionData?.redirectToShopify && actionData?.confirmationUrl) {
+      console.log('🔵 Redirecting to Shopify billing:', actionData.confirmationUrl);
+      // Use top.location to break out of iframe
+      window.top.location.href = actionData.confirmationUrl;
+    }
+  }, [actionData]);
 
   const handleUpgrade = (planName) => {
     console.log('🔵 Button clicked! Plan:', planName);
