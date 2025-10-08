@@ -21,7 +21,7 @@ export default function Onboarding() {
           <Card>
             <div>
               <Text variant="headingMd" as="h2">
-                🚀 Setup Complete!
+                Setup Complete!
               </Text>
               <br />
               <Text variant="bodyMd" as="p">
@@ -45,7 +45,7 @@ export default function Onboarding() {
           <Card>
             <div>
               <Text variant="headingMd" as="h3">
-                📋 Next Steps
+                Next Steps
               </Text>
               <br />
               <Text variant="bodyMd" as="p">

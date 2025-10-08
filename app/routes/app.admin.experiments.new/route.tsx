@@ -267,7 +267,7 @@ export default function NewExperimentPage() {
                   <Card>
                     <BlockStack gap="200">
                       <Text as="p" variant="bodySm" tone="subdued">
-                        Total Traffic Split: {totalSplit}% {totalSplit !== 100 && '⚠️ Must equal 100%'}
+                        Total Traffic Split: {totalSplit}% {totalSplit !== 100 && '(Must equal 100%)'}
                       </Text>
                     </BlockStack>
                   </Card>
