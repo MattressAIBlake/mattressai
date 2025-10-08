@@ -216,17 +216,14 @@ export const loader = async ({ request }) => {
       
       // Build bubble content based on style
       let bubbleContent = '';
-      const icon = \`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mattressai-bubble-icon">
+      const icon = \`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mattressai-icon-svg">
           <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
         </svg>\`;
-      const text = \`<span class="mattressai-bubble-text">\${this.config.bubbleText}</span>\`;
       
       if (this.config.bubbleStyle === 'icon') {
         bubbleContent = icon;
       } else if (this.config.bubbleStyle === 'text') {
-        bubbleContent = text;
-      } else if (this.config.bubbleStyle === 'icon_text') {
-        bubbleContent = icon + text;
+        bubbleContent = \`<span class="mattressai-bubble-text-span">\${this.config.bubbleText}</span>\`;
       }
       
       bubble.innerHTML = bubbleContent;
@@ -791,14 +788,14 @@ export const loader = async ({ request }) => {
       left: auto;
     }
     
-    /* Bubble styles */
-    .mattressai-bubble-icon {
+    /* Bubble style variations */
+    .mattressai-chat-bubble.mattressai-bubble-icon {
       width: var(--mattress-bubble-size, 64px);
       min-width: var(--mattress-bubble-size, 64px);
       border-radius: 50% !important;
     }
     
-    .mattressai-bubble-text {
+    .mattressai-chat-bubble.mattressai-bubble-text {
       padding: 0 14px;
       min-width: auto;
     }
