@@ -107,7 +107,7 @@ export default function CatalogIndexing() {
   useEffect(() => {
     if (data.isIndexing) {
       const interval = setInterval(() => {
-        fetcher.load('/admin/index/status');
+        fetcher.load('/app/admin/index/status');
       }, 2000);
 
       return () => clearInterval(interval);

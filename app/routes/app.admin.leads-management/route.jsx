@@ -42,7 +42,7 @@ export default function LeadsManagement() {
     params.append('from', from.toISOString());
     params.append('to', to.toISOString());
 
-    fetcher.load(`/admin/leads?${params.toString()}`);
+    fetcher.load(`/app/admin/leads?${params.toString()}`);
   }, [searchValue, statusFilter, dateRange, fetcher]);
 
   const handleExport = useCallback(() => {
@@ -50,13 +50,13 @@ export default function LeadsManagement() {
     if (statusFilter !== 'all') params.append('status', statusFilter);
     params.append('export', 'true');
     
-    window.location.href = `/admin/leads?${params.toString()}`;
+    window.location.href = `/app/admin/leads?${params.toString()}`;
   }, [statusFilter]);
 
   const handleStatusChange = useCallback((leadId, newStatus) => {
     fetcher.submit(
       { leadId, status: newStatus },
-      { method: 'post', action: '/admin/leads', encType: 'application/json' }
+      { method: 'post', action: '/app/admin/leads', encType: 'application/json' }
     );
   }, [fetcher]);
 

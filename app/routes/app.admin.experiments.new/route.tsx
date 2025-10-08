@@ -52,7 +52,7 @@ export const action = async ({ request }) => {
       variants: experimentData.variants
     });
 
-    return redirect(`/admin/experiments/${experiment.id}`);
+    return redirect(`/app/admin/experiments/${experiment.id}`);
   } catch (error) {
     return json({ error: error.message }, { status: 400 });
   }
@@ -161,7 +161,7 @@ export default function NewExperimentPage() {
       secondaryActions={[
         {
           content: 'Cancel',
-          onAction: () => navigate('/admin/experiments')
+          onAction: () => navigate('/app/admin/experiments')
         }
       ]}
     >

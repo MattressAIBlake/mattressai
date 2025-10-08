@@ -105,7 +105,7 @@ export default function ExperimentDetailPage() {
     const actions = [
       {
         content: 'Back to Experiments',
-        onAction: () => navigate('/admin/experiments')
+        onAction: () => navigate('/app/admin/experiments')
       }
     ];
 

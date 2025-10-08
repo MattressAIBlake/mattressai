@@ -41,11 +41,11 @@ export default function ExperimentsPage() {
   const navigate = useNavigate();
 
   const handleCreateExperiment = () => {
-    navigate('/admin/experiments/new');
+    navigate('/app/admin/experiments/new');
   };
 
   const handleViewExperiment = (experimentId) => {
-    navigate(`/admin/experiments/${experimentId}`);
+    navigate(`/app/admin/experiments/${experimentId}`);
   };
 
   const getStatusBadge = (status) => {

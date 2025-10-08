@@ -58,7 +58,7 @@ export default function AlertsManagement() {
 
   // Load settings on mount
   useEffect(() => {
-    settingsFetcher.load('/admin/alerts/settings');
+    settingsFetcher.load('/app/admin/alerts/settings');
   }, []);
 
   // Update state when settings load
@@ -82,7 +82,7 @@ export default function AlertsManagement() {
       },
       { 
         method: 'post', 
-        action: '/admin/alerts/settings', 
+        action: '/app/admin/alerts/settings', 
         encType: 'application/json' 
       }
     );
@@ -92,12 +92,12 @@ export default function AlertsManagement() {
     const config = channels[channel];
     testFetcher.submit(
       { action: 'test', channel, config },
-      { method: 'post', action: '/admin/alerts/settings', encType: 'application/json' }
+      { method: 'post', action: '/app/admin/alerts/settings', encType: 'application/json' }
     );
   }, [channels, testFetcher]);
 
   const handleLoadHistory = useCallback(() => {
-    historyFetcher.load('/admin/alerts/history');
+    historyFetcher.load('/app/admin/alerts/history');
   }, [historyFetcher]);
 
   const alerts = historyFetcher.data?.alerts || [];

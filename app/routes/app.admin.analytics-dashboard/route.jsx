@@ -37,8 +37,8 @@ export default function AnalyticsDashboard() {
       to: to.toISOString()
     });
 
-    funnelFetcher.load(`/admin/analytics/funnel?${params.toString()}`);
-    productsFetcher.load(`/admin/analytics/products?${params.toString()}`);
+    funnelFetcher.load(`/app/admin/analytics/funnel?${params.toString()}`);
+    productsFetcher.load(`/app/admin/analytics/products?${params.toString()}`);
   }, [dateRange, funnelFetcher, productsFetcher]);
 
   useEffect(() => {

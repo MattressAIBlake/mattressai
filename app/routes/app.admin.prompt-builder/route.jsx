@@ -121,7 +121,7 @@ export async function action({ request }) {
 
     if (step === 'activate') {
       // Redirect to activation endpoint
-      const activationUrl = new URL('/admin/prompt/activate', request.url);
+      const activationUrl = new URL('/app/admin/prompt/activate', request.url);
 
       // Forward all form data to the activation endpoint
       const form = new FormData();
