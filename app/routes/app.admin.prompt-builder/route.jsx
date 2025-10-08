@@ -224,6 +224,68 @@ export async function action({ request }) {
         );
       }
     }
+
+    if (step === 'activateAdvanced') {
+      // Handle direct prompt text activation
+      try {
+        const compiledPrompt = formData.get('compiledPrompt');
+        
+        if (!compiledPrompt || compiledPrompt.trim().length === 0) {
+          return json(
+            { success: false, error: 'Prompt text cannot be empty' },
+            { status: 400 }
+          );
+        }
+
+        // Create minimal runtime rules for advanced editing
+        const runtimeRules = {
+          tone: 'custom',
+          questionLimit: 3,
+          earlyExit: false,
+          leadCapture: {
+            enabled: false,
+            position: 'end',
+            fields: []
+          },
+          maxRecommendations: 3,
+          customQuestions: [],
+          isAdvancedEdit: true
+        };
+
+        // Deactivate all previous versions for this tenant
+        await prisma.promptVersion.updateMany({
+          where: { tenant: session.shop, isActive: true },
+          data: { isActive: false }
+        });
+
+        // Create prompt version directly with the edited text
+        const promptVersion = await prisma.promptVersion.create({
+          data: {
+            tenant: session.shop,
+            compiledPrompt: compiledPrompt.trim(),
+            runtimeRules: JSON.stringify(runtimeRules),
+            isActive: true
+          }
+        });
+
+        return json({
+          success: true,
+          message: 'Custom prompt activated successfully',
+          promptVersion: {
+            id: promptVersion.id,
+            compiledPrompt: promptVersion.compiledPrompt,
+            isActive: promptVersion.isActive,
+            createdAt: promptVersion.createdAt
+          }
+        });
+      } catch (error) {
+        console.error('Error activating advanced prompt:', error);
+        return json(
+          { success: false, error: error.message || 'Failed to activate custom prompt' },
+          { status: 500 }
+        );
+      }
+    }
   }
 
   return json({ error: 'Invalid request' }, { status: 400 });
@@ -261,6 +323,9 @@ export default function PromptBuilder() {
   const [newQuestion, setNewQuestion] = useState('');
   const [activationSuccess, setActivationSuccess] = useState(false);
   const [showCurrentPrompt, setShowCurrentPrompt] = useState(true);
+  const [showAdvancedEditor, setShowAdvancedEditor] = useState(false);
+  const [advancedPromptText, setAdvancedPromptText] = useState('');
+  const [savingAdvanced, setSavingAdvanced] = useState(false);
 
   // Handle compile fetcher response
   useEffect(() => {
@@ -348,6 +413,36 @@ export default function PromptBuilder() {
       setCurrentStep(0);
     }
   };
+
+  // Open advanced editor with current prompt
+  const handleOpenAdvancedEditor = () => {
+    if (activePrompt && activePrompt.compiledPrompt) {
+      setAdvancedPromptText(activePrompt.compiledPrompt);
+    } else {
+      // If no active prompt, compile current form data
+      handleCompilePreview();
+    }
+    setShowAdvancedEditor(true);
+    setShowCurrentPrompt(false);
+  };
+
+  // Save directly edited prompt
+  const handleSaveAdvancedPrompt = async () => {
+    setSavingAdvanced(true);
+    
+    const form = new FormData();
+    form.append('step', 'activateAdvanced');
+    form.append('compiledPrompt', advancedPromptText);
+    
+    activateFetcher.submit(form, { method: 'POST' });
+  };
+
+  // Update advanced prompt text when compile completes
+  useEffect(() => {
+    if (showAdvancedEditor && compiledPrompt && !advancedPromptText) {
+      setAdvancedPromptText(compiledPrompt);
+    }
+  }, [compiledPrompt, showAdvancedEditor, advancedPromptText]);
 
   // Compile preview
   const handleCompilePreview = () => {
@@ -845,9 +940,12 @@ export default function PromptBuilder() {
 
                 <Divider />
 
-                <div className="mt-6 flex gap-4">
+                <div className="mt-6 flex gap-4 flex-wrap">
                   <Button primary onClick={handleLoadCurrentPrompt}>
-                    Load & Edit This Prompt
+                    Load & Edit Settings
+                  </Button>
+                  <Button onClick={handleOpenAdvancedEditor}>
+                    Edit Prompt Text Directly
                   </Button>
                   <Button onClick={() => window.location.href = '/app/admin/prompt/versions'}>
                     View All Versions
@@ -857,8 +955,125 @@ export default function PromptBuilder() {
             </Card>
           )}
 
+          {/* Advanced Editor */}
+          {showAdvancedEditor ? (
+            <Card>
+              <div className="p-8">
+                <div className="flex items-start justify-between mb-6">
+                  <div>
+                    <Text variant="headingLg" as="h2" fontWeight="semibold">
+                      Advanced Prompt Editor
+                    </Text>
+                    <div className="mt-2">
+                      <Text variant="bodyMd" as="p" tone="subdued">
+                        Directly edit the AI prompt text. Changes will be saved and immediately applied to customer conversations.
+                      </Text>
+                    </div>
+                  </div>
+                  <Button onClick={() => {
+                    setShowAdvancedEditor(false);
+                    setShowCurrentPrompt(true);
+                  }}>
+                    Close Editor
+                  </Button>
+                </div>
+
+                {activationSuccess ? (
+                  <Banner tone="success">
+                    <p><strong>✓ Custom Prompt Activated!</strong> Your directly edited prompt is now live.</p>
+                  </Banner>
+                ) : (
+                  <Banner tone="warning">
+                    <p><strong>Advanced Mode:</strong> You are editing the raw prompt text. Make sure your changes maintain the proper structure and instructions for the AI.</p>
+                  </Banner>
+                )}
+
+                <div className="mt-6">
+                  <div className="mb-4">
+                    <Text variant="headingSm" as="h4" fontWeight="semibold">
+                      Prompt Text
+                    </Text>
+                    <div className="mt-1">
+                      <Text variant="bodyMd" as="p" tone="subdued">
+                        Edit the complete AI system prompt below. Use markdown formatting for best results.
+                      </Text>
+                    </div>
+                  </div>
+                  
+                  <textarea
+                    value={advancedPromptText}
+                    onChange={(e) => setAdvancedPromptText(e.target.value)}
+                    className="w-full h-96 p-4 border border-gray-300 rounded-lg font-mono text-sm resize-y focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Enter your AI system prompt here..."
+                    style={{
+                      minHeight: '400px',
+                      lineHeight: '1.6',
+                      backgroundColor: '#f9fafb'
+                    }}
+                  />
+                  
+                  <div className="mt-2 flex items-center gap-2">
+                    <Text variant="bodySm" as="p" tone="subdued">
+                      {advancedPromptText.length} characters
+                    </Text>
+                    {advancedPromptText.length < 100 && (
+                      <Badge tone="warning">Too short</Badge>
+                    )}
+                    {advancedPromptText.length > 10000 && (
+                      <Badge tone="warning">Very long prompt may affect performance</Badge>
+                    )}
+                  </div>
+                </div>
+
+                <Divider />
+
+                {activationSuccess ? (
+                  <div className="mt-6 flex gap-4">
+                    <Button onClick={() => window.location.href = '/app'} size="large">
+                      Back to Dashboard
+                    </Button>
+                    <Button
+                      primary
+                      size="large"
+                      onClick={() => {
+                        setActivationSuccess(false);
+                        setShowAdvancedEditor(false);
+                        setShowCurrentPrompt(true);
+                        setAdvancedPromptText('');
+                      }}
+                    >
+                      Create Another
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="mt-6 flex gap-4">
+                    <Button 
+                      onClick={() => {
+                        setShowAdvancedEditor(false);
+                        setShowCurrentPrompt(true);
+                      }}
+                      size="large"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      primary
+                      size="large"
+                      onClick={handleSaveAdvancedPrompt}
+                      loading={activateFetcher.state === 'submitting' || activateFetcher.state === 'loading'}
+                      disabled={!advancedPromptText || advancedPromptText.trim().length < 100}
+                    >
+                      Save & Activate Custom Prompt
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </Card>
+          ) : null}
+
           {/* Step content */}
-          <Card>
+          {!showAdvancedEditor && (
+            <Card>
             <div className="p-8">
               {/* Clean progress bar */}
               <div className="mb-10">
@@ -910,6 +1125,7 @@ export default function PromptBuilder() {
               </div>
             )}
           </Card>
+          )}
         </Layout.Section>
       </Layout>
     </Page>
