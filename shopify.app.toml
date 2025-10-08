@@ -5,12 +5,6 @@ name = "MattressAI"
 application_url = "https://mattressaishopify.vercel.app/"
 embedded = true
 
-[app_metadata]
-privacy_policy_url = "https://www.themattressai.com/privacy"
-terms_of_service_url = "https://www.themattressai.com/terms"
-support_url = "https://www.themattressai.com/support"
-support_email = "system@themattressai.com"
-
 [build]
 automatically_update_urls_on_dev = true
 
