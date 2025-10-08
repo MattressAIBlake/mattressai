@@ -757,7 +757,6 @@ export const loader = async ({ request }) => {
       position: fixed;
       bottom: var(--mattress-position-bottom, 20px);
       height: var(--mattress-bubble-size, 64px);
-      border-radius: calc(var(--mattress-bubble-size, 64px) / 2);
       background: var(--mattress-primary, #0F172A);
       color: white;
       border: none;
@@ -770,7 +769,6 @@ export const loader = async ({ request }) => {
       transition: transform 0.2s ease, box-shadow 0.2s ease;
       z-index: 9999;
       animation: slideUp 0.3s ease;
-      padding: 0;
       font-size: 15px;
       font-weight: 600;
       white-space: nowrap;
@@ -792,12 +790,16 @@ export const loader = async ({ request }) => {
     .mattressai-chat-bubble.mattressai-bubble-icon {
       width: var(--mattress-bubble-size, 64px);
       min-width: var(--mattress-bubble-size, 64px);
+      height: var(--mattress-bubble-size, 64px);
       border-radius: 50% !important;
+      padding: 0;
     }
     
     .mattressai-chat-bubble.mattressai-bubble-text {
+      width: auto;
+      min-width: 100px;
       padding: 0 14px;
-      min-width: auto;
+      border-radius: calc(var(--mattress-bubble-size, 64px) / 2);
     }
     
     @media (prefers-reduced-motion: reduce) {
