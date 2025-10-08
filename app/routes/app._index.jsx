@@ -31,7 +31,7 @@ export default function Index() {
                 </Text>
                 <Text variant="bodyLg" as="p" tone="subdued">
                   Deploy AI assistants across sales channels to engage shoppers, match their needs, 
-                  and boost conversions beyond price-driven decisions.
+                  and <strong style={{ color: '#449de7' }}>generate very warm leads</strong> that boost conversions beyond price-driven decisions.
                 </Text>
               </BlockStack>
             </Card>
