@@ -26,9 +26,13 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Gradient Primary Buttons */
+/* Gradient Primary Buttons - Works with all Polaris versions */
 .Polaris-Button--primary,
-button[class*="Polaris-Button--primary"] {
+.Polaris-Button--variantPrimary,
+button[class*="Polaris-Button--primary"],
+button[class*="Polaris-Button"][class*="Primary"],
+button[data-variant="primary"],
+button[data-primary="true"] {
   background: var(--gradient-primary) !important;
   border: none !important;
   box-shadow: var(--shadow-md) !important;
@@ -38,26 +42,43 @@ button[class*="Polaris-Button--primary"] {
 }
 
 .Polaris-Button--primary:hover,
-button[class*="Polaris-Button--primary"]:hover {
+.Polaris-Button--variantPrimary:hover,
+button[class*="Polaris-Button--primary"]:hover,
+button[class*="Polaris-Button"][class*="Primary"]:hover,
+button[data-variant="primary"]:hover,
+button[data-primary="true"]:hover {
   background: var(--gradient-primary-hover) !important;
   transform: translateY(-1px) !important;
   box-shadow: var(--shadow-lg) !important;
 }
 
 .Polaris-Button--primary:active,
-button[class*="Polaris-Button--primary"]:active {
+.Polaris-Button--variantPrimary:active,
+button[class*="Polaris-Button--primary"]:active,
+button[class*="Polaris-Button"][class*="Primary"]:active,
+button[data-variant="primary"]:active,
+button[data-primary="true"]:active {
   transform: translateY(0) !important;
 }
 
-/* Enhanced Cards */
+/* Enhanced Cards with subtle accent border */
 .Polaris-Card {
   box-shadow: var(--shadow-sm) !important;
   border: 1px solid var(--color-border) !important;
+  border-top: 3px solid var(--color-blue) !important;
   transition: all 0.2s ease !important;
+  position: relative !important;
 }
 
 .Polaris-Card:hover {
   box-shadow: var(--shadow-md) !important;
+  border-top-color: var(--color-teal) !important;
+  transform: translateY(-2px);
+}
+
+/* Add gradient accent to first card in a section */
+.Polaris-Layout__Section:first-child .Polaris-Card:first-child {
+  border-top: 3px solid var(--color-teal) !important;
 }
 
 /* Modern Headings */
@@ -126,14 +147,28 @@ button[class*="Polaris-Button--primary"]:active {
   color: var(--color-teal) !important;
 }
 
-/* Modern Page Header */
-.Polaris-Page-Header__Title {
+/* Modern Page Header - More specific selectors */
+.Polaris-Page-Header__Title,
+.Polaris-Text--headingXl,
+h1[class*="Polaris-Text"] {
   background: var(--gradient-primary) !important;
   -webkit-background-clip: text !important;
   -webkit-text-fill-color: transparent !important;
   background-clip: text !important;
+  text-fill-color: transparent !important;
   font-weight: 700 !important;
   letter-spacing: -0.02em !important;
+}
+
+/* Make all headings use accent colors for consistency */
+.Polaris-Text--headingLg,
+h2[class*="Polaris-Text"] {
+  color: var(--color-blue) !important;
+}
+
+.Polaris-Text--headingMd,
+h3[class*="Polaris-Text"] {
+  color: var(--color-teal) !important;
 }
 
 /* Enhanced DataTable */
@@ -158,9 +193,12 @@ button[class*="Polaris-Button--primary"]:active {
   box-shadow: 0 0 0 1px var(--color-blue) !important;
 }
 
-/* Enhanced Dividers */
+/* Enhanced Dividers with gradient */
 .Polaris-Divider {
-  border-color: var(--color-border) !important;
+  height: 2px !important;
+  background: linear-gradient(90deg, var(--color-blue) 0%, var(--color-teal) 100%) !important;
+  border: none !important;
+  opacity: 0.3 !important;
 }
 
 /* Statistics Cards - Special styling for metric displays */
