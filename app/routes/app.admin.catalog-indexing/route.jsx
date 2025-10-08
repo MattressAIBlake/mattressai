@@ -188,6 +188,10 @@ export default function CatalogIndexing() {
     }
   }, [fallbackFetcher.data]);
 
+  // Check for conflict error (job already running)
+  const hasConflictError = fetcher.data?.error?.includes('already running') || 
+                           fetcher.data?.error === 'An indexing job is already running for this shop';
+
   // Handle start indexing
   const handleStartIndexing = () => {
     setIsStarting(true);
@@ -256,6 +260,22 @@ export default function CatalogIndexing() {
       ]}
     >
       <Layout>
+        {/* Error Banner for Job Already Running */}
+        {hasConflictError && (
+          <Layout.Section>
+            <Banner
+              title="Indexing Job Already Running"
+              tone="warning"
+              onDismiss={() => fetcher.load('/app/admin/index/status')}
+            >
+              <p>
+                There's already an indexing job in progress. Please wait for it to complete before starting a new one. 
+                If the job appears stuck, it will automatically timeout after 30 minutes, or you can refresh this page and try again.
+              </p>
+            </Banner>
+          </Layout.Section>
+        )}
+
         {/* Current Job Status */}
         <Layout.Section>
           <Card>

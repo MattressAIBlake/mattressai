@@ -53,18 +53,38 @@ export async function action({ request }) {
       where: {
         tenant: shop,
         status: { in: ['pending', 'running'] }
-      }
+      },
+      orderBy: { startedAt: 'desc' }
     });
 
     if (existingJob) {
-      throw json(
-        {
-          error: 'An indexing job is already running for this shop',
-          jobId: existingJob.id,
-          status: existingJob.status
-        },
-        { status: 409 }
-      );
+      // Check if the job is stale (running for more than 30 minutes)
+      const jobAge = Date.now() - existingJob.startedAt.getTime();
+      const isStale = jobAge > 30 * 60 * 1000; // 30 minutes
+
+      if (isStale) {
+        // Mark stale job as failed
+        await prisma.indexJob.update({
+          where: { id: existingJob.id },
+          data: {
+            status: 'failed',
+            finishedAt: new Date(),
+            errorMessage: 'Job timed out - exceeded 30 minute limit'
+          }
+        });
+        console.log(`Marked stale job ${existingJob.id} as failed`);
+      } else {
+        // Job is still active
+        throw json(
+          {
+            error: 'An indexing job is already running for this shop',
+            jobId: existingJob.id,
+            status: existingJob.status,
+            startedAt: existingJob.startedAt
+          },
+          { status: 409 }
+        );
+      }
     }
 
     // Create new indexing job
