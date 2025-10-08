@@ -12,12 +12,13 @@ export interface PlanConfig {
   price: number;
   features: {
     tokens: number;
-    alertsPerHour: number;
+    alertsPerDay: number;
     smsEnabled: boolean;
     vectorQueries: number;
     indexJobs: number;
     priorityIndexing: boolean;
   };
+  guidance: string;
 }
 
 export const PLAN_CONFIGS: Record<string, PlanConfig> = {
@@ -26,36 +27,39 @@ export const PLAN_CONFIGS: Record<string, PlanConfig> = {
     price: 0,
     features: {
       tokens: 100000,
-      alertsPerHour: 20,
+      alertsPerDay: 2,
       smsEnabled: false,
       vectorQueries: 10000,
-      indexJobs: 5,
+      indexJobs: 2,
       priorityIndexing: false
-    }
+    },
+    guidance: 'Best for stores with 0-75 unique visitors per day'
   },
   pro: {
     name: 'pro',
     price: 49,
     features: {
       tokens: 500000,
-      alertsPerHour: 100,
+      alertsPerDay: 50,
       smsEnabled: true,
       vectorQueries: 50000,
-      indexJobs: 20,
+      indexJobs: 5,
       priorityIndexing: false
-    }
+    },
+    guidance: 'Best for stores with 75-250 unique visitors per day'
   },
   enterprise: {
     name: 'enterprise',
     price: 199,
     features: {
       tokens: 2000000,
-      alertsPerHour: 500,
+      alertsPerDay: -1,
       smsEnabled: true,
       vectorQueries: 200000,
-      indexJobs: 100,
+      indexJobs: -1,
       priorityIndexing: true
-    }
+    },
+    guidance: 'Best for stores with 250+ unique visitors per day'
   }
 };
 
@@ -130,11 +134,20 @@ export async function checkFeatureAccess(
  */
 export async function checkQuota(
   shop: string,
-  quotaType: 'tokens' | 'alertsPerHour' | 'vectorQueries' | 'indexJobs',
+  quotaType: 'tokens' | 'alertsPerDay' | 'vectorQueries' | 'indexJobs',
   currentUsage: number
 ): Promise<{ withinQuota: boolean; limit: number; usage: number }> {
   const plan = await getTenantPlan(shop);
   const limit = plan.features[quotaType];
+
+  // Unlimited plans (indicated by -1) are always within quota
+  if (limit === -1) {
+    return {
+      withinQuota: true,
+      limit: -1,
+      usage: currentUsage
+    };
+  }
 
   return {
     withinQuota: currentUsage < limit,
@@ -202,11 +215,11 @@ export async function getUsageStats(tenantId: string, period: 'current_month' | 
   const totalCost = indexJobs.reduce((sum, job) => sum + (job.actualCost || 0), 0);
 
   // Get alert counts
-  const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
-  const alertsLastHour = await prisma.alert.count({
+  const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  const alertsToday = await prisma.alert.count({
     where: {
       tenantId,
-      createdAt: { gte: oneHourAgo }
+      createdAt: { gte: oneDayAgo }
     }
   });
 
@@ -251,7 +264,7 @@ export async function getUsageStats(tenantId: string, period: 'current_month' | 
     endDate: now.toISOString(),
     tokensUsed,
     totalCost,
-    alertsLastHour,
+    alertsToday,
     totalAlerts,
     totalSessions,
     totalLeads,
@@ -270,12 +283,13 @@ export function getPlanComparison() {
     displayName: config.name.charAt(0).toUpperCase() + config.name.slice(1),
     price: config.price,
     priceDisplay: config.price === 0 ? 'Free' : `$${config.price}/mo`,
+    guidance: config.guidance,
     features: {
       tokens: `${(config.features.tokens / 1000).toLocaleString()}K tokens/month`,
-      alertsPerHour: `${config.features.alertsPerHour} alerts/hour`,
+      alertsPerDay: config.features.alertsPerDay === -1 ? 'Unlimited alerts/day' : `${config.features.alertsPerDay} alerts/day`,
       smsAlerts: config.features.smsEnabled ? 'Included' : 'Not included',
       vectorQueries: `${(config.features.vectorQueries / 1000).toLocaleString()}K queries/month`,
-      indexJobs: `${config.features.indexJobs} concurrent jobs`,
+      indexJobs: config.features.indexJobs === -1 ? 'Unlimited concurrent jobs' : `${config.features.indexJobs} concurrent jobs`,
       priorityIndexing: config.features.priorityIndexing ? 'Yes' : 'No'
     }
   }));

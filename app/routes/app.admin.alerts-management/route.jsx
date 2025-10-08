@@ -52,7 +52,7 @@ export default function AlertsManagement() {
   });
 
   const [throttles, setThrottles] = useState({
-    perHour: 20,
+    perDay: 2,
     perSession: 2
   });
 
@@ -317,11 +317,12 @@ export default function AlertsManagement() {
               <div style={{ marginTop: '16px' }}>
                 <BlockStack gap="300">
                   <TextField
-                    label="Max alerts per hour"
+                    label="Max alerts per day"
                     type="number"
-                    value={throttles.perHour.toString()}
-                    onChange={(value) => setThrottles({ ...throttles, perHour: parseInt(value, 10) })}
+                    value={throttles.perDay.toString()}
+                    onChange={(value) => setThrottles({ ...throttles, perDay: parseInt(value, 10) })}
                     autoComplete="off"
+                    helpText="Based on your current plan. -1 for unlimited."
                   />
                   <TextField
                     label="Max alerts per session"

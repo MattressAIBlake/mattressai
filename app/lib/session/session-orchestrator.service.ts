@@ -301,28 +301,39 @@ const enqueueAlert = async (
     return;
   }
 
-  // Check throttles
-  const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+  // Check throttles based on tenant plan
+  const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
   const recentAlerts = await prisma.alert.count({
     where: {
       tenantId,
-      createdAt: { gte: oneHourAgo }
+      createdAt: { gte: oneDayAgo }
     }
   });
 
-  if (recentAlerts >= (throttles.perHour || 20)) {
-    // Throttle limit reached
-    await prisma.alert.create({
-      data: {
-        tenantId,
-        sessionId,
-        type: alertType,
-        channel: 'throttled',
-        payload: JSON.stringify({ reason: 'hourly_limit_reached' }),
-        status: 'skipped'
-      }
-    });
-    return;
+  // Get tenant plan to check daily alert limit
+  const tenant = await prisma.tenant.findUnique({
+    where: { id: tenantId }
+  });
+
+  if (tenant?.quotas) {
+    const quotas = JSON.parse(tenant.quotas);
+    const dailyLimit = quotas.alertsPerDay || throttles.perDay || 2;
+    
+    // -1 means unlimited
+    if (dailyLimit !== -1 && recentAlerts >= dailyLimit) {
+      // Throttle limit reached
+      await prisma.alert.create({
+        data: {
+          tenantId,
+          sessionId,
+          type: alertType,
+          channel: 'throttled',
+          payload: JSON.stringify({ reason: 'daily_limit_reached' }),
+          status: 'skipped'
+        }
+      });
+      return;
+    }
   }
 
   // Check per-session throttle

@@ -600,24 +600,26 @@ https://your-website.com/privacy
 
 #### Pricing Details
 
-**Starter Plan:**
+**Starter Plan (Free):**
 - Price: Free
+- Best for: Stores with 0-75 unique visitors per day
 - Features:
   - 100K AI tokens/month
-  - 20 alerts/hour
+  - 2 alerts/day
   - 10K vector queries/month
-  - 5 concurrent indexing jobs
+  - 2 concurrent indexing jobs
   - Email alerts
   - Basic analytics
 
 **Pro Plan:**
 - Price: $49/month
 - Trial: 14 days
+- Best for: Stores with 75-250 unique visitors per day
 - Features:
   - 500K AI tokens/month
-  - 100 alerts/hour
+  - 50 alerts/day
   - 50K vector queries/month
-  - 20 concurrent indexing jobs
+  - 5 concurrent indexing jobs
   - SMS + Email alerts
   - Advanced analytics
   - A/B testing
@@ -626,11 +628,12 @@ https://your-website.com/privacy
 **Enterprise Plan:**
 - Price: $199/month
 - Trial: 14 days
+- Best for: Stores with 250+ unique visitors per day
 - Features:
   - 2M AI tokens/month
-  - 500 alerts/hour
+  - Unlimited alerts/day
   - 200K vector queries/month
-  - 100 concurrent indexing jobs
+  - Unlimited concurrent indexing jobs
   - All Pro features
   - Priority indexing
   - Dedicated support

@@ -457,7 +457,7 @@ export const getOrCreateAlertSettings = async (tenantId: string): Promise<any> =
           webhook: {}
         }),
         throttles: JSON.stringify({
-          perHour: 20,
+          perDay: 2,
           perSession: 2
         })
       }

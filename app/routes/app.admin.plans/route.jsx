@@ -232,16 +232,18 @@ export default function PlansPage() {
               <BlockStack gap="200">
                 <InlineStack align="space-between">
                   <Text as="p" variant="bodyMd">
-                    Alerts (Last Hour)
+                    Alerts (Today)
                   </Text>
                   <Text as="p" variant="bodyMd">
-                    {usage.alertsLastHour} / {quotas.alertsPerHour}
+                    {usage.alertsToday} / {quotas.alertsPerDay === -1 ? 'Unlimited' : quotas.alertsPerDay}
                   </Text>
                 </InlineStack>
-                <ProgressBar
-                  progress={getUsagePercent(usage.alertsLastHour, quotas.alertsPerHour)}
-                  tone={getUsageTone(getUsagePercent(usage.alertsLastHour, quotas.alertsPerHour))}
-                />
+                {quotas.alertsPerDay !== -1 && (
+                  <ProgressBar
+                    progress={getUsagePercent(usage.alertsToday, quotas.alertsPerDay)}
+                    tone={getUsageTone(getUsagePercent(usage.alertsToday, quotas.alertsPerDay))}
+                  />
+                )}
               </BlockStack>
 
               <Divider />
@@ -253,13 +255,15 @@ export default function PlansPage() {
                     Indexing Jobs
                   </Text>
                   <Text as="p" variant="bodyMd">
-                    {usage.runningIndexJobs} running / {quotas.indexJobs} max
+                    {usage.runningIndexJobs} running / {quotas.indexJobs === -1 ? 'Unlimited' : quotas.indexJobs} max
                   </Text>
                 </InlineStack>
-                <ProgressBar
-                  progress={getUsagePercent(usage.runningIndexJobs, quotas.indexJobs)}
-                  tone={getUsageTone(getUsagePercent(usage.runningIndexJobs, quotas.indexJobs))}
-                />
+                {quotas.indexJobs !== -1 && (
+                  <ProgressBar
+                    progress={getUsagePercent(usage.runningIndexJobs, quotas.indexJobs)}
+                    tone={getUsageTone(getUsagePercent(usage.runningIndexJobs, quotas.indexJobs))}
+                  />
+                )}
               </BlockStack>
 
               <Divider />
@@ -325,13 +329,16 @@ export default function PlansPage() {
                     <Text as="p" variant="headingLg">
                       {plan.priceDisplay}
                     </Text>
+                    <Text as="p" variant="bodySm" tone="subdued">
+                      {plan.guidance}
+                    </Text>
                   </BlockStack>
 
                   <Divider />
 
                   <List type="bullet">
                     <List.Item>{plan.features.tokens}</List.Item>
-                    <List.Item>{plan.features.alertsPerHour}</List.Item>
+                    <List.Item>{plan.features.alertsPerDay}</List.Item>
                     <List.Item>SMS Alerts: {plan.features.smsAlerts}</List.Item>
                     <List.Item>{plan.features.vectorQueries}</List.Item>
                     <List.Item>{plan.features.indexJobs}</List.Item>

@@ -958,7 +958,7 @@ fetch('/apps/mattressai/lead', {
 
 #### **Rate Limiting**
 - **Event Tracking**: 100 events/minute per tenant (configurable)
-- **Alert Throttling**: 20 alerts/hour per tenant (configurable)
+- **Alert Throttling**: Based on plan tier (2 alerts/day for Free, 50/day for Pro, unlimited for Enterprise)
 - **API Rate Limits**: Shopify API limits respected
 
 ### ✅ Database Schema

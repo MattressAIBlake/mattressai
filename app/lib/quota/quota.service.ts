@@ -37,7 +37,7 @@ const DEFAULT_QUOTAS: Record<string, QuotaLimits> = {
     maxCostPerDay: 10.0,
     maxCostPerMonth: 100.0,
     maxRequestsPerMinute: 30,
-    maxConcurrentJobs: 1
+    maxConcurrentJobs: 2
   },
   'professional': {
     maxIndexingJobsPerDay: 5,
@@ -48,18 +48,18 @@ const DEFAULT_QUOTAS: Record<string, QuotaLimits> = {
     maxCostPerDay: 50.0,
     maxCostPerMonth: 500.0,
     maxRequestsPerMinute: 60,
-    maxConcurrentJobs: 2
+    maxConcurrentJobs: 5
   },
   'enterprise': {
-    maxIndexingJobsPerDay: 20,
+    maxIndexingJobsPerDay: -1,
     maxProductsPerIndexingJob: 10000,
-    maxIndexingJobsPerHour: 10,
+    maxIndexingJobsPerHour: -1,
     maxTokensPerDay: 2000000,
     maxTokensPerHour: 200000,
-    maxCostPerDay: 200.0,
-    maxCostPerMonth: 2000.0,
+    maxCostPerDay: -1,
+    maxCostPerMonth: -1,
     maxRequestsPerMinute: 120,
-    maxConcurrentJobs: 5
+    maxConcurrentJobs: -1
   }
 };
 
@@ -79,34 +79,40 @@ export class QuotaService {
   async canStartIndexingJob(): Promise<{ allowed: boolean; reason?: string; limits?: QuotaLimits }> {
     const limits = await this.getTenantLimits();
 
-    // Check concurrent jobs limit
-    const concurrentJobs = await this.getConcurrentJobsCount();
-    if (concurrentJobs >= limits.maxConcurrentJobs) {
-      return {
-        allowed: false,
-        reason: `Maximum concurrent jobs (${limits.maxConcurrentJobs}) reached`,
-        limits
-      };
+    // Check concurrent jobs limit (-1 means unlimited)
+    if (limits.maxConcurrentJobs !== -1) {
+      const concurrentJobs = await this.getConcurrentJobsCount();
+      if (concurrentJobs >= limits.maxConcurrentJobs) {
+        return {
+          allowed: false,
+          reason: `Maximum concurrent jobs (${limits.maxConcurrentJobs}) reached`,
+          limits
+        };
+      }
     }
 
-    // Check hourly indexing jobs limit
-    const hourlyJobs = await this.getIndexingJobsCount('hour');
-    if (hourlyJobs >= limits.maxIndexingJobsPerHour) {
-      return {
-        allowed: false,
-        reason: `Maximum indexing jobs per hour (${limits.maxIndexingJobsPerHour}) reached`,
-        limits
-      };
+    // Check hourly indexing jobs limit (-1 means unlimited)
+    if (limits.maxIndexingJobsPerHour !== -1) {
+      const hourlyJobs = await this.getIndexingJobsCount('hour');
+      if (hourlyJobs >= limits.maxIndexingJobsPerHour) {
+        return {
+          allowed: false,
+          reason: `Maximum indexing jobs per hour (${limits.maxIndexingJobsPerHour}) reached`,
+          limits
+        };
+      }
     }
 
-    // Check daily indexing jobs limit
-    const dailyJobs = await this.getIndexingJobsCount('day');
-    if (dailyJobs >= limits.maxIndexingJobsPerDay) {
-      return {
-        allowed: false,
-        reason: `Maximum indexing jobs per day (${limits.maxIndexingJobsPerDay}) reached`,
-        limits
-      };
+    // Check daily indexing jobs limit (-1 means unlimited)
+    if (limits.maxIndexingJobsPerDay !== -1) {
+      const dailyJobs = await this.getIndexingJobsCount('day');
+      if (dailyJobs >= limits.maxIndexingJobsPerDay) {
+        return {
+          allowed: false,
+          reason: `Maximum indexing jobs per day (${limits.maxIndexingJobsPerDay}) reached`,
+          limits
+        };
+      }
     }
 
     return { allowed: true, limits };
@@ -145,13 +151,15 @@ export class QuotaService {
   async canIncurCost(cost: number): Promise<{ allowed: boolean; reason?: string }> {
     const limits = await this.getTenantLimits();
 
-    // Check daily cost limit
-    const dailyCost = await this.getCostIncurred('day');
-    if (dailyCost + cost > limits.maxCostPerDay) {
-      return {
-        allowed: false,
-        reason: `Daily cost limit ($${limits.maxCostPerDay}) would be exceeded`
-      };
+    // Check daily cost limit (-1 means unlimited)
+    if (limits.maxCostPerDay !== -1) {
+      const dailyCost = await this.getCostIncurred('day');
+      if (dailyCost + cost > limits.maxCostPerDay) {
+        return {
+          allowed: false,
+          reason: `Daily cost limit ($${limits.maxCostPerDay}) would be exceeded`
+        };
+      }
     }
 
     return { allowed: true };
