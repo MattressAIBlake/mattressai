@@ -2,7 +2,7 @@
 
 client_id = "6b1ed5786311fcaad075b3a7cc5f348e"
 name = "MattressAI"
-application_url = "https://mattressaishopify-h5o6k4th9-blake-austins-projects.vercel.app/"
+application_url = "https://mattressaishopify.vercel.app/"
 embedded = true
 
 [build]
@@ -42,11 +42,11 @@ scopes = "read_customers,read_inventory,read_orders,read_products"
 
 [auth]
 redirect_urls = [
-  "https://mattressaishopify-h5o6k4th9-blake-austins-projects.vercel.app/auth/callback",
+  "https://mattressaishopify.vercel.app/auth/callback",
   "http://localhost:5174/auth/callback"
 ]
 
 [app_proxy]
-url = "https://mattressaishopify-h5o6k4th9-blake-austins-projects.vercel.app/apps/mattressai"
+url = "https://mattressaishopify.vercel.app/apps/mattressai"
 subpath = "mattressai"
 prefix = "apps"
