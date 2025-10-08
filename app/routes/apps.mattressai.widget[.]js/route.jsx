@@ -52,7 +52,9 @@ export const loader = async ({ request }) => {
         autoOpen: root.dataset.autoOpen === 'true',
         showCompare: root.dataset.showCompare === 'true',
         guidedMode: root.dataset.guidedMode === 'true',
-        primaryColor: root.dataset.primaryColor || '#2c5f2d'
+        primaryColor: root.dataset.primaryColor || '#2c5f2d',
+        widgetTitle: root.dataset.widgetTitle || 'MattressAI Assistant',
+        widgetSubtitle: root.dataset.widgetSubtitle || 'Find your perfect mattress'
       };
       
       // Set CSS custom properties
@@ -150,8 +152,8 @@ export const loader = async ({ request }) => {
       widget.innerHTML = \`
         <div class="mattressai-widget__header">
           <div class="mattressai-widget__header-content">
-            <h3 class="mattressai-widget__title">MattressAI Assistant</h3>
-            <p class="mattressai-widget__subtitle">Find your perfect mattress</p>
+            <h3 class="mattressai-widget__title">\${this.config.widgetTitle}</h3>
+            <p class="mattressai-widget__subtitle">\${this.config.widgetSubtitle}</p>
           </div>
           <button class="mattressai-widget__close" aria-label="Close chat">
             <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">

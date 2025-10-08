@@ -3,10 +3,53 @@
   "name": "MattressAI Widget",
   "target": "body",
   "settings": [
-    { "type": "checkbox", "id": "auto_open", "label": "Auto open on first visit", "default": false },
-    { "type": "checkbox", "id": "show_compare", "label": "Enable product comparison", "default": true },
-    { "type": "checkbox", "id": "guided_mode", "label": "Enable guided question mode", "default": true },
-    { "type": "color", "id": "primary_color", "label": "Primary color", "default": "#2c5f2d" }
+    { 
+      "type": "header",
+      "content": "Widget Appearance"
+    },
+    { 
+      "type": "text", 
+      "id": "widget_title", 
+      "label": "Widget title", 
+      "default": "MattressAI Assistant",
+      "info": "Main heading shown in the chat widget"
+    },
+    { 
+      "type": "text", 
+      "id": "widget_subtitle", 
+      "label": "Widget subtitle", 
+      "default": "Find your perfect mattress",
+      "info": "Subtitle shown below the title"
+    },
+    { 
+      "type": "color", 
+      "id": "primary_color", 
+      "label": "Primary color", 
+      "default": "#2c5f2d",
+      "info": "Color for buttons, header, and chat bubble"
+    },
+    { 
+      "type": "header",
+      "content": "Widget Behavior"
+    },
+    { 
+      "type": "checkbox", 
+      "id": "auto_open", 
+      "label": "Auto open on first visit", 
+      "default": false 
+    },
+    { 
+      "type": "checkbox", 
+      "id": "show_compare", 
+      "label": "Enable product comparison", 
+      "default": true 
+    },
+    { 
+      "type": "checkbox", 
+      "id": "guided_mode", 
+      "label": "Enable guided question mode", 
+      "default": true 
+    }
   ]
 }
 {% endschema %}
@@ -19,6 +62,8 @@
   data-show-compare="{{ block.settings.show_compare }}"
   data-guided-mode="{{ block.settings.guided_mode }}"
   data-primary-color="{{ block.settings.primary_color }}"
+  data-widget-title="{{ block.settings.widget_title | escape }}"
+  data-widget-subtitle="{{ block.settings.widget_subtitle | escape }}"
 ></div>
 
 <!-- Widget Assets -->
