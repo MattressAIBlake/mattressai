@@ -9,7 +9,8 @@ export const RuntimeRules = z.object({
     position: z.enum(['start', 'end']),
     fields: z.array(z.enum(['name', 'email', 'phone', 'zip']))
   }),
-  maxRecommendations: z.number().min(1).max(5)
+  maxRecommendations: z.number().min(1).max(5),
+  customQuestions: z.array(z.string()).optional()
 });
 
 export type RuntimeRulesType = z.infer<typeof RuntimeRules>;
@@ -33,7 +34,17 @@ export function createCompiledPrompt(rules: RuntimeRulesType): string {
     : 'no lead capture';
   const maxRecsText = `up to ${rules.maxRecommendations} recommendation${rules.maxRecommendations > 1 ? 's' : ''}`;
 
-  return `AI assistant configured with ${toneDescription} tone, ${questionLimitText} ${earlyExitText}, ${leadCaptureText}, and ${maxRecsText}.`;
+  let prompt = `AI assistant configured with ${toneDescription} tone, ${questionLimitText} ${earlyExitText}, ${leadCaptureText}, and ${maxRecsText}.`;
+
+  // Add custom questions if any
+  if (rules.customQuestions && rules.customQuestions.length > 0) {
+    prompt += `\n\nCustom questions to ask:\n`;
+    rules.customQuestions.forEach((question, index) => {
+      prompt += `${index + 1}. ${question}\n`;
+    });
+  }
+
+  return prompt;
 }
 
 /**

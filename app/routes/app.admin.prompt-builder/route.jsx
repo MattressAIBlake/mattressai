@@ -99,7 +99,8 @@ export async function action({ request }) {
             position: formData.get('leadCapturePosition'),
             fields: formData.getAll('leadCaptureFields')
           },
-          maxRecommendations: parseInt(formData.get('maxRecommendations'))
+          maxRecommendations: parseInt(formData.get('maxRecommendations')),
+          customQuestions: formData.getAll('customQuestions')
         };
 
         const compiledPrompt = createCompiledPrompt(runtimeRulesData);
@@ -162,11 +163,14 @@ export default function PromptBuilder() {
     leadCaptureEnabled: false,
     leadCapturePosition: 'end',
     leadCaptureFields: [],
-    maxRecommendations: 3
+    maxRecommendations: 3,
+    customQuestions: []
   });
   const [compiledPrompt, setCompiledPrompt] = useState('');
   const [showPreview, setShowPreview] = useState(false);
   const [isActivating, setIsActivating] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [newQuestion, setNewQuestion] = useState('');
 
   // Handle fetcher response
   useEffect(() => {
@@ -196,6 +200,25 @@ export default function PromptBuilder() {
     }));
   };
 
+  // Add custom question
+  const handleAddQuestion = () => {
+    if (newQuestion.trim()) {
+      setFormData(prev => ({
+        ...prev,
+        customQuestions: [...prev.customQuestions, newQuestion.trim()]
+      }));
+      setNewQuestion('');
+    }
+  };
+
+  // Remove custom question
+  const handleRemoveQuestion = (index) => {
+    setFormData(prev => ({
+      ...prev,
+      customQuestions: prev.customQuestions.filter((_, i) => i !== index)
+    }));
+  };
+
   // Navigate between steps
   const goToStep = (stepIndex) => {
     if (stepIndex >= 0 && stepIndex < steps.length) {
@@ -208,7 +231,10 @@ export default function PromptBuilder() {
   const handleCompilePreview = () => {
     const form = new FormData();
     Object.entries(formData).forEach(([key, value]) => {
-      if (Array.isArray(value)) {
+      if (key === 'customQuestions') {
+        // Handle custom questions specially
+        value.forEach(question => form.append('customQuestions', question));
+      } else if (Array.isArray(value)) {
         value.forEach(item => form.append(key, item));
       } else {
         form.append(key, value.toString());
@@ -225,7 +251,10 @@ export default function PromptBuilder() {
 
     const form = new FormData();
     Object.entries(formData).forEach(([key, value]) => {
-      if (Array.isArray(value)) {
+      if (key === 'customQuestions') {
+        // Handle custom questions specially
+        value.forEach(question => form.append('customQuestions', question));
+      } else if (Array.isArray(value)) {
         value.forEach(item => form.append(key, item));
       } else {
         form.append(key, value.toString());
@@ -331,6 +360,86 @@ export default function PromptBuilder() {
                   checked={formData.earlyExit}
                   onChange={checked => handleInputChange('earlyExit', checked)}
                 />
+              </div>
+
+              <Divider />
+
+              <div className="mt-8">
+                <div className="mb-5">
+                  <button
+                    type="button"
+                    onClick={() => setShowAdvanced(!showAdvanced)}
+                    className="flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium"
+                  >
+                    <span>{showAdvanced ? '▼' : '▶'}</span>
+                    <Text variant="headingSm" as="h4" fontWeight="semibold">
+                      Advanced: Custom Questions
+                    </Text>
+                  </button>
+                  <div className="mt-2">
+                    <Text variant="bodyMd" as="p" tone="subdued">
+                      Add your own specific questions for the AI to ask customers
+                    </Text>
+                  </div>
+                </div>
+
+                {showAdvanced && (
+                  <div className="mt-5 p-6 bg-gray-50 rounded-lg border border-gray-200">
+                    <div className="space-y-5">
+                      <div>
+                        <Text variant="bodyMd" as="p" tone="subdued">
+                          Write questions you want the AI to ask. These will be asked in addition to the AI's standard questions.
+                        </Text>
+                      </div>
+
+                      {/* Custom Questions List */}
+                      {formData.customQuestions.length > 0 && (
+                        <div className="space-y-3">
+                          {formData.customQuestions.map((question, index) => (
+                            <div key={index} className="flex items-start gap-3 p-4 bg-white rounded-lg border border-gray-200">
+                              <div className="flex-1">
+                                <Text variant="bodyMd" as="p">
+                                  {index + 1}. {question}
+                                </Text>
+                              </div>
+                              <Button
+                                size="slim"
+                                onClick={() => handleRemoveQuestion(index)}
+                                tone="critical"
+                              >
+                                Remove
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Add Question Input */}
+                      <div className="space-y-3">
+                        <TextField
+                          label="New question"
+                          labelHidden
+                          placeholder="e.g., Do you prefer a soft or firm mattress?"
+                          value={newQuestion}
+                          onChange={setNewQuestion}
+                          autoComplete="off"
+                          onKeyPress={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handleAddQuestion();
+                            }
+                          }}
+                        />
+                        <Button
+                          onClick={handleAddQuestion}
+                          disabled={!newQuestion.trim()}
+                        >
+                          Add Question
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </Card>
@@ -469,6 +578,26 @@ export default function PromptBuilder() {
                         </>
                       )}
                     </div>
+
+                    {formData.customQuestions.length > 0 && (
+                      <>
+                        <Divider />
+                        <div className="mt-6">
+                          <Text variant="headingSm" as="h4" fontWeight="semibold">
+                            Custom Questions ({formData.customQuestions.length})
+                          </Text>
+                          <div className="mt-4 space-y-2">
+                            {formData.customQuestions.map((question, index) => (
+                              <div key={index} className="p-4 bg-gray-50 rounded-lg">
+                                <Text variant="bodyMd" as="p">
+                                  {index + 1}. {question}
+                                </Text>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </Card>
 
