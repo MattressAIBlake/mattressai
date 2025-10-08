@@ -161,7 +161,7 @@ export default function CatalogIndexing() {
         {/* Configuration Section */}
         <Layout.Section>
           <Card>
-            <Card.Section>
+            <div>
               <Text variant="headingMd" as="h2">
                 Indexing Configuration
               </Text>
@@ -195,14 +195,14 @@ export default function CatalogIndexing() {
                   </div>
                 )}
               </div>
-            </Card.Section>
+            </div>
           </Card>
         </Layout.Section>
 
         {/* Current Job Status */}
         <Layout.Section>
           <Card>
-            <Card.Section>
+            <div>
               <div className="flex justify-between items-center mb-4">
                 <Text variant="headingMd" as="h2">
                   Current Status
@@ -332,14 +332,14 @@ export default function CatalogIndexing() {
                   )}
                 </div>
               )}
-            </Card.Section>
+            </div>
           </Card>
         </Layout.Section>
 
         {/* Recent Jobs */}
         <Layout.Section>
           <Card>
-            <Card.Section>
+            <div>
               <Text variant="headingMd" as="h2">
                 Recent Jobs
               </Text>
@@ -388,14 +388,14 @@ export default function CatalogIndexing() {
                   </List>
                 </div>
               )}
-            </Card.Section>
+            </div>
           </Card>
         </Layout.Section>
 
         {/* Information Section */}
         <Layout.Section>
           <Card>
-            <Card.Section>
+            <div>
               <Text variant="headingMd" as="h2">
                 About Catalog Indexing
               </Text>
@@ -436,7 +436,7 @@ export default function CatalogIndexing() {
                   </p>
                 </Banner>
               </div>
-            </Card.Section>
+            </div>
           </Card>
         </Layout.Section>
       </Layout>

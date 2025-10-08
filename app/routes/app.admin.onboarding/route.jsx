@@ -19,7 +19,7 @@ export default function Onboarding() {
       <Layout>
         <Layout.Section>
           <Card>
-            <Card.Section>
+            <div>
               <Text variant="headingMd" as="h2">
                 🚀 Setup Complete!
               </Text>
@@ -28,8 +28,8 @@ export default function Onboarding() {
                 Your MattressAI app has been installed successfully. To start helping customers on your storefront,
                 you need to activate the App Embed block.
               </Text>
-            </Card.Section>
-            <Card.Section>
+            </div>
+            <div>
               <Button
                 primary
                 size="large"
@@ -37,13 +37,13 @@ export default function Onboarding() {
               >
                 Activate Storefront App Embed
               </Button>
-            </Card.Section>
+            </div>
           </Card>
         </Layout.Section>
 
         <Layout.Section>
           <Card>
-            <Card.Section>
+            <div>
               <Text variant="headingMd" as="h3">
                 📋 Next Steps
               </Text>
@@ -57,7 +57,7 @@ export default function Onboarding() {
                 <li>• Configure widget settings in Theme Customizer</li>
                 <li>• Monitor conversations in your admin dashboard</li>
               </ul>
-            </Card.Section>
+            </div>
           </Card>
         </Layout.Section>
       </Layout>

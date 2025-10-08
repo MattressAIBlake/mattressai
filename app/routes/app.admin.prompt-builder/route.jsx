@@ -262,7 +262,7 @@ export default function PromptBuilder() {
     switch (currentStep) {
       case 0: // Tone & Style
         return (
-          <Card.Section>
+          <div>
             <FormLayout>
               <div className="space-y-4">
                 {toneOptions.map(option => (
@@ -279,12 +279,12 @@ export default function PromptBuilder() {
                 ))}
               </div>
             </FormLayout>
-          </Card.Section>
+          </div>
         );
 
       case 1: // Question Limit
         return (
-          <Card.Section>
+          <div>
             <FormLayout>
               <div className="space-y-6">
                 <div>
@@ -314,12 +314,12 @@ export default function PromptBuilder() {
                 />
               </div>
             </FormLayout>
-          </Card.Section>
+          </div>
         );
 
       case 2: // Lead Capture
         return (
-          <Card.Section>
+          <div>
             <FormLayout>
               <div className="space-y-6">
                 <Checkbox
@@ -356,12 +356,12 @@ export default function PromptBuilder() {
                 )}
               </div>
             </FormLayout>
-          </Card.Section>
+          </div>
         );
 
       case 3: // Review & Activate
         return (
-          <Card.Section>
+          <div>
             <div className="space-y-6">
               {!showPreview ? (
                 <div className="text-center py-8">
@@ -376,7 +376,7 @@ export default function PromptBuilder() {
                   </Banner>
 
                   <Card>
-                    <Card.Section>
+                    <div>
                       <Text variant="headingSm" as="h4">
                         Configuration Summary:
                       </Text>
@@ -393,11 +393,11 @@ export default function PromptBuilder() {
                         )}
                         <div><strong>Max Recommendations:</strong> {formData.maxRecommendations}</div>
                       </div>
-                    </Card.Section>
+                    </div>
                   </Card>
 
                   <Card>
-                    <Card.Section>
+                    <div>
                       <Text variant="headingSm" as="h4">
                         Generated Prompt:
                       </Text>
@@ -406,7 +406,7 @@ export default function PromptBuilder() {
                           {compiledPrompt}
                         </Text>
                       </div>
-                    </Card.Section>
+                    </div>
                   </Card>
 
                   <div className="flex gap-3 justify-end">
@@ -424,7 +424,7 @@ export default function PromptBuilder() {
                 </div>
               )}
             </div>
-          </Card.Section>
+          </div>
         );
 
       default:
@@ -444,7 +444,7 @@ export default function PromptBuilder() {
         <Layout.Section>
           {/* Progress indicator */}
           <Card>
-            <Card.Section>
+            <div>
               <div className="mb-6">
                 <ProgressBar
                   progress={(currentStep + 1) / steps.length * 100}
@@ -473,12 +473,12 @@ export default function PromptBuilder() {
                   </div>
                 ))}
               </div>
-            </Card.Section>
+            </div>
           </Card>
 
           {/* Step content */}
           <Card>
-            <Card.Section>
+            <div>
               <div className="mb-6">
                 <Text variant="headingLg" as="h2">
                   {steps[currentStep].title}
@@ -489,11 +489,11 @@ export default function PromptBuilder() {
               </div>
 
               {renderStepContent()}
-            </Card.Section>
+            </div>
 
             {/* Navigation buttons */}
             {currentStep < steps.length - 1 && (
-              <Card.Section>
+              <div>
                 <div className="flex justify-between">
                   <Button
                     disabled={currentStep === 0}
@@ -508,7 +508,7 @@ export default function PromptBuilder() {
                     Next
                   </Button>
                 </div>
-              </Card.Section>
+              </div>
             )}
           </Card>
         </Layout.Section>
