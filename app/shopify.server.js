@@ -13,15 +13,18 @@ const appUrl = process.env.SHOPIFY_APP_URL ||
   "https://placeholder.com"; // Fallback to prevent crash
 
 // Log environment variables for debugging
-console.log('🔧 SHOPIFY CONFIG:', {
-  SHOPIFY_APP_URL: process.env.SHOPIFY_APP_URL || '❌ MISSING',
-  HOST: process.env.HOST || '❌ MISSING',
-  SHOPIFY_API_KEY: process.env.SHOPIFY_API_KEY || '❌ MISSING',
-  SHOPIFY_API_SECRET: process.env.SHOPIFY_API_SECRET ? '✅ SET' : '❌ MISSING',
-  SCOPES: process.env.SCOPES || '❌ MISSING',
-  NODE_ENV: process.env.NODE_ENV,
-  appUrl: appUrl,
-});
+console.log('========================================');
+console.log('🔧 SHOPIFY CONFIG DEBUG:');
+console.log('========================================');
+console.log('SHOPIFY_APP_URL (raw):', JSON.stringify(process.env.SHOPIFY_APP_URL));
+console.log('HOST (raw):', JSON.stringify(process.env.HOST));
+console.log('SHOPIFY_API_KEY:', process.env.SHOPIFY_API_KEY ? '✅ SET' : '❌ MISSING');
+console.log('SHOPIFY_API_SECRET:', process.env.SHOPIFY_API_SECRET ? '✅ SET' : '❌ MISSING');
+console.log('SCOPES:', process.env.SCOPES || '❌ MISSING');
+console.log('NODE_ENV:', process.env.NODE_ENV);
+console.log('========================================');
+console.log('COMPUTED appUrl:', JSON.stringify(appUrl));
+console.log('========================================');
 
 const shopify = shopifyApp({
   apiKey: process.env.SHOPIFY_API_KEY || "placeholder",
