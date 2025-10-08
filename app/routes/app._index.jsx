@@ -11,24 +11,6 @@ import {
 import { TitleBar } from "@shopify/app-bridge-react";
 import { useNavigate } from "@remix-run/react";
 
-// Modern gradient button style
-const gradientButtonStyle = {
-  background: 'linear-gradient(135deg, #5B8DEE 0%, #0BC5EA 50%, #48BB78 100%)',
-  border: 'none',
-  color: 'white',
-  fontWeight: '600',
-  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-  transition: 'all 0.3s ease',
-};
-
-// Gradient text style for headings
-const gradientTextStyle = {
-  background: 'linear-gradient(135deg, #5B8DEE 0%, #0BC5EA 50%, #48BB78 100%)',
-  WebkitBackgroundClip: 'text',
-  WebkitTextFillColor: 'transparent',
-  backgroundClip: 'text',
-};
-
 export default function Index() {
   const navigate = useNavigate();
 
@@ -40,11 +22,9 @@ export default function Index() {
           <Layout.Section>
             <Card>
               <BlockStack gap="400">
-                <div style={gradientTextStyle}>
-                  <Text as="h1" variant="headingXl" fontWeight="bold">
-                    Welcome to MattressAI
-                  </Text>
-                </div>
+                <Text as="h1" variant="headingXl" fontWeight="bold">
+                  Welcome to MattressAI
+                </Text>
                 <Text variant="bodyLg" as="p" tone="subdued">
                   Deploy AI assistants across sales channels to engage shoppers, match their needs, 
                   and boost conversions beyond price-driven decisions.
@@ -69,20 +49,13 @@ export default function Index() {
                       <Text variant="bodyMd" tone="subdued">
                         Index your products for AI recommendations
                       </Text>
-                      <div style={gradientButtonStyle} onMouseOver={(e) => {
-                        e.currentTarget.style.transform = 'translateY(-2px)';
-                        e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)';
-                      }} onMouseOut={(e) => {
-                        e.currentTarget.style.transform = 'translateY(0)';
-                        e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)';
-                      }}>
-                        <Button 
-                          onClick={() => navigate("/app/admin/catalog-indexing")} 
-                          fullWidth
-                        >
-                          Manage Catalog
-                        </Button>
-                      </div>
+                      <Button 
+                        onClick={() => navigate("/app/admin/catalog-indexing")} 
+                        variant="primary"
+                        fullWidth
+                      >
+                        Manage Catalog
+                      </Button>
                     </BlockStack>
                   </Card>
                 </Layout.Section>
@@ -96,20 +69,12 @@ export default function Index() {
                       <Text variant="bodyMd" tone="subdued">
                         Customize AI behavior and responses
                       </Text>
-                      <div style={gradientButtonStyle} onMouseOver={(e) => {
-                        e.currentTarget.style.transform = 'translateY(-2px)';
-                        e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)';
-                      }} onMouseOut={(e) => {
-                        e.currentTarget.style.transform = 'translateY(0)';
-                        e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)';
-                      }}>
-                        <Button 
-                          onClick={() => navigate("/app/admin/prompt-builder")} 
-                          fullWidth
-                        >
-                          Build Prompts
-                        </Button>
-                      </div>
+                      <Button 
+                        onClick={() => navigate("/app/admin/prompt-builder")} 
+                        fullWidth
+                      >
+                        Build Prompts
+                      </Button>
                     </BlockStack>
                   </Card>
                 </Layout.Section>
@@ -123,20 +88,12 @@ export default function Index() {
                       <Text variant="bodyMd" tone="subdued">
                         Track conversations and conversions
                       </Text>
-                      <div style={gradientButtonStyle} onMouseOver={(e) => {
-                        e.currentTarget.style.transform = 'translateY(-2px)';
-                        e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)';
-                      }} onMouseOut={(e) => {
-                        e.currentTarget.style.transform = 'translateY(0)';
-                        e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)';
-                      }}>
-                        <Button 
-                          onClick={() => navigate("/app/admin/analytics-dashboard")} 
-                          fullWidth
-                        >
-                          View Analytics
-                        </Button>
-                      </div>
+                      <Button 
+                        onClick={() => navigate("/app/admin/analytics-dashboard")} 
+                        fullWidth
+                      >
+                        View Analytics
+                      </Button>
                     </BlockStack>
                   </Card>
                 </Layout.Section>
@@ -152,20 +109,12 @@ export default function Index() {
                       <Text variant="bodyMd" tone="subdued">
                         Manage customer inquiries and contacts
                       </Text>
-                      <div style={gradientButtonStyle} onMouseOver={(e) => {
-                        e.currentTarget.style.transform = 'translateY(-2px)';
-                        e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)';
-                      }} onMouseOut={(e) => {
-                        e.currentTarget.style.transform = 'translateY(0)';
-                        e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)';
-                      }}>
-                        <Button 
-                          onClick={() => navigate("/app/admin/leads-management")} 
-                          fullWidth
-                        >
-                          View Leads
-                        </Button>
-                      </div>
+                      <Button 
+                        onClick={() => navigate("/app/admin/leads-management")} 
+                        fullWidth
+                      >
+                        View Leads
+                      </Button>
                     </BlockStack>
                   </Card>
                 </Layout.Section>
@@ -179,20 +128,12 @@ export default function Index() {
                       <Text variant="bodyMd" tone="subdued">
                         Experiment with prompts and recommendations
                       </Text>
-                      <div style={gradientButtonStyle} onMouseOver={(e) => {
-                        e.currentTarget.style.transform = 'translateY(-2px)';
-                        e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)';
-                      }} onMouseOut={(e) => {
-                        e.currentTarget.style.transform = 'translateY(0)';
-                        e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)';
-                      }}>
-                        <Button 
-                          onClick={() => navigate("/app/admin/experiments")} 
-                          fullWidth
-                        >
-                          Run Experiments
-                        </Button>
-                      </div>
+                      <Button 
+                        onClick={() => navigate("/app/admin/experiments")} 
+                        fullWidth
+                      >
+                        Run Experiments
+                      </Button>
                     </BlockStack>
                   </Card>
                 </Layout.Section>
@@ -206,20 +147,12 @@ export default function Index() {
                       <Text variant="bodyMd" tone="subdued">
                         View usage and upgrade options
                       </Text>
-                      <div style={gradientButtonStyle} onMouseOver={(e) => {
-                        e.currentTarget.style.transform = 'translateY(-2px)';
-                        e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)';
-                      }} onMouseOut={(e) => {
-                        e.currentTarget.style.transform = 'translateY(0)';
-                        e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)';
-                      }}>
-                        <Button 
-                          onClick={() => navigate("/app/admin/plans")} 
-                          fullWidth
-                        >
-                          Manage Plan
-                        </Button>
-                      </div>
+                      <Button 
+                        onClick={() => navigate("/app/admin/plans")} 
+                        fullWidth
+                      >
+                        Manage Plan
+                      </Button>
                     </BlockStack>
                   </Card>
                 </Layout.Section>
@@ -241,21 +174,14 @@ export default function Index() {
                     <Text variant="bodyMd">3. Enable the theme extension</Text>
                     <Text variant="bodyMd">4. Test on your storefront</Text>
                   </BlockStack>
-                  <div style={gradientButtonStyle} onMouseOver={(e) => {
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                    e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)';
-                  }} onMouseOut={(e) => {
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)';
-                  }}>
-                    <Button 
-                      url="https://docs.mattressai.com" 
-                      external
-                      fullWidth
-                    >
-                      View Documentation
-                    </Button>
-                  </div>
+                  <Button 
+                    url="https://docs.mattressai.com" 
+                    external
+                    variant="primary"
+                    fullWidth
+                  >
+                    View Documentation
+                  </Button>
                 </BlockStack>
               </Card>
 
