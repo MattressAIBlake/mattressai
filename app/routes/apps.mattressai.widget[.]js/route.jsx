@@ -65,9 +65,7 @@ export const loader = async ({ request }) => {
         bubbleSize: parseInt(root.dataset.bubbleSize || '64', 10),
         positionHorizontal: root.dataset.positionHorizontal || 'right',
         positionBottom: parseInt(root.dataset.positionBottom || '20', 10),
-        positionSide: parseInt(root.dataset.positionSide || '20', 10),
-        widgetWidth: parseInt(root.dataset.widgetWidth || '360', 10),
-        widgetHeight: parseInt(root.dataset.widgetHeight || '550', 10)
+        positionSide: parseInt(root.dataset.positionSide || '20', 10)
       };
       
       // Set CSS custom properties
@@ -75,8 +73,6 @@ export const loader = async ({ request }) => {
       document.documentElement.style.setProperty('--mattress-bubble-size', this.config.bubbleSize + 'px');
       document.documentElement.style.setProperty('--mattress-position-bottom', this.config.positionBottom + 'px');
       document.documentElement.style.setProperty('--mattress-position-side', this.config.positionSide + 'px');
-      document.documentElement.style.setProperty('--mattress-widget-width', this.config.widgetWidth + 'px');
-      document.documentElement.style.setProperty('--mattress-widget-height', this.config.widgetHeight + 'px');
       
       // Set position classes
       document.body.classList.add('mattressai-position-' + this.config.positionHorizontal);
@@ -792,7 +788,7 @@ export const loader = async ({ request }) => {
     .mattressai-bubble-text,
     .mattressai-bubble-icon_text {
       border-radius: calc(var(--mattress-bubble-size, 64px) / 2);
-      padding: 0 20px;
+      padding: 0 16px;
       width: auto;
       min-width: auto;
     }
@@ -844,9 +840,9 @@ export const loader = async ({ request }) => {
     .mattressai-widget {
       position: fixed;
       bottom: var(--mattress-position-bottom, 20px);
-      width: var(--mattress-widget-width, 360px);
+      width: 360px;
       max-width: calc(100vw - 40px);
-      height: var(--mattress-widget-height, 550px);
+      height: 550px;
       max-height: calc(100vh - 100px);
       background: var(--mattress-bg, white);
       border-radius: var(--mattress-radius, 12px);

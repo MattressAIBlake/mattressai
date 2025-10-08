@@ -108,32 +108,6 @@
     },
     { 
       "type": "header",
-      "content": "Widget Size"
-    },
-    { 
-      "type": "range", 
-      "id": "widget_width", 
-      "label": "Widget width", 
-      "min": 300,
-      "max": 500,
-      "step": 20,
-      "unit": "px",
-      "default": 360,
-      "info": "Width of the chat widget (desktop)"
-    },
-    { 
-      "type": "range", 
-      "id": "widget_height", 
-      "label": "Widget height", 
-      "min": 400,
-      "max": 700,
-      "step": 25,
-      "unit": "px",
-      "default": 550,
-      "info": "Height of the chat widget (desktop)"
-    },
-    { 
-      "type": "header",
       "content": "Widget Behavior"
     },
     { 
@@ -175,11 +149,9 @@
   data-position-horizontal="{{ block.settings.position_horizontal }}"
   data-position-bottom="{{ block.settings.position_bottom }}"
   data-position-side="{{ block.settings.position_side }}"
-  data-widget-width="{{ block.settings.widget_width }}"
-  data-widget-height="{{ block.settings.widget_height }}"
 ></div>
 
 <!-- Widget Assets -->
 <script src="{{ 'tracking.js' | asset_url }}" data-tenant="{{ shop.permanent_domain | escape }}" defer></script>
-<script src="{{ shop.url }}/apps/mattressai/widget.js?v=12" data-tenant="{{ shop.permanent_domain | escape }}" defer></script>
+<script src="{{ shop.url }}/apps/mattressai/widget.js?v=13" data-tenant="{{ shop.permanent_domain | escape }}" defer></script>
 <link rel="stylesheet" href="{{ 'widget.css' | asset_url }}">
