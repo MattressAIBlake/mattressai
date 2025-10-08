@@ -59,7 +59,7 @@ export const loader = async ({ request }) => {
         primaryColor: root.dataset.primaryColor || '#2c5f2d',
         widgetTitle: root.dataset.widgetTitle || 'MattressAI Assistant',
         widgetSubtitle: root.dataset.widgetSubtitle || 'Find your perfect mattress',
-        welcomeMessage: root.dataset.welcomeMessage || 'Hi! I\'m here to help you find the perfect mattress. What type of sleeper are you?',
+        welcomeMessage: root.dataset.welcomeMessage || 'Hi! I\\'m here to help you find the perfect mattress. What type of sleeper are you?',
         bubbleStyle: root.dataset.bubbleStyle || 'icon',
         bubbleText: root.dataset.bubbleText || 'Chat',
         bubbleSize: parseInt(root.dataset.bubbleSize || '56', 10),

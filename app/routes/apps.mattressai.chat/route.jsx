@@ -97,13 +97,13 @@ async function handleChatSession({
   promptType,
   stream
 }) {
-  // Initialize services
-  const openaiService = createOpenAIService();
-  const toolService = createToolService();
-
-  // Initialize MCP client
+  // Initialize MCP client first to get shop domain
   const url = new URL(request.url);
   const shopDomain = url.searchParams.get('shop') || request.headers.get('Origin');
+  
+  // Initialize services with shop domain for custom prompts
+  const openaiService = createOpenAIService(undefined, shopDomain);
+  const toolService = createToolService();
   const customerMcpEndpoint = await getCustomerMcpEndpoint(shopDomain, conversationId);
   const mcpClient = new MCPClient(
     shopDomain,

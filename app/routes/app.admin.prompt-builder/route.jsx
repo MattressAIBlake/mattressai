@@ -22,6 +22,7 @@ import {
 import { authenticate } from '~/shopify.server';
 import { createCompiledPrompt, validateRuntimeRules } from '~/lib/domain/runtimeRules';
 import { createPromptVersion } from '~/lib/domain/promptVersion.server';
+import prisma from '~/db.server';
 
 // Step definitions
 const STEPS = [
@@ -141,9 +142,15 @@ export async function action({ request }) {
         // Create compiled prompt
         const compiledPrompt = createCompiledPrompt(runtimeRules);
 
+        // Deactivate all previous versions for this tenant
+        await prisma.promptVersion.updateMany({
+          where: { tenant: session.shop, isActive: true },
+          data: { isActive: false }
+        });
+
         // Create and activate the prompt version
         const promptVersion = await createPromptVersion({
-          tenant: shop,
+          tenant: session.shop,
           runtimeRules,
           isActive: true
         });

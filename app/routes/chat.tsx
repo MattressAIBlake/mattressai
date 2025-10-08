@@ -127,13 +127,13 @@ async function handleChatSession({
   promptType,
   stream
 }) {
-  // Initialize services
-  const openaiService = createOpenAIService();
-  const toolService = createToolService();
-
-  // Initialize MCP client
+  // Get shop info first
   const shopId = request.headers.get("X-Shopify-Shop-Id");
   const shopDomain = request.headers.get("Origin");
+  
+  // Initialize services with shop domain for custom prompts
+  const openaiService = createOpenAIService(undefined, shopDomain);
+  const toolService = createToolService();
   const customerMcpEndpoint = await getCustomerMcpEndpoint(shopDomain, conversationId);
   const mcpClient = new MCPClient(
     shopDomain,

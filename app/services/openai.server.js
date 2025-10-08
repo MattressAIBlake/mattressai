@@ -5,13 +5,15 @@
 import OpenAI from "openai";
 import AppConfig from "./config.server";
 import systemPrompts from "../prompts/prompts.json";
+import { getActivePromptVersion } from "~/lib/domain/promptVersion.server";
 
 /**
  * Creates an OpenAI service instance
  * @param {string} apiKey - OpenAI API key
+ * @param {string} shop - Shop domain (tenant) for loading custom prompts
  * @returns {Object} OpenAI service with methods for interacting with OpenAI API
  */
-export function createOpenAIService(apiKey = process.env.OPENAI_API_KEY) {
+export function createOpenAIService(apiKey = process.env.OPENAI_API_KEY, shop = null) {
   // Initialize OpenAI client
   const openai = new OpenAI({ apiKey });
 
@@ -33,7 +35,7 @@ export function createOpenAIService(apiKey = process.env.OPENAI_API_KEY) {
     tools
   }, streamHandlers) => {
     // Get system prompt from configuration or use default
-    const systemInstruction = getSystemPrompt(promptType);
+    const systemInstruction = await getSystemPrompt(promptType);
 
     // Convert messages to OpenAI format with system message
     const openAIMessages = [
@@ -174,9 +176,24 @@ export function createOpenAIService(apiKey = process.env.OPENAI_API_KEY) {
   /**
    * Gets the system prompt content for a given prompt type
    * @param {string} promptType - The prompt type to retrieve
-   * @returns {string} The system prompt content
+   * @returns {Promise<string>} The system prompt content
    */
-  const getSystemPrompt = (promptType) => {
+  const getSystemPrompt = async (promptType) => {
+    // If shop is provided, try to load active prompt version from database
+    if (shop) {
+      try {
+        const activePrompt = await getActivePromptVersion(shop);
+        if (activePrompt && activePrompt.compiledPrompt) {
+          console.log(`Using custom prompt version for shop: ${shop}`);
+          return activePrompt.compiledPrompt;
+        }
+      } catch (error) {
+        console.error('Error loading active prompt version:', error);
+        // Fall through to use default prompt
+      }
+    }
+
+    // Fall back to static prompts from JSON file
     return systemPrompts.systemPrompts[promptType]?.content ||
       systemPrompts.systemPrompts[AppConfig.api.defaultPromptType].content;
   };
