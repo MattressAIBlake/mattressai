@@ -14,7 +14,7 @@ export const loader = async ({ request }) => {
   // Allow CORS for storefront access
   const headers = {
     'Content-Type': 'application/javascript; charset=utf-8',
-    'Cache-Control': 'public, max-age=3600',
+    'Cache-Control': 'no-cache, no-store, must-revalidate', // Temporarily disable caching for testing
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type'
