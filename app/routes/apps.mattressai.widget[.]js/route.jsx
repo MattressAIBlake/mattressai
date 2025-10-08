@@ -621,15 +621,20 @@ export const loader = async ({ request }) => {
       border-radius: 12px;
       max-width: 240px;
       word-wrap: break-word;
+      word-break: normal;
+      overflow-wrap: break-word;
+      hyphens: none;
       box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-      line-height: 1.4;
+      line-height: 1.5;
       font-size: 14px;
       color: #374151;
+      white-space: pre-wrap;
     }
     
     .mattressai-message--user .mattressai-message__content {
       background: var(--mattress-primary, #2c5f2d);
       color: white;
+      word-break: normal;
     }
     
     /* Loading Animation */
@@ -836,7 +841,9 @@ export const loader = async ({ request }) => {
       }
       
       .mattressai-message__content {
-        max-width: 75%;
+        max-width: 80%;
+        word-break: normal;
+        overflow-wrap: break-word;
       }
     }
   \`;
