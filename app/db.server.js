@@ -1,12 +1,24 @@
 import { PrismaClient } from "@prisma/client";
 
+const prismaOptions = {
+  datasources: {
+    db: {
+      url: process.env.DATABASE_URL,
+    },
+  },
+  // Disable prepared statements for PgBouncer compatibility
+  ...(process.env.DATABASE_URL?.includes('pooler.supabase.com') && {
+    engineType: 'binary',
+  }),
+};
+
 if (process.env.NODE_ENV !== "production") {
   if (!global.prismaGlobal) {
-    global.prismaGlobal = new PrismaClient();
+    global.prismaGlobal = new PrismaClient(prismaOptions);
   }
 }
 
-const prisma = global.prismaGlobal ?? new PrismaClient();
+const prisma = global.prismaGlobal ?? new PrismaClient(prismaOptions);
 
 export default prisma;
 
