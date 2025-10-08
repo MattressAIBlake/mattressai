@@ -42,9 +42,9 @@ export default function Index() {
                     <BlockStack gap="200">
                       <Text as="h3" variant="headingMd">📦 Catalog</Text>
                       <Text variant="bodyMd">Index your products for AI recommendations</Text>
-                      <Button onClick={() => navigate("/admin/catalog-indexing")} fullWidth>
-                        Manage Catalog
-                      </Button>
+                              <Button onClick={() => navigate("/app/admin/catalog-indexing")} fullWidth>
+                                Manage Catalog
+                              </Button>
                     </BlockStack>
                   </Card>
                 </Layout.Section>
@@ -54,9 +54,9 @@ export default function Index() {
                     <BlockStack gap="200">
                       <Text as="h3" variant="headingMd">✍️ Prompts</Text>
                       <Text variant="bodyMd">Customize AI behavior and responses</Text>
-                      <Button onClick={() => navigate("/admin/prompt-builder")} fullWidth>
-                        Build Prompts
-                      </Button>
+                              <Button onClick={() => navigate("/app/admin/prompt-builder")} fullWidth>
+                                Build Prompts
+                              </Button>
                     </BlockStack>
                   </Card>
                 </Layout.Section>
@@ -66,9 +66,9 @@ export default function Index() {
                     <BlockStack gap="200">
                       <Text as="h3" variant="headingMd">📊 Analytics</Text>
                       <Text variant="bodyMd">Track conversations and conversions</Text>
-                      <Button onClick={() => navigate("/admin/analytics-dashboard")} fullWidth>
-                        View Analytics
-                      </Button>
+                              <Button onClick={() => navigate("/app/admin/analytics-dashboard")} fullWidth>
+                                View Analytics
+                              </Button>
                     </BlockStack>
                   </Card>
                 </Layout.Section>
@@ -80,9 +80,9 @@ export default function Index() {
                     <BlockStack gap="200">
                       <Text as="h3" variant="headingMd">👥 Leads</Text>
                       <Text variant="bodyMd">Manage customer inquiries</Text>
-                      <Button onClick={() => navigate("/admin/leads-management")} fullWidth>
-                        View Leads
-                      </Button>
+                              <Button onClick={() => navigate("/app/admin/leads-management")} fullWidth>
+                                View Leads
+                              </Button>
                     </BlockStack>
                   </Card>
                 </Layout.Section>
@@ -92,9 +92,9 @@ export default function Index() {
                     <BlockStack gap="200">
                       <Text as="h3" variant="headingMd">🧪 Experiments</Text>
                       <Text variant="bodyMd">A/B test prompts and recommendations</Text>
-                      <Button onClick={() => navigate("/admin/experiments")} fullWidth>
-                        Run Experiments
-                      </Button>
+                              <Button onClick={() => navigate("/app/admin/experiments")} fullWidth>
+                                Run Experiments
+                              </Button>
                     </BlockStack>
                   </Card>
                 </Layout.Section>
@@ -104,9 +104,9 @@ export default function Index() {
                     <BlockStack gap="200">
                       <Text as="h3" variant="headingMd">💳 Plans</Text>
                       <Text variant="bodyMd">View usage and upgrade options</Text>
-                      <Button onClick={() => navigate("/admin/plans")} fullWidth>
-                        Manage Plan
-                      </Button>
+                              <Button onClick={() => navigate("/app/admin/plans")} fullWidth>
+                                Manage Plan
+                              </Button>
                     </BlockStack>
                   </Card>
                 </Layout.Section>
@@ -139,9 +139,9 @@ export default function Index() {
                 <BlockStack gap="200">
                   <Text as="h3" variant="headingMd">🔔 Alerts</Text>
                   <Text variant="bodyMd">Monitor system health and notifications</Text>
-                  <Button onClick={() => navigate("/admin/alerts-management")} fullWidth>
-                    View Alerts
-                  </Button>
+                              <Button onClick={() => navigate("/app/admin/alerts-management")} fullWidth>
+                                View Alerts
+                              </Button>
                 </BlockStack>
               </Card>
             </BlockStack>
