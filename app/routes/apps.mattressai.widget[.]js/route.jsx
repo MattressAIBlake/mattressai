@@ -62,7 +62,7 @@ export const loader = async ({ request }) => {
         welcomeMessage: root.dataset.welcomeMessage || 'Hi! I\\'m here to help you find the perfect mattress. What type of sleeper are you?',
         bubbleStyle: root.dataset.bubbleStyle || 'icon',
         bubbleText: root.dataset.bubbleText || 'Chat',
-        bubbleSize: parseInt(root.dataset.bubbleSize || '56', 10),
+        bubbleSize: parseInt(root.dataset.bubbleSize || '64', 10),
         positionHorizontal: root.dataset.positionHorizontal || 'right',
         positionBottom: parseInt(root.dataset.positionBottom || '20', 10),
         positionSide: parseInt(root.dataset.positionSide || '20', 10),
@@ -752,8 +752,8 @@ export const loader = async ({ request }) => {
     .mattressai-chat-bubble {
       position: fixed;
       bottom: var(--mattress-position-bottom, 20px);
-      width: var(--mattress-bubble-size, 56px);
-      height: var(--mattress-bubble-size, 56px);
+      min-width: var(--mattress-bubble-size, 64px);
+      height: var(--mattress-bubble-size, 64px);
       border-radius: 50%;
       background: var(--mattress-primary, #2c5f2d);
       color: white;
@@ -763,12 +763,12 @@ export const loader = async ({ request }) => {
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 6px;
+      gap: 8px;
       transition: transform 0.2s ease, box-shadow 0.2s ease;
       z-index: 9999;
       animation: slideUp 0.3s ease;
-      padding: 0 12px;
-      font-size: 14px;
+      padding: 0;
+      font-size: 15px;
       font-weight: 600;
       white-space: nowrap;
     }
@@ -788,12 +788,15 @@ export const loader = async ({ request }) => {
     /* Bubble styles */
     .mattressai-bubble-icon {
       border-radius: 50%;
+      width: var(--mattress-bubble-size, 64px);
     }
     
     .mattressai-bubble-text,
     .mattressai-bubble-icon_text {
-      border-radius: 28px;
-      padding: 0 16px;
+      border-radius: calc(var(--mattress-bubble-size, 64px) / 2);
+      padding: 0 20px;
+      width: auto;
+      min-width: auto;
     }
     
     @media (prefers-reduced-motion: reduce) {
@@ -807,14 +810,17 @@ export const loader = async ({ request }) => {
       box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
     }
     
+    /* Icon sizing */
     .mattressai-bubble-icon {
-      width: calc(var(--mattress-bubble-size, 56px) * 0.4);
-      height: calc(var(--mattress-bubble-size, 56px) * 0.4);
+      width: calc(var(--mattress-bubble-size, 64px) * 0.42);
+      height: calc(var(--mattress-bubble-size, 64px) * 0.42);
       flex-shrink: 0;
     }
     
+    /* Text sizing - responsive to bubble height */
     .mattressai-bubble-text {
-      font-size: calc(var(--mattress-bubble-size, 56px) * 0.25);
+      font-size: clamp(14px, calc(var(--mattress-bubble-size, 64px) * 0.24), 18px);
+      line-height: 1.2;
     }
     
     /* Unread Badge */

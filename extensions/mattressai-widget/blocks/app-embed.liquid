@@ -62,12 +62,12 @@
       "type": "range", 
       "id": "bubble_size", 
       "label": "Bubble size", 
-      "min": 48,
+      "min": 52,
       "max": 80,
       "step": 4,
       "unit": "px",
-      "default": 56,
-      "info": "Size of the chat bubble button"
+      "default": 64,
+      "info": "Height of the chat bubble button"
     },
     { 
       "type": "header",
@@ -181,5 +181,5 @@
 
 <!-- Widget Assets -->
 <script src="{{ 'tracking.js' | asset_url }}" data-tenant="{{ shop.permanent_domain | escape }}" defer></script>
-<script src="{{ shop.url }}/apps/mattressai/widget.js?v=10" data-tenant="{{ shop.permanent_domain | escape }}" defer></script>
+<script src="{{ shop.url }}/apps/mattressai/widget.js?v=11" data-tenant="{{ shop.permanent_domain | escape }}" defer></script>
 <link rel="stylesheet" href="{{ 'widget.css' | asset_url }}">
