@@ -2,7 +2,7 @@
   "name": "shop-chat-agent",
   "private": true,
   "scripts": {
-    "build": "prisma migrate resolve --applied 20240530213853_create_session_table || true && prisma migrate deploy && remix vite:build",
+    "build": "npx prisma db push && remix vite:build",
     "postinstall": "prisma generate",
     "dev": "shopify app dev",
     "config:link": "shopify app config link",

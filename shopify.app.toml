@@ -5,28 +5,31 @@ name = "MattressAI"
 application_url = "https://mattressaishopify-h5o6k4th9-blake-austins-projects.vercel.app/"
 embedded = true
 
+[build]
+automatically_update_urls_on_dev = true
+
 [webhooks]
 api_version = "2025-10"
 
   [[webhooks.subscriptions]]
   topics = [
-  "products/update",
-  "shop/update",
-  "orders/create",
-  "inventory_levels/update",
-  "customers/delete",
-  "orders/updated",
   "app/uninstalled",
+  "orders/fulfilled",
+  "products/delete",
+  "products/create",
+  "orders/updated",
+  "products/update",
+  "inventory_levels/update",
   "app_subscriptions/update",
   "orders/paid",
-  "products/create",
+  "shop/update",
+  "orders/create",
   "orders/cancelled",
   "customers/create",
   "customers/update",
-  "orders/fulfilled",
-  "products/delete"
+  "customers/delete"
 ]
-  uri = "https://mattressaishopify-h5o6k4th9-blake-austins-projects.vercel.app/api/webhooks"
+  uri = "/api/webhooks"
   compliance_topics = [ "customers/data_request", "customers/redact", "shop/redact" ]
 
 [access.admin]
@@ -47,6 +50,3 @@ redirect_urls = [
 url = "https://mattressaishopify-h5o6k4th9-blake-austins-projects.vercel.app/apps/mattressai"
 subpath = "mattressai"
 prefix = "apps"
-
-[build]
-automatically_update_urls_on_dev = true
