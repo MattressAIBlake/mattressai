@@ -6,10 +6,10 @@
 
 /* Root variables for consistent theming */
 :root {
-  --gradient-primary: linear-gradient(135deg, #5B8DEE 0%, #0BC5EA 50%, #48BB78 100%);
-  --gradient-primary-hover: linear-gradient(135deg, #4A7BDD 0%, #0AB4D9 50%, #3AAA67 100%);
-  --color-blue: #5B8DEE;
-  --color-teal: #0BC5EA;
+  --gradient-primary: linear-gradient(135deg, #449de7 0%, #3da7b1 100%);
+  --gradient-primary-hover: linear-gradient(135deg, #3389d6 0%, #2c9699 100%);
+  --color-blue: #449de7;
+  --color-teal: #3da7b1;
   --color-green: #48BB78;
   --color-text-primary: #1A202C;
   --color-text-secondary: #718096;
@@ -291,5 +291,199 @@ button[class*="Polaris-Button--primary"]:active {
   background: var(--color-text-primary) !important;
   box-shadow: var(--shadow-lg) !important;
   border-radius: 8px !important;
+}
+
+/* ===== PROMPT BUILDER SPECIFIC STYLING ===== */
+
+/* Progress indicator badge */
+.progress-badge {
+  padding: 6px 16px;
+  border-radius: 9999px;
+  font-weight: 600;
+  font-size: 14px;
+  background-color: var(--color-teal);
+  color: white;
+  display: inline-block;
+}
+
+/* Gradient progress bar */
+.gradient-progress-bar {
+  height: 12px;
+  background-color: #E5E7EB;
+  border-radius: 9999px;
+  overflow: hidden;
+  position: relative;
+}
+
+.gradient-progress-fill {
+  height: 100%;
+  border-radius: 9999px;
+  background: var(--gradient-primary);
+  transition: width 0.3s ease;
+}
+
+/* Colored text utilities */
+.text-blue {
+  color: var(--color-blue);
+}
+
+.text-teal {
+  color: var(--color-teal);
+}
+
+/* Tone selection cards */
+.tone-card {
+  padding: 20px;
+  border: 2px solid #E5E7EB;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tone-card:hover {
+  background-color: #F9FAFB;
+}
+
+.tone-card-selected {
+  border-color: var(--color-blue);
+  background-color: #F0F9FF;
+  box-shadow: var(--shadow-lg);
+}
+
+/* Custom questions styling */
+.custom-questions-container {
+  margin-top: 20px;
+  padding: 24px;
+  background-color: #F0F9FF;
+  border: 2px solid var(--color-blue);
+  border-radius: 12px;
+}
+
+.custom-question-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  background-color: white;
+  border-radius: 8px;
+  border-left: 4px solid var(--color-teal);
+  box-shadow: var(--shadow-sm);
+}
+
+.custom-question-number {
+  color: var(--color-teal);
+  font-weight: 600;
+}
+
+/* Lead capture container */
+.lead-capture-container {
+  padding: 20px;
+  border: 2px solid #E5E7EB;
+  border-radius: 12px;
+  transition: all 0.2s ease;
+}
+
+.lead-capture-container-enabled {
+  border-color: var(--color-teal);
+  background-color: #ECFEFF;
+}
+
+.lead-capture-field-item {
+  padding: 12px;
+  border-radius: 8px;
+  transition: background-color 0.2s ease;
+}
+
+.lead-capture-field-item-selected {
+  background-color: #F0F9FF;
+}
+
+/* Summary card items */
+.summary-card-item {
+  padding: 20px;
+  border-radius: 8px;
+  border-left: 4px solid var(--color-blue);
+  background-color: #F0F9FF;
+  box-shadow: var(--shadow-sm);
+}
+
+.summary-card-item-alt {
+  padding: 20px;
+  border-radius: 8px;
+  border-left: 4px solid var(--color-teal);
+  background-color: #ECFEFF;
+  box-shadow: var(--shadow-sm);
+}
+
+/* Generated prompt display */
+.generated-prompt-box {
+  margin-top: 24px;
+  padding: 24px;
+  background-color: #F0F9FF;
+  border: 2px solid var(--color-blue);
+  border-radius: 8px;
+  box-shadow: var(--shadow-sm);
+  word-wrap: break-word;
+}
+
+/* Active prompt card */
+.active-prompt-card {
+  padding: 32px;
+  border-left: 8px solid var(--color-blue);
+  background-color: #F0F9FF;
+  border-radius: 8px;
+}
+
+.active-prompt-info-item {
+  padding: 20px;
+  background-color: white;
+  border-radius: 8px;
+  border-left: 4px solid var(--color-blue);
+  box-shadow: var(--shadow-sm);
+}
+
+.active-prompt-info-item-alt {
+  padding: 20px;
+  background-color: white;
+  border-radius: 8px;
+  border-left: 4px solid var(--color-teal);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Advanced editor */
+.advanced-editor-container {
+  padding: 32px;
+  border-left: 8px solid var(--color-teal);
+  background-color: #ECFEFF;
+  border-radius: 8px;
+}
+
+.advanced-editor-textarea {
+  width: 100%;
+  min-height: 400px;
+  padding: 16px;
+  background-color: white;
+  border: 2px solid var(--color-teal);
+  border-radius: 8px;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
+  font-size: 14px;
+  line-height: 1.6;
+  resize: vertical;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s ease;
+}
+
+.advanced-editor-textarea:focus {
+  outline: none;
+  border-color: var(--color-blue);
+  box-shadow: 0 0 0 3px rgba(68, 157, 231, 0.1);
+}
+
+/* Review section gradient background */
+.review-preview-container {
+  text-align: center;
+  padding: 64px 32px;
+  background: linear-gradient(135deg, #F0F9FF 0%, #ECFEFF 100%);
+  border-radius: 8px;
 }
 
