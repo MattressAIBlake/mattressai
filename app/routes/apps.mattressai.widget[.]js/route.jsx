@@ -64,8 +64,8 @@ export const loader = async ({ request }) => {
         avatarText: root.dataset.avatarText || 'AI',
         avatarImage: root.dataset.avatarImage || '',
         avatarBackground: root.dataset.avatarBackground || '#0F172A',
-        bubbleStyle: root.dataset.bubbleStyle || 'icon',
-        bubbleText: root.dataset.bubbleText || 'Chat',
+        bubbleStyle: root.dataset.bubbleStyle || 'text',
+        bubbleText: root.dataset.bubbleText || 'MattressAI',
         bubbleSize: parseInt(root.dataset.bubbleSize || '64', 10),
         positionHorizontal: root.dataset.positionHorizontal || 'right',
         positionBottom: parseInt(root.dataset.positionBottom || '20', 10),
@@ -759,10 +759,9 @@ export const loader = async ({ request }) => {
     .mattressai-chat-bubble {
       position: fixed;
       bottom: var(--mattress-position-bottom, 20px);
-      min-width: var(--mattress-bubble-size, 64px);
       height: var(--mattress-bubble-size, 64px);
-      border-radius: 50%;
-      background: var(--mattress-primary, #2c5f2d);
+      border-radius: calc(var(--mattress-bubble-size, 64px) / 2);
+      background: var(--mattress-primary, #0F172A);
       color: white;
       border: none;
       box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
@@ -794,17 +793,13 @@ export const loader = async ({ request }) => {
     
     /* Bubble styles */
     .mattressai-bubble-icon {
-      border-radius: 50%;
       width: var(--mattress-bubble-size, 64px);
       min-width: var(--mattress-bubble-size, 64px);
-      padding: 0;
+      border-radius: 50% !important;
     }
     
-    .mattressai-bubble-text,
-    .mattressai-bubble-icon_text {
-      border-radius: calc(var(--mattress-bubble-size, 64px) / 2);
-      padding: 0 16px;
-      width: auto;
+    .mattressai-bubble-text {
+      padding: 0 14px;
       min-width: auto;
     }
     
