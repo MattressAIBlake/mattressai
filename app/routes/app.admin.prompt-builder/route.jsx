@@ -24,7 +24,6 @@ import { authenticate } from '~/shopify.server';
 import { createCompiledPrompt, validateRuntimeRules } from '~/lib/domain/runtimeRules';
 import { createPromptVersion } from '~/lib/domain/promptVersion.server';
 import prisma from '~/db.server';
-import '~/styles/admin-custom.css';
 
 // Step definitions
 const STEPS = [
