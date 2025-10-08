@@ -1,0 +1,32 @@
+# === COPY & PASTE THESE INTO VERCEL ===
+# Go to: https://vercel.com/blake-austins-projects/mattressaishopify/settings/environment-variables
+# Click "Add New" for each variable below
+# Make sure to CHECK "Production" for each one!
+
+# === 1. SHOPIFY CONFIGURATION ===
+SHOPIFY_API_KEY=6b1ed5786311fcaad075b3a7cc5f348e
+
+# GET THIS: Go to https://partners.shopify.com/181356265473/apps → MattressAI → Configuration → Client credentials → Copy "Client secret"
+SHOPIFY_API_SECRET=PASTE_YOUR_SHOPIFY_CLIENT_SECRET_HERE
+
+HOST=mattressaishopify-h5o6k4th9-blake-austins-projects.vercel.app
+
+SHOPIFY_APP_URL=https://mattressaishopify-h5o6k4th9-blake-austins-projects.vercel.app
+
+SCOPES=read_customers,read_inventory,read_orders,read_products
+
+# === 2. DATABASE ===
+# GET THIS: Go to Supabase → Project Settings → Database → Connection Pooling → Copy the "Session" or "Transaction" mode URL (port 6543)
+DATABASE_URL=PASTE_YOUR_SUPABASE_CONNECTION_POOLING_URL_HERE
+
+# === 3. OPENAI (REQUIRED for chat) ===
+# GET THIS: From your OpenAI account or from your local .env file if you have it
+OPENAI_API_KEY=PASTE_YOUR_OPENAI_API_KEY_HERE
+
+# === 4. OPTIONAL: Vector Search (Only if you're using Pinecone) ===
+EMBEDDING_PROVIDER=openai
+VECTOR_STORE=pinecone
+PINECONE_API_KEY=PASTE_YOUR_PINECONE_KEY_OR_SKIP_IF_NOT_USING
+PINECONE_ENVIRONMENT=us-east-1-aws
+PINECONE_INDEX=mattressai-products
+
