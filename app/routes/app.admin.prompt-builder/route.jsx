@@ -495,9 +495,13 @@ export default function PromptBuilder() {
                     onClick={() => handleInputChange('tone', option.value)}
                     className={`p-5 border-2 rounded-xl cursor-pointer transition-all ${
                       formData.tone === option.value
-                        ? 'border-blue-500 bg-blue-50 shadow-sm'
-                        : 'border-gray-200 hover:border-blue-200 hover:bg-gray-50'
+                        ? 'shadow-lg'
+                        : 'border-gray-200 hover:bg-gray-50'
                     }`}
+                    style={{
+                      borderColor: formData.tone === option.value ? '#449de7' : undefined,
+                      backgroundColor: formData.tone === option.value ? '#f0f9ff' : undefined,
+                    }}
                   >
                     <div className="flex items-start gap-4">
                       <div className="pt-1">
@@ -509,7 +513,9 @@ export default function PromptBuilder() {
                       </div>
                       <div className="flex-1">
                         <Text variant="headingMd" as="h4" fontWeight="semibold">
-                          {option.label}
+                          <span style={{ color: formData.tone === option.value ? '#449de7' : undefined }}>
+                            {option.label}
+                          </span>
                         </Text>
                         <div className="mt-1">
                           <Text variant="bodyMd" as="p" tone="subdued">
@@ -532,9 +538,11 @@ export default function PromptBuilder() {
               <div className="mb-8">
                 <div className="flex justify-between items-center mb-5">
                   <Text variant="headingMd" as="h3" fontWeight="semibold">
-                    Maximum Questions
+                    <span style={{ color: '#449de7' }}>Maximum Questions</span>
                   </Text>
-                  <Badge tone="info">{formData.questionLimit} question{formData.questionLimit > 1 ? 's' : ''}</Badge>
+                  <div className="px-4 py-2 rounded-full font-semibold text-sm" style={{ backgroundColor: '#3da7b1', color: 'white' }}>
+                    {formData.questionLimit} question{formData.questionLimit > 1 ? 's' : ''}
+                  </div>
                 </div>
                 <RangeSlider
                   label="Maximum questions to ask"
@@ -570,7 +578,7 @@ export default function PromptBuilder() {
                   <div className="flex items-start gap-3">
                     <div className="flex-1">
                       <Text variant="headingSm" as="h4" fontWeight="semibold">
-                        Advanced: Custom Questions
+                        <span style={{ color: '#3da7b1' }}>Advanced: Custom Questions</span>
                       </Text>
                       <div className="mt-1">
                         <Text variant="bodyMd" as="p" tone="subdued">
@@ -588,7 +596,7 @@ export default function PromptBuilder() {
                 </div>
 
                 {showAdvanced && (
-                  <div className="mt-5 p-6 bg-gray-50 rounded-lg border border-gray-200">
+                  <div className="mt-5 p-6 rounded-lg border-2" style={{ backgroundColor: '#f0f9ff', borderColor: '#449de7' }}>
                     <div className="space-y-5">
                       <div>
                         <Text variant="bodyMd" as="p" tone="subdued">
@@ -600,10 +608,10 @@ export default function PromptBuilder() {
                       {formData.customQuestions.length > 0 && (
                         <div className="space-y-3">
                           {formData.customQuestions.map((question, index) => (
-                            <div key={index} className="flex items-start gap-3 p-4 bg-white rounded-lg border border-gray-200">
+                            <div key={index} className="flex items-start gap-3 p-4 bg-white rounded-lg border-l-4 shadow-sm" style={{ borderLeftColor: '#3da7b1' }}>
                               <div className="flex-1">
                                 <Text variant="bodyMd" as="p">
-                                  {index + 1}. {question}
+                                  <span style={{ color: '#3da7b1', fontWeight: '600' }}>{index + 1}.</span> {question}
                                 </Text>
                               </div>
                               <Button
@@ -653,12 +661,17 @@ export default function PromptBuilder() {
         return (
           <Card>
             <div className="p-8">
-              <Checkbox
-                label="Enable lead capture"
-                helpText="Collect customer information during or after the conversation"
-                checked={formData.leadCaptureEnabled}
-                onChange={checked => handleInputChange('leadCaptureEnabled', checked)}
-              />
+              <div className="p-5 rounded-xl border-2 transition-all" style={{
+                borderColor: formData.leadCaptureEnabled ? '#3da7b1' : '#e5e7eb',
+                backgroundColor: formData.leadCaptureEnabled ? '#ecfeff' : 'transparent'
+              }}>
+                <Checkbox
+                  label={<span style={{ color: formData.leadCaptureEnabled ? '#3da7b1' : undefined, fontWeight: formData.leadCaptureEnabled ? '600' : undefined }}>Enable lead capture</span>}
+                  helpText="Collect customer information during or after the conversation"
+                  checked={formData.leadCaptureEnabled}
+                  onChange={checked => handleInputChange('leadCaptureEnabled', checked)}
+                />
+              </div>
 
               {formData.leadCaptureEnabled && (
                 <>
@@ -668,7 +681,7 @@ export default function PromptBuilder() {
 
                   <div className="mb-8">
                     <Select
-                      label="When to capture leads"
+                      label={<span style={{ color: '#449de7' }}>When to capture leads</span>}
                       options={positionOptions}
                       value={formData.leadCapturePosition}
                       onChange={value => handleInputChange('leadCapturePosition', value)}
@@ -680,7 +693,7 @@ export default function PromptBuilder() {
                   <div className="mt-8">
                     <div className="mb-4">
                       <Text variant="headingSm" as="h4" fontWeight="semibold">
-                        Information to collect
+                        <span style={{ color: '#449de7' }}>Information to collect</span>
                       </Text>
                       <div className="mt-2">
                         <Text variant="bodyMd" as="p" tone="subdued">
@@ -690,12 +703,19 @@ export default function PromptBuilder() {
                     </div>
                     <div className="mt-5 space-y-4">
                       {fieldOptions.map(field => (
-                        <Checkbox
+                        <div 
                           key={field.value}
-                          label={field.label}
-                          checked={formData.leadCaptureFields.includes(field.value)}
-                          onChange={checked => handleArrayChange('leadCaptureFields', field.value, checked)}
-                        />
+                          className="p-3 rounded-lg transition-all"
+                          style={{
+                            backgroundColor: formData.leadCaptureFields.includes(field.value) ? '#f0f9ff' : 'transparent'
+                          }}
+                        >
+                          <Checkbox
+                            label={field.label}
+                            checked={formData.leadCaptureFields.includes(field.value)}
+                            onChange={checked => handleArrayChange('leadCaptureFields', field.value, checked)}
+                          />
+                        </div>
                       ))}
                     </div>
                   </div>
@@ -709,26 +729,28 @@ export default function PromptBuilder() {
         return (
           <div className="space-y-8">
             {!showPreview ? (
-              <div className="text-center py-16">
-                <div className="mb-4">
-                  <Text variant="headingMd" as="h3" fontWeight="semibold">
-                    Ready to review your configuration
+              <Card>
+                <div className="text-center py-16 px-8 rounded-lg" style={{ background: 'linear-gradient(135deg, #f0f9ff 0%, #ecfeff 100%)' }}>
+                  <div className="mb-4">
+                    <Text variant="headingMd" as="h3" fontWeight="semibold">
+                      <span style={{ color: '#449de7' }}>Ready to review your configuration</span>
+                    </Text>
+                  </div>
+                  <Text variant="bodyMd" as="p" tone="subdued">
+                    Generate a preview to see how your AI assistant will behave
                   </Text>
+                  <div className="mt-8">
+                    <Button 
+                      primary 
+                      size="large"
+                      onClick={handleCompilePreview} 
+                      loading={fetcher.state === 'submitting' || fetcher.state === 'loading'}
+                    >
+                      Generate Preview
+                    </Button>
+                  </div>
                 </div>
-                <Text variant="bodyMd" as="p" tone="subdued">
-                  Generate a preview to see how your AI assistant will behave
-                </Text>
-                <div className="mt-8">
-                  <Button 
-                    primary 
-                    size="large"
-                    onClick={handleCompilePreview} 
-                    loading={fetcher.state === 'submitting' || fetcher.state === 'loading'}
-                  >
-                    Generate Preview
-                  </Button>
-                </div>
-              </div>
+              </Card>
             ) : (
               <>
                 {activationSuccess ? (
@@ -744,43 +766,55 @@ export default function PromptBuilder() {
                 <Card>
                   <div className="p-8">
                     <Text variant="headingMd" as="h3" fontWeight="semibold">
-                      Configuration Summary
+                      <span style={{ color: '#449de7' }}>Configuration Summary</span>
                     </Text>
                     <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-5">
-                      <div className="p-5 bg-gray-50 rounded-lg">
-                        <Text variant="headingSm" as="h4" fontWeight="semibold">Tone</Text>
+                      <div className="p-5 rounded-lg border-l-4 shadow-sm" style={{ backgroundColor: '#f0f9ff', borderLeftColor: '#449de7' }}>
+                        <Text variant="headingSm" as="h4" fontWeight="semibold">
+                          <span style={{ color: '#449de7' }}>Tone</span>
+                        </Text>
                         <div className="mt-2">
                           <Text variant="bodyMd" as="p">{toneOptions.find(t => t.value === formData.tone)?.label}</Text>
                         </div>
                       </div>
-                      <div className="p-5 bg-gray-50 rounded-lg">
-                        <Text variant="headingSm" as="h4" fontWeight="semibold">Question Limit</Text>
+                      <div className="p-5 rounded-lg border-l-4 shadow-sm" style={{ backgroundColor: '#ecfeff', borderLeftColor: '#3da7b1' }}>
+                        <Text variant="headingSm" as="h4" fontWeight="semibold">
+                          <span style={{ color: '#3da7b1' }}>Question Limit</span>
+                        </Text>
                         <div className="mt-2">
                           <Text variant="bodyMd" as="p">{formData.questionLimit} questions</Text>
                         </div>
                       </div>
-                      <div className="p-5 bg-gray-50 rounded-lg">
-                        <Text variant="headingSm" as="h4" fontWeight="semibold">Early Exit</Text>
+                      <div className="p-5 rounded-lg border-l-4 shadow-sm" style={{ backgroundColor: '#f0f9ff', borderLeftColor: '#449de7' }}>
+                        <Text variant="headingSm" as="h4" fontWeight="semibold">
+                          <span style={{ color: '#449de7' }}>Early Exit</span>
+                        </Text>
                         <div className="mt-2">
                           <Text variant="bodyMd" as="p">{formData.earlyExit ? 'Enabled' : 'Disabled'}</Text>
                         </div>
                       </div>
-                      <div className="p-5 bg-gray-50 rounded-lg">
-                        <Text variant="headingSm" as="h4" fontWeight="semibold">Lead Capture</Text>
+                      <div className="p-5 rounded-lg border-l-4 shadow-sm" style={{ backgroundColor: '#ecfeff', borderLeftColor: '#3da7b1' }}>
+                        <Text variant="headingSm" as="h4" fontWeight="semibold">
+                          <span style={{ color: '#3da7b1' }}>Lead Capture</span>
+                        </Text>
                         <div className="mt-2">
                           <Text variant="bodyMd" as="p">{formData.leadCaptureEnabled ? 'Enabled' : 'Disabled'}</Text>
                         </div>
                       </div>
                       {formData.leadCaptureEnabled && (
                         <>
-                          <div className="p-5 bg-gray-50 rounded-lg">
-                            <Text variant="headingSm" as="h4" fontWeight="semibold">Capture Timing</Text>
+                          <div className="p-5 rounded-lg border-l-4 shadow-sm" style={{ backgroundColor: '#f0f9ff', borderLeftColor: '#449de7' }}>
+                            <Text variant="headingSm" as="h4" fontWeight="semibold">
+                              <span style={{ color: '#449de7' }}>Capture Timing</span>
+                            </Text>
                             <div className="mt-2">
                               <Text variant="bodyMd" as="p">{positionOptions.find(p => p.value === formData.leadCapturePosition)?.label}</Text>
                             </div>
                           </div>
-                          <div className="p-5 bg-gray-50 rounded-lg">
-                            <Text variant="headingSm" as="h4" fontWeight="semibold">Fields to Collect</Text>
+                          <div className="p-5 rounded-lg border-l-4 shadow-sm" style={{ backgroundColor: '#ecfeff', borderLeftColor: '#3da7b1' }}>
+                            <Text variant="headingSm" as="h4" fontWeight="semibold">
+                              <span style={{ color: '#3da7b1' }}>Fields to Collect</span>
+                            </Text>
                             <div className="mt-2">
                               <Text variant="bodyMd" as="p">{formData.leadCaptureFields.join(', ') || 'None'}</Text>
                             </div>
@@ -794,13 +828,13 @@ export default function PromptBuilder() {
                         <Divider />
                         <div className="mt-6">
                           <Text variant="headingSm" as="h4" fontWeight="semibold">
-                            Custom Questions ({formData.customQuestions.length})
+                            <span style={{ color: '#3da7b1' }}>Custom Questions ({formData.customQuestions.length})</span>
                           </Text>
                           <div className="mt-4 space-y-2">
                             {formData.customQuestions.map((question, index) => (
-                              <div key={index} className="p-4 bg-gray-50 rounded-lg">
+                              <div key={index} className="p-4 rounded-lg border-l-4 shadow-sm" style={{ backgroundColor: '#f0f9ff', borderLeftColor: '#449de7' }}>
                                 <Text variant="bodyMd" as="p">
-                                  {index + 1}. {question}
+                                  <span style={{ color: '#449de7', fontWeight: '600' }}>{index + 1}.</span> {question}
                                 </Text>
                               </div>
                             ))}
@@ -814,9 +848,9 @@ export default function PromptBuilder() {
                 <Card>
                   <div className="p-8">
                     <Text variant="headingMd" as="h3" fontWeight="semibold">
-                      Generated AI Prompt
+                      <span style={{ color: '#3da7b1' }}>Generated AI Prompt</span>
                     </Text>
-                    <div className="mt-6 p-6 bg-gray-50 rounded-lg border border-gray-200">
+                    <div className="mt-6 p-6 rounded-lg border-2 shadow-sm" style={{ backgroundColor: '#f0f9ff', borderColor: '#449de7' }}>
                       <Text variant="bodyMd" as="p" breakWord>
                         {compiledPrompt}
                       </Text>
@@ -883,11 +917,11 @@ export default function PromptBuilder() {
           {/* Current Active Prompt Card */}
           {activePrompt && showCurrentPrompt && (
             <Card>
-              <div className="p-8">
+              <div className="p-8 border-l-8 rounded-lg" style={{ borderLeftColor: '#449de7', backgroundColor: '#f0f9ff' }}>
                 <div className="flex items-start justify-between mb-6">
                   <div>
                     <Text variant="headingLg" as="h2" fontWeight="semibold">
-                      Current Active Prompt
+                      <span style={{ color: '#449de7' }}>Current Active Prompt</span>
                     </Text>
                     <div className="mt-2">
                       <Text variant="bodyMd" as="p" tone="subdued">
@@ -907,35 +941,45 @@ export default function PromptBuilder() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
-                  <div className="p-5 bg-gray-50 rounded-lg">
-                    <Text variant="headingSm" as="h4" fontWeight="semibold">Tone</Text>
+                  <div className="p-5 bg-white rounded-lg shadow-sm border-l-4" style={{ borderLeftColor: '#449de7' }}>
+                    <Text variant="headingSm" as="h4" fontWeight="semibold">
+                      <span style={{ color: '#449de7' }}>Tone</span>
+                    </Text>
                     <div className="mt-2">
                       <Text variant="bodyMd" as="p">
                         {toneOptions.find(t => t.value === activePrompt.runtimeRules.tone)?.label || activePrompt.runtimeRules.tone}
                       </Text>
                     </div>
                   </div>
-                  <div className="p-5 bg-gray-50 rounded-lg">
-                    <Text variant="headingSm" as="h4" fontWeight="semibold">Question Limit</Text>
+                  <div className="p-5 bg-white rounded-lg shadow-sm border-l-4" style={{ borderLeftColor: '#3da7b1' }}>
+                    <Text variant="headingSm" as="h4" fontWeight="semibold">
+                      <span style={{ color: '#3da7b1' }}>Question Limit</span>
+                    </Text>
                     <div className="mt-2">
                       <Text variant="bodyMd" as="p">{activePrompt.runtimeRules.questionLimit} questions</Text>
                     </div>
                   </div>
-                  <div className="p-5 bg-gray-50 rounded-lg">
-                    <Text variant="headingSm" as="h4" fontWeight="semibold">Early Exit</Text>
+                  <div className="p-5 bg-white rounded-lg shadow-sm border-l-4" style={{ borderLeftColor: '#449de7' }}>
+                    <Text variant="headingSm" as="h4" fontWeight="semibold">
+                      <span style={{ color: '#449de7' }}>Early Exit</span>
+                    </Text>
                     <div className="mt-2">
                       <Text variant="bodyMd" as="p">{activePrompt.runtimeRules.earlyExit ? 'Enabled' : 'Disabled'}</Text>
                     </div>
                   </div>
-                  <div className="p-5 bg-gray-50 rounded-lg">
-                    <Text variant="headingSm" as="h4" fontWeight="semibold">Lead Capture</Text>
+                  <div className="p-5 bg-white rounded-lg shadow-sm border-l-4" style={{ borderLeftColor: '#3da7b1' }}>
+                    <Text variant="headingSm" as="h4" fontWeight="semibold">
+                      <span style={{ color: '#3da7b1' }}>Lead Capture</span>
+                    </Text>
                     <div className="mt-2">
                       <Text variant="bodyMd" as="p">{activePrompt.runtimeRules.leadCapture?.enabled ? 'Enabled' : 'Disabled'}</Text>
                     </div>
                   </div>
                   {activePrompt.runtimeRules.customQuestions && activePrompt.runtimeRules.customQuestions.length > 0 && (
-                    <div className="p-5 bg-gray-50 rounded-lg md:col-span-2">
-                      <Text variant="headingSm" as="h4" fontWeight="semibold">Custom Questions</Text>
+                    <div className="p-5 bg-white rounded-lg shadow-sm border-l-4 md:col-span-2" style={{ borderLeftColor: '#3da7b1' }}>
+                      <Text variant="headingSm" as="h4" fontWeight="semibold">
+                        <span style={{ color: '#3da7b1' }}>Custom Questions</span>
+                      </Text>
                       <div className="mt-2">
                         <Text variant="bodyMd" as="p">{activePrompt.runtimeRules.customQuestions.length} question(s)</Text>
                       </div>
@@ -963,11 +1007,11 @@ export default function PromptBuilder() {
           {/* Advanced Editor */}
           {showAdvancedEditor ? (
             <Card>
-              <div className="p-8">
+              <div className="p-8 border-l-8 rounded-lg" style={{ borderLeftColor: '#3da7b1', backgroundColor: '#ecfeff' }}>
                 <div className="flex items-start justify-between mb-6">
                   <div>
                     <Text variant="headingLg" as="h2" fontWeight="semibold">
-                      Advanced Prompt Editor
+                      <span style={{ color: '#3da7b1' }}>Advanced Prompt Editor</span>
                     </Text>
                     <div className="mt-2">
                       <Text variant="bodyMd" as="p" tone="subdued">
@@ -996,7 +1040,7 @@ export default function PromptBuilder() {
                 <div className="mt-6">
                   <div className="mb-4">
                     <Text variant="headingSm" as="h4" fontWeight="semibold">
-                      Prompt Text
+                      <span style={{ color: '#449de7' }}>Prompt Text</span>
                     </Text>
                     <div className="mt-1">
                       <Text variant="bodyMd" as="p" tone="subdued">
@@ -1008,12 +1052,22 @@ export default function PromptBuilder() {
                   <textarea
                     value={advancedPromptText}
                     onChange={(e) => setAdvancedPromptText(e.target.value)}
-                    className="w-full h-96 p-4 border border-gray-300 rounded-lg font-mono text-sm resize-y focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full h-96 p-4 rounded-lg font-mono text-sm resize-y focus:outline-none focus:ring-2 focus:border-transparent"
                     placeholder="Enter your AI system prompt here..."
                     style={{
                       minHeight: '400px',
                       lineHeight: '1.6',
-                      backgroundColor: '#f9fafb'
+                      backgroundColor: '#ffffff',
+                      border: '2px solid #3da7b1',
+                      boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)'
+                    }}
+                    onFocus={(e) => {
+                      e.target.style.borderColor = '#449de7';
+                      e.target.style.boxShadow = '0 0 0 3px rgba(68, 157, 231, 0.1)';
+                    }}
+                    onBlur={(e) => {
+                      e.target.style.borderColor = '#3da7b1';
+                      e.target.style.boxShadow = '0 1px 3px 0 rgba(0, 0, 0, 0.1)';
                     }}
                   />
                   
@@ -1083,22 +1137,29 @@ export default function PromptBuilder() {
               {/* Clean progress bar */}
               <div className="mb-10">
                 <div className="flex justify-between items-center mb-4">
-                  <Text variant="bodyMd" as="p" tone="subdued">
-                    Step {currentStep + 1} of {steps.length}
+                  <Text variant="bodyMd" as="p">
+                    <span style={{ color: '#449de7', fontWeight: '600' }}>Step {currentStep + 1} of {steps.length}</span>
                   </Text>
-                  <Text variant="bodyMd" as="p" tone="subdued">
+                  <div className="px-3 py-1 rounded-full text-sm font-semibold" style={{ backgroundColor: '#3da7b1', color: 'white' }}>
                     {Math.round((currentStep + 1) / steps.length * 100)}% complete
-                  </Text>
+                  </div>
                 </div>
-                <ProgressBar
-                  progress={(currentStep + 1) / steps.length * 100}
-                  size="medium"
-                />
+                <div className="relative">
+                  <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full rounded-full transition-all duration-300" 
+                      style={{ 
+                        width: `${(currentStep + 1) / steps.length * 100}%`,
+                        background: 'linear-gradient(90deg, #449de7 0%, #3da7b1 100%)'
+                      }}
+                    />
+                  </div>
+                </div>
               </div>
 
               <div className="mb-8">
                 <Text variant="headingLg" as="h2" fontWeight="semibold">
-                  {steps[currentStep].title}
+                  <span style={{ color: '#449de7' }}>{steps[currentStep].title}</span>
                 </Text>
                 <div className="mt-2">
                   <Text variant="bodyMd" as="p" tone="subdued">
