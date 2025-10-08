@@ -12,23 +12,29 @@ import {
   Box,
   Badge,
   List,
-  RangeSlider,
-  Checkbox,
   Divider,
   Spinner,
-  EmptyState
+  Icon,
+  BlockStack,
+  InlineStack
 } from '@shopify/polaris';
+import {
+  DatabaseIcon,
+  CheckCircleIcon,
+  AlertCircleIcon
+} from '@shopify/polaris-icons';
 import { authenticate } from '~/shopify.server';
 
 /**
  * Loader function - get current indexing status
  */
 export async function loader({ request }) {
-  await authenticate.admin(request);
+  const { session } = await authenticate.admin(request);
 
   // In a real implementation, this would call the status endpoint
   // For now, return mock data
   return json({
+    shop: session.shop,
     currentJob: null, // Will be populated by the status endpoint
     recentJobs: [],
     isIndexing: false,
@@ -43,26 +49,41 @@ export async function loader({ request }) {
  * Action function - handle start/stop indexing
  */
 export async function action({ request }) {
-  await authenticate.admin(request);
+  const { session } = await authenticate.admin(request);
 
   const formData = await request.formData();
-  const action = formData.get('action');
+  const actionType = formData.get('action');
 
-  if (action === 'start') {
-    // Start indexing job
-    const useAIEnrichment = formData.get('useAIEnrichment') === 'true';
-    const confidenceThreshold = parseFloat(formData.get('confidenceThreshold') || '0.7');
+  if (actionType === 'start') {
+    // Start indexing job with hardcoded optimal settings
+    const useAIEnrichment = true; // Always enabled for best results
+    const confidenceThreshold = 0.7; // 70% - optimal balance
 
-    // In a real implementation, this would call the start endpoint
-    return json({
-      success: true,
-      message: 'Indexing job started',
-      jobId: `job-${Date.now()}`,
-      configuration: { useAIEnrichment, confidenceThreshold }
-    });
+    // Forward the request to the actual indexing endpoint
+    const startIndexForm = new FormData();
+    startIndexForm.append('useAIEnrichment', useAIEnrichment.toString());
+    startIndexForm.append('confidenceThreshold', confidenceThreshold.toString());
+
+    try {
+      // In production, this would call the actual /admin/index/start endpoint
+      // For now, return a success response
+      return json({
+        success: true,
+        message: 'Indexing job started',
+        jobId: `job-${Date.now()}`,
+        shop: session.shop,
+        configuration: { useAIEnrichment, confidenceThreshold }
+      });
+    } catch (error) {
+      console.error('Failed to start indexing:', error);
+      return json(
+        { error: 'Failed to start indexing job' },
+        { status: 500 }
+      );
+    }
   }
 
-  if (action === 'stop') {
+  if (actionType === 'stop') {
     // Stop indexing job
     return json({
       success: true,
@@ -80,8 +101,6 @@ export default function CatalogIndexing() {
   const data = useLoaderData();
   const fetcher = useFetcher();
 
-  const [useAIEnrichment, setUseAIEnrichment] = useState(data.configuration.useAIEnrichment);
-  const [confidenceThreshold, setConfidenceThreshold] = useState(data.configuration.confidenceThreshold);
   const [isStarting, setIsStarting] = useState(false);
 
   // Poll for status updates when indexing is active
@@ -95,24 +114,26 @@ export default function CatalogIndexing() {
     }
   }, [data.isIndexing, fetcher]);
 
+  // Reset isStarting when fetcher completes
+  useEffect(() => {
+    if (fetcher.state === 'idle' && isStarting) {
+      setIsStarting(false);
+    }
+  }, [fetcher.state, isStarting]);
+
   // Handle start indexing
-  const handleStartIndexing = async () => {
+  const handleStartIndexing = () => {
     setIsStarting(true);
 
     const formData = new FormData();
-    formData.append('action', 'start');
-    formData.append('useAIEnrichment', useAIEnrichment.toString());
-    formData.append('confidenceThreshold', confidenceThreshold.toString());
+    formData.append('useAIEnrichment', 'true');
+    formData.append('confidenceThreshold', '0.7');
 
-    try {
-      await fetcher.submit(formData, { method: 'POST' });
-      // Refresh the page to show new job status
-      window.location.reload();
-    } catch (error) {
-      console.error('Failed to start indexing:', error);
-    } finally {
-      setIsStarting(false);
-    }
+    // Submit to the actual indexing endpoint
+    fetcher.submit(formData, { 
+      method: 'POST',
+      action: '/app/admin/index/start'
+    });
   };
 
   // Handle stop indexing
@@ -158,47 +179,6 @@ export default function CatalogIndexing() {
       ]}
     >
       <Layout>
-        {/* Configuration Section */}
-        <Layout.Section>
-          <Card>
-            <div>
-              <Text variant="headingMd" as="h2" fontWeight="semibold">
-                Indexing Configuration
-              </Text>
-              <div className="mt-4 space-y-4">
-                <Checkbox
-                  label="Use AI Enrichment"
-                  checked={useAIEnrichment}
-                  onChange={setUseAIEnrichment}
-                  helpText="Enable AI-powered attribute extraction for better recommendations"
-                />
-
-                {useAIEnrichment && (
-                  <div className="mt-4">
-                    <Text variant="bodyMd" as="p">
-                      Confidence Threshold: {(confidenceThreshold * 100).toFixed(0)}%
-                    </Text>
-                    <div className="mt-2">
-                      <RangeSlider
-                        label="Minimum confidence for AI extractions"
-                        labelHidden
-                        value={confidenceThreshold * 100}
-                        onChange={(value) => setConfidenceThreshold(value / 100)}
-                        min={30}
-                        max={90}
-                        step={5}
-                      />
-                    </div>
-                    <div className="mt-2 text-sm text-gray-600">
-                      Higher thresholds mean fewer but more confident extractions
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </Card>
-        </Layout.Section>
-
         {/* Current Job Status */}
         <Layout.Section>
           <Card>
@@ -230,11 +210,85 @@ export default function CatalogIndexing() {
               </div>
 
               {!currentJob && !isStarting ? (
-                <EmptyState
-                  heading="Ready to index"
-                  content="Click 'Start Indexing' to begin processing your product catalog"
-                  image="/empty-state-indexing.svg"
-                />
+                <div className="py-12 px-6">
+                  <BlockStack gap="600" align="center">
+                    <div className="flex justify-center items-center w-20 h-20 rounded-full bg-gradient-to-br from-blue-50 to-indigo-100">
+                      <Icon
+                        source={DatabaseIcon}
+                        tone="info"
+                      />
+                    </div>
+                    
+                    <BlockStack gap="200" align="center">
+                      <Text variant="headingLg" as="h3" alignment="center">
+                        Ready to Index Your Catalog
+                      </Text>
+                      <div className="max-w-lg">
+                        <Text variant="bodyMd" as="p" alignment="center" tone="subdued">
+                          Your product catalog hasn't been indexed yet. Start indexing to enable AI-powered product recommendations for your customers.
+                        </Text>
+                      </div>
+                    </BlockStack>
+
+                    <div className="w-full max-w-2xl">
+                      <Card background="bg-surface-secondary">
+                        <BlockStack gap="400">
+                          <div className="flex items-start gap-3">
+                            <div className="mt-1">
+                              <Icon source={CheckCircleIcon} tone="success" />
+                            </div>
+                            <BlockStack gap="100">
+                              <Text variant="headingSm" as="h4">
+                                Step 1: Ensure you have products in your Shopify store
+                              </Text>
+                              <Text variant="bodyMd" as="p" tone="subdued">
+                                Make sure your products are properly configured with titles, descriptions, and relevant details.
+                              </Text>
+                            </BlockStack>
+                          </div>
+
+                          <Divider />
+
+                          <div className="flex items-start gap-3">
+                            <div className="mt-1">
+                              <Icon source={CheckCircleIcon} tone="success" />
+                            </div>
+                            <BlockStack gap="100">
+                              <Text variant="headingSm" as="h4">
+                                Step 2: Click "Start Indexing" above
+                              </Text>
+                              <Text variant="bodyMd" as="p" tone="subdued">
+                                Our AI will automatically process your entire catalog using optimal settings (AI enrichment enabled with 70% confidence threshold).
+                              </Text>
+                            </BlockStack>
+                          </div>
+
+                          <Divider />
+
+                          <div className="flex items-start gap-3">
+                            <div className="mt-1">
+                              <Icon source={CheckCircleIcon} tone="success" />
+                            </div>
+                            <BlockStack gap="100">
+                              <Text variant="headingSm" as="h4">
+                                Step 3: Monitor progress
+                              </Text>
+                              <Text variant="bodyMd" as="p" tone="subdued">
+                                The indexing typically processes 50-100 products per minute. You can leave this page and come back to check progress.
+                              </Text>
+                            </BlockStack>
+                          </div>
+                        </BlockStack>
+                      </Card>
+                    </div>
+
+                    <Banner tone="info">
+                      <p>
+                        <strong>First time indexing?</strong> Depending on your catalog size, this may take several minutes. You'll see detailed progress updates once indexing begins.
+                      </p>
+                    </Banner>
+                  </BlockStack>
+                </div>
               ) : (
                 <div className="space-y-4">
                   {/* Status Badge */}
@@ -395,48 +449,50 @@ export default function CatalogIndexing() {
         {/* Information Section */}
         <Layout.Section>
           <Card>
-            <div>
+            <BlockStack gap="400">
               <Text variant="headingMd" as="h2" fontWeight="semibold">
                 About Catalog Indexing
               </Text>
-              <div className="mt-4 space-y-3">
-                <Text variant="bodyMd" as="p">
-                  Catalog indexing processes your Shopify products and creates vector embeddings for AI-powered recommendations.
+              
+              <Text variant="bodyMd" as="p">
+                Catalog indexing processes your Shopify products and creates vector embeddings for AI-powered recommendations. Our system automatically uses optimal settings to ensure the best results.
+              </Text>
+
+              <BlockStack gap="200">
+                <Text variant="headingSm" as="h3">
+                  What happens during indexing:
                 </Text>
+                <List>
+                  <List.Item>Extract product information from Shopify</List.Item>
+                  <List.Item>Enrich products with mattress-specific attributes using AI</List.Item>
+                  <List.Item>Generate vector embeddings for semantic search</List.Item>
+                  <List.Item>Store embeddings in your vector database</List.Item>
+                </List>
+              </BlockStack>
 
-                <div className="space-y-2">
-                  <Text variant="headingSm" as="h3">
-                    What happens during indexing:
-                  </Text>
-                  <List>
-                    <List.Item>Extract product information from Shopify</List.Item>
-                    <List.Item>Enrich products with mattress-specific attributes</List.Item>
-                    <List.Item>Generate vector embeddings for semantic search</List.Item>
-                    <List.Item>Store embeddings in your vector database</List.Item>
-                  </List>
-                </div>
+              <BlockStack gap="200">
+                <Text variant="headingSm" as="h3">
+                  Optimized for you:
+                </Text>
+                <List>
+                  <List.Item>
+                    <strong>AI Enrichment:</strong> Automatically enabled to extract detailed mattress attributes from product descriptions
+                  </List.Item>
+                  <List.Item>
+                    <strong>Confidence Threshold:</strong> Set to 70% for optimal balance between coverage and accuracy
+                  </List.Item>
+                  <List.Item>
+                    <strong>Processing Speed:</strong> Typically 50-100 products per minute
+                  </List.Item>
+                </List>
+              </BlockStack>
 
-                <div className="space-y-2">
-                  <Text variant="headingSm" as="h3">
-                    Configuration options:
-                  </Text>
-                  <List>
-                    <List.Item>
-                      <strong>AI Enrichment:</strong> Uses AI to extract detailed mattress attributes from product descriptions
-                    </List.Item>
-                    <List.Item>
-                      <strong>Confidence Threshold:</strong> Controls how confident the AI must be before extracting attributes
-                    </List.Item>
-                  </List>
-                </div>
-
-                <Banner status="info">
-                  <p>
-                    Indexing typically processes 50-100 products per minute depending on your catalog size and AI enrichment settings.
-                  </p>
-                </Banner>
-              </div>
-            </div>
+              <Banner tone="info">
+                <p>
+                  <strong>Pro Tip:</strong> Re-index your catalog periodically (e.g., monthly) to keep your AI recommendations up-to-date with new products and changes.
+                </p>
+              </Banner>
+            </BlockStack>
           </Card>
         </Layout.Section>
       </Layout>
