@@ -168,10 +168,21 @@ export default function PlansPage() {
   const submit = useSubmit();
 
   const handleUpgrade = (planName) => {
-    const formData = new FormData();
-    formData.append('action', 'upgrade');
-    formData.append('planName', planName);
-    submit(formData, { method: 'post' });
+    console.log('🔵 Button clicked! Plan:', planName);
+    console.log('🔵 Submit function:', typeof submit);
+    
+    try {
+      const formData = new FormData();
+      formData.append('action', 'upgrade');
+      formData.append('planName', planName);
+      console.log('🔵 FormData created:', Array.from(formData.entries()));
+      
+      submit(formData, { method: 'post' });
+      console.log('🔵 Submit called successfully');
+    } catch (error) {
+      console.error('🔴 Error in handleUpgrade:', error);
+      alert('Error: ' + error.message);
+    }
   };
 
   const getUsagePercent = (used, limit) => {
