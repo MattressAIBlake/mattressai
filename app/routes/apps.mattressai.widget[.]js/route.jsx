@@ -56,10 +56,10 @@ export const loader = async ({ request }) => {
         autoOpen: root.dataset.autoOpen === 'true',
         showCompare: root.dataset.showCompare === 'true',
         guidedMode: root.dataset.guidedMode === 'true',
-        primaryColor: root.dataset.primaryColor || '#2c5f2d',
-        widgetTitle: root.dataset.widgetTitle || 'MattressAI Assistant',
-        widgetSubtitle: root.dataset.widgetSubtitle || 'Find your perfect mattress',
-        welcomeMessage: root.dataset.welcomeMessage || 'Hi! I\\'m here to help you find the perfect mattress. What type of sleeper are you?',
+        primaryColor: root.dataset.primaryColor || '#0F172A',
+        widgetTitle: root.dataset.widgetTitle || 'Chat with us',
+        widgetSubtitle: root.dataset.widgetSubtitle || 'We\\'re here to help',
+        welcomeMessage: root.dataset.welcomeMessage || 'Hi! How can we help you today?',
         bubbleStyle: root.dataset.bubbleStyle || 'icon',
         bubbleText: root.dataset.bubbleText || 'Chat',
         bubbleSize: parseInt(root.dataset.bubbleSize || '64', 10),
@@ -303,12 +303,10 @@ export const loader = async ({ request }) => {
             <div class="mattressai-message__content">\${this.config.welcomeMessage}</div>
           </div>
           <div class="mattressai-quick-replies" id="mattressai-quick-replies">
-            <button class="mattressai-quick-reply" data-message="I'm a side sleeper">Side sleeper</button>
-            <button class="mattressai-quick-reply" data-message="I'm a back sleeper">Back sleeper</button>
-            <button class="mattressai-quick-reply" data-message="I'm a stomach sleeper">Stomach sleeper</button>
-            <button class="mattressai-quick-reply" data-message="I have back pain">Back pain</button>
-            <button class="mattressai-quick-reply" data-message="Show me mattresses under $1000">Under $1000</button>
-            <button class="mattressai-quick-reply" data-message="I want organic materials">Organic materials</button>
+            <button class="mattressai-quick-reply" data-message="I need help choosing a product">Product help</button>
+            <button class="mattressai-quick-reply" data-message="What are your best sellers?">Best sellers</button>
+            <button class="mattressai-quick-reply" data-message="Do you have any sales or promotions?">Sales</button>
+            <button class="mattressai-quick-reply" data-message="I have a question">Ask a question</button>
           </div>
         </div>
         
@@ -727,7 +725,7 @@ export const loader = async ({ request }) => {
   style.textContent = \`
     /* CSS Variables / Theming */
     :root {
-      --mattress-primary: #2c5f2d;
+      --mattress-primary: #0F172A;
       --mattress-bg: #ffffff;
       --mattress-surface: #f9fafb;
       --mattress-text: #111827;
@@ -1131,9 +1129,9 @@ export const loader = async ({ request }) => {
     }
     
     .mattressai-quick-reply:hover {
-      background: var(--mattress-primary, #2c5f2d);
+      background: var(--mattress-primary, #0F172A);
       color: white;
-      border-color: var(--mattress-primary, #2c5f2d);
+      border-color: var(--mattress-primary, #0F172A);
       transform: translateY(-1px);
     }
     
@@ -1238,7 +1236,7 @@ export const loader = async ({ request }) => {
     }
     
     .mattressai-product-card__button:hover {
-      background: #1e4620;
+      background: #1e293b;
     }
     
     /* Input Container */
@@ -1292,7 +1290,7 @@ export const loader = async ({ request }) => {
     }
     
     .mattressai-widget__send-btn:hover:not(:disabled) {
-      background: #1e4620;
+      background: #1e293b;
       transform: scale(1.05);
     }
     

@@ -11,28 +11,28 @@
       "type": "text", 
       "id": "widget_title", 
       "label": "Widget title", 
-      "default": "MattressAI Assistant",
+      "default": "Chat with us",
       "info": "Main heading shown in the chat widget header"
     },
     { 
       "type": "text", 
       "id": "widget_subtitle", 
       "label": "Widget subtitle", 
-      "default": "Find your perfect mattress",
+      "default": "We're here to help",
       "info": "Subtitle shown below the title in header"
     },
     { 
       "type": "textarea", 
       "id": "welcome_message", 
       "label": "Welcome message", 
-      "default": "Hi! I'm here to help you find the perfect mattress. What type of sleeper are you?",
+      "default": "Hi! How can we help you today?",
       "info": "First message displayed to grab shopper attention"
     },
     { 
       "type": "color", 
       "id": "primary_color", 
       "label": "Primary color", 
-      "default": "#2c5f2d",
+      "default": "#0F172A",
       "info": "Color for buttons, header, and chat bubble"
     },
     { 
@@ -181,5 +181,5 @@
 
 <!-- Widget Assets -->
 <script src="{{ 'tracking.js' | asset_url }}" data-tenant="{{ shop.permanent_domain | escape }}" defer></script>
-<script src="{{ shop.url }}/apps/mattressai/widget.js?v=11" data-tenant="{{ shop.permanent_domain | escape }}" defer></script>
+<script src="{{ shop.url }}/apps/mattressai/widget.js?v=12" data-tenant="{{ shop.permanent_domain | escape }}" defer></script>
 <link rel="stylesheet" href="{{ 'widget.css' | asset_url }}">
