@@ -367,15 +367,17 @@ export default function PromptBuilder() {
                       <Text variant="headingSm" as="h4" fontWeight="semibold">
                         Information to collect
                       </Text>
-                      <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <Text variant="bodyMd" as="p" tone="subdued">
+                        Select which customer details you'd like to collect
+                      </Text>
+                      <div className="mt-4 space-y-3">
                         {fieldOptions.map(field => (
-                          <div key={field.value} className="p-3 border rounded-lg">
-                            <Checkbox
-                              label={field.label}
-                              checked={formData.leadCaptureFields.includes(field.value)}
-                              onChange={checked => handleArrayChange('leadCaptureFields', field.value, checked)}
-                            />
-                          </div>
+                          <Checkbox
+                            key={field.value}
+                            label={field.label}
+                            checked={formData.leadCaptureFields.includes(field.value)}
+                            onChange={checked => handleArrayChange('leadCaptureFields', field.value, checked)}
+                          />
                         ))}
                       </div>
                     </div>
