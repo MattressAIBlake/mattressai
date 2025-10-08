@@ -783,6 +783,8 @@ export const loader = async ({ request }) => {
     .mattressai-bubble-icon {
       border-radius: 50%;
       width: var(--mattress-bubble-size, 64px);
+      min-width: var(--mattress-bubble-size, 64px);
+      padding: 0;
     }
     
     .mattressai-bubble-text,
