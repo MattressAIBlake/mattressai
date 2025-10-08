@@ -180,7 +180,7 @@
   data-welcome-message="{{ block.settings.welcome_message | escape }}"
   data-avatar-style="{{ block.settings.avatar_style }}"
   data-avatar-text="{{ block.settings.avatar_text | escape }}"
-  data-avatar-image="{{ block.settings.avatar_image | img_url: '72x72', crop: 'center' }}"
+  data-avatar-image="{{ block.settings.avatar_image | image_url: width: 72, height: 72, crop: 'center' }}"
   data-avatar-background="{{ block.settings.avatar_background }}"
   data-bubble-style="{{ block.settings.bubble_style }}"
   data-bubble-text="{{ block.settings.bubble_text | escape }}"
