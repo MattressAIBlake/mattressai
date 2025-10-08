@@ -7,7 +7,7 @@
  * IMPORTANT: This must be fully functional before App Store submission.
  */
 
-import { prisma } from '~/db.server';
+import prisma from '~/db.server';
 
 /**
  * Export all customer data in machine-readable format
