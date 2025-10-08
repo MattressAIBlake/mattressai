@@ -258,144 +258,154 @@ export default function PromptBuilder() {
     switch (currentStep) {
       case 0: // Tone & Style
         return (
-          <FormLayout>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {toneOptions.map(option => (
-                <div
-                  key={option.value}
-                  onClick={() => handleInputChange('tone', option.value)}
-                  className={`p-5 border-2 rounded-lg cursor-pointer transition-all ${
-                    formData.tone === option.value
-                      ? 'border-blue-500 bg-blue-50'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                >
-                  <div className="flex items-start gap-3">
-                    <RadioButton
-                      label=""
-                      checked={formData.tone === option.value}
-                      onChange={() => handleInputChange('tone', option.value)}
-                    />
-                    <div className="flex-1">
-                      <Text variant="headingSm" as="h4" fontWeight="semibold">
-                        {option.label}
-                      </Text>
-                      <Text variant="bodyMd" as="p" tone="subdued">
-                        {option.description}
-                      </Text>
+          <Card>
+            <div className="p-8">
+              <div className="space-y-5">
+                {toneOptions.map(option => (
+                  <div
+                    key={option.value}
+                    onClick={() => handleInputChange('tone', option.value)}
+                    className={`p-5 border-2 rounded-xl cursor-pointer transition-all ${
+                      formData.tone === option.value
+                        ? 'border-blue-500 bg-blue-50 shadow-sm'
+                        : 'border-gray-200 hover:border-blue-200 hover:bg-gray-50'
+                    }`}
+                  >
+                    <div className="flex items-center gap-4">
+                      <RadioButton
+                        label=""
+                        checked={formData.tone === option.value}
+                        onChange={() => handleInputChange('tone', option.value)}
+                      />
+                      <div className="flex-1">
+                        <div className="flex items-baseline gap-3">
+                          <Text variant="headingMd" as="h4" fontWeight="semibold">
+                            {option.label}
+                          </Text>
+                          <Text variant="bodyMd" as="span" tone="subdued">
+                            {option.description}
+                          </Text>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </FormLayout>
+          </Card>
         );
 
       case 1: // Question Limit
         return (
-          <FormLayout>
-            <Card>
-              <div className="p-6">
-                <div className="mb-6">
-                  <div className="flex justify-between items-center mb-4">
-                    <Text variant="headingMd" as="h3" fontWeight="semibold">
-                      Maximum Questions
-                    </Text>
-                    <Badge tone="info">{formData.questionLimit} question{formData.questionLimit > 1 ? 's' : ''}</Badge>
-                  </div>
-                  <RangeSlider
-                    label="Maximum questions to ask"
-                    labelHidden
-                    value={formData.questionLimit}
-                    onChange={value => handleInputChange('questionLimit', value)}
-                    min={1}
-                    max={6}
-                    step={1}
-                  />
+          <Card>
+            <div className="p-8">
+              <div className="mb-8">
+                <div className="flex justify-between items-center mb-5">
+                  <Text variant="headingMd" as="h3" fontWeight="semibold">
+                    Maximum Questions
+                  </Text>
+                  <Badge tone="info">{formData.questionLimit} question{formData.questionLimit > 1 ? 's' : ''}</Badge>
+                </div>
+                <RangeSlider
+                  label="Maximum questions to ask"
+                  labelHidden
+                  value={formData.questionLimit}
+                  onChange={value => handleInputChange('questionLimit', value)}
+                  min={1}
+                  max={6}
+                  step={1}
+                />
+                <div className="mt-3">
                   <Text variant="bodyMd" as="p" tone="subdued">
                     The AI will ask up to {formData.questionLimit} question{formData.questionLimit > 1 ? 's' : ''} before making mattress recommendations
                   </Text>
                 </div>
-
-                <Divider />
-
-                <div className="mt-6">
-                  <Checkbox
-                    label="Allow early exit when enough information is gathered"
-                    helpText="The AI can skip remaining questions if it has sufficient information to make accurate recommendations"
-                    checked={formData.earlyExit}
-                    onChange={checked => handleInputChange('earlyExit', checked)}
-                  />
-                </div>
               </div>
-            </Card>
-          </FormLayout>
+
+              <Divider />
+
+              <div className="mt-8">
+                <Checkbox
+                  label="Allow early exit when enough information is gathered"
+                  helpText="The AI can skip remaining questions if it has sufficient information to make accurate recommendations"
+                  checked={formData.earlyExit}
+                  onChange={checked => handleInputChange('earlyExit', checked)}
+                />
+              </div>
+            </div>
+          </Card>
         );
 
       case 2: // Lead Capture
         return (
-          <FormLayout>
-            <Card>
-              <div className="p-6">
-                <Checkbox
-                  label="Enable lead capture"
-                  helpText="Collect customer information during or after the conversation"
-                  checked={formData.leadCaptureEnabled}
-                  onChange={checked => handleInputChange('leadCaptureEnabled', checked)}
-                />
+          <Card>
+            <div className="p-8">
+              <Checkbox
+                label="Enable lead capture"
+                helpText="Collect customer information during or after the conversation"
+                checked={formData.leadCaptureEnabled}
+                onChange={checked => handleInputChange('leadCaptureEnabled', checked)}
+              />
 
-                {formData.leadCaptureEnabled && (
-                  <>
+              {formData.leadCaptureEnabled && (
+                <>
+                  <div className="my-8">
                     <Divider />
+                  </div>
 
-                    <div className="mt-6">
-                      <Select
-                        label="When to capture leads"
-                        options={positionOptions}
-                        value={formData.leadCapturePosition}
-                        onChange={value => handleInputChange('leadCapturePosition', value)}
-                      />
-                    </div>
+                  <div className="mb-8">
+                    <Select
+                      label="When to capture leads"
+                      options={positionOptions}
+                      value={formData.leadCapturePosition}
+                      onChange={value => handleInputChange('leadCapturePosition', value)}
+                    />
+                  </div>
 
-                    <Divider />
+                  <Divider />
 
-                    <div className="mt-6">
+                  <div className="mt-8">
+                    <div className="mb-4">
                       <Text variant="headingSm" as="h4" fontWeight="semibold">
                         Information to collect
                       </Text>
-                      <Text variant="bodyMd" as="p" tone="subdued">
-                        Select which customer details you'd like to collect
-                      </Text>
-                      <div className="mt-4 space-y-3">
-                        {fieldOptions.map(field => (
-                          <Checkbox
-                            key={field.value}
-                            label={field.label}
-                            checked={formData.leadCaptureFields.includes(field.value)}
-                            onChange={checked => handleArrayChange('leadCaptureFields', field.value, checked)}
-                          />
-                        ))}
+                      <div className="mt-2">
+                        <Text variant="bodyMd" as="p" tone="subdued">
+                          Select which customer details you'd like to collect
+                        </Text>
                       </div>
                     </div>
-                  </>
-                )}
-              </div>
-            </Card>
-          </FormLayout>
+                    <div className="mt-5 space-y-4">
+                      {fieldOptions.map(field => (
+                        <Checkbox
+                          key={field.value}
+                          label={field.label}
+                          checked={formData.leadCaptureFields.includes(field.value)}
+                          onChange={checked => handleArrayChange('leadCaptureFields', field.value, checked)}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          </Card>
         );
 
       case 3: // Review & Activate
         return (
-          <div className="space-y-6">
+          <div className="space-y-8">
             {!showPreview ? (
-              <div className="text-center py-12">
-                <Text variant="headingMd" as="h3" fontWeight="semibold">
-                  Ready to review your configuration
-                </Text>
+              <div className="text-center py-16">
+                <div className="mb-4">
+                  <Text variant="headingMd" as="h3" fontWeight="semibold">
+                    Ready to review your configuration
+                  </Text>
+                </div>
                 <Text variant="bodyMd" as="p" tone="subdued">
                   Generate a preview to see how your AI assistant will behave
                 </Text>
-                <div className="mt-6">
+                <div className="mt-8">
                   <Button 
                     primary 
                     size="large"
@@ -413,36 +423,48 @@ export default function PromptBuilder() {
                 </Banner>
 
                 <Card>
-                  <div className="p-6">
+                  <div className="p-8">
                     <Text variant="headingMd" as="h3" fontWeight="semibold">
                       Configuration Summary
                     </Text>
-                    <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="p-4 bg-gray-50 rounded-lg">
+                    <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-5">
+                      <div className="p-5 bg-gray-50 rounded-lg">
                         <Text variant="headingSm" as="h4" fontWeight="semibold">Tone</Text>
-                        <Text variant="bodyMd" as="p">{toneOptions.find(t => t.value === formData.tone)?.label}</Text>
+                        <div className="mt-2">
+                          <Text variant="bodyMd" as="p">{toneOptions.find(t => t.value === formData.tone)?.label}</Text>
+                        </div>
                       </div>
-                      <div className="p-4 bg-gray-50 rounded-lg">
+                      <div className="p-5 bg-gray-50 rounded-lg">
                         <Text variant="headingSm" as="h4" fontWeight="semibold">Question Limit</Text>
-                        <Text variant="bodyMd" as="p">{formData.questionLimit} questions</Text>
+                        <div className="mt-2">
+                          <Text variant="bodyMd" as="p">{formData.questionLimit} questions</Text>
+                        </div>
                       </div>
-                      <div className="p-4 bg-gray-50 rounded-lg">
+                      <div className="p-5 bg-gray-50 rounded-lg">
                         <Text variant="headingSm" as="h4" fontWeight="semibold">Early Exit</Text>
-                        <Text variant="bodyMd" as="p">{formData.earlyExit ? 'Enabled' : 'Disabled'}</Text>
+                        <div className="mt-2">
+                          <Text variant="bodyMd" as="p">{formData.earlyExit ? 'Enabled' : 'Disabled'}</Text>
+                        </div>
                       </div>
-                      <div className="p-4 bg-gray-50 rounded-lg">
+                      <div className="p-5 bg-gray-50 rounded-lg">
                         <Text variant="headingSm" as="h4" fontWeight="semibold">Lead Capture</Text>
-                        <Text variant="bodyMd" as="p">{formData.leadCaptureEnabled ? 'Enabled' : 'Disabled'}</Text>
+                        <div className="mt-2">
+                          <Text variant="bodyMd" as="p">{formData.leadCaptureEnabled ? 'Enabled' : 'Disabled'}</Text>
+                        </div>
                       </div>
                       {formData.leadCaptureEnabled && (
                         <>
-                          <div className="p-4 bg-gray-50 rounded-lg">
+                          <div className="p-5 bg-gray-50 rounded-lg">
                             <Text variant="headingSm" as="h4" fontWeight="semibold">Capture Timing</Text>
-                            <Text variant="bodyMd" as="p">{positionOptions.find(p => p.value === formData.leadCapturePosition)?.label}</Text>
+                            <div className="mt-2">
+                              <Text variant="bodyMd" as="p">{positionOptions.find(p => p.value === formData.leadCapturePosition)?.label}</Text>
+                            </div>
                           </div>
-                          <div className="p-4 bg-gray-50 rounded-lg">
+                          <div className="p-5 bg-gray-50 rounded-lg">
                             <Text variant="headingSm" as="h4" fontWeight="semibold">Fields to Collect</Text>
-                            <Text variant="bodyMd" as="p">{formData.leadCaptureFields.join(', ') || 'None'}</Text>
+                            <div className="mt-2">
+                              <Text variant="bodyMd" as="p">{formData.leadCaptureFields.join(', ') || 'None'}</Text>
+                            </div>
                           </div>
                         </>
                       )}
@@ -451,11 +473,11 @@ export default function PromptBuilder() {
                 </Card>
 
                 <Card>
-                  <div className="p-6">
+                  <div className="p-8">
                     <Text variant="headingMd" as="h3" fontWeight="semibold">
                       Generated AI Prompt
                     </Text>
-                    <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <div className="mt-6 p-6 bg-gray-50 rounded-lg border border-gray-200">
                       <Text variant="bodyMd" as="p" breakWord>
                         {compiledPrompt}
                       </Text>
@@ -463,8 +485,8 @@ export default function PromptBuilder() {
                   </div>
                 </Card>
 
-                <div className="flex gap-3 justify-end">
-                  <Button onClick={() => goToStep(2)}>
+                <div className="flex gap-4 justify-end">
+                  <Button onClick={() => goToStep(2)} size="large">
                     Back to Settings
                   </Button>
                   <Button
@@ -498,10 +520,10 @@ export default function PromptBuilder() {
         <Layout.Section>
           {/* Step content */}
           <Card>
-            <div>
+            <div className="p-8">
               {/* Clean progress bar */}
-              <div className="mb-8">
-                <div className="flex justify-between items-center mb-3">
+              <div className="mb-10">
+                <div className="flex justify-between items-center mb-4">
                   <Text variant="bodyMd" as="p" tone="subdued">
                     Step {currentStep + 1} of {steps.length}
                   </Text>
@@ -515,13 +537,15 @@ export default function PromptBuilder() {
                 />
               </div>
 
-              <div className="mb-6">
+              <div className="mb-8">
                 <Text variant="headingLg" as="h2" fontWeight="semibold">
                   {steps[currentStep].title}
                 </Text>
-                <Text variant="bodyMd" as="p" tone="subdued">
-                  {steps[currentStep].description}
-                </Text>
+                <div className="mt-2">
+                  <Text variant="bodyMd" as="p" tone="subdued">
+                    {steps[currentStep].description}
+                  </Text>
+                </div>
               </div>
 
               {renderStepContent()}
@@ -529,8 +553,8 @@ export default function PromptBuilder() {
 
             {/* Navigation buttons */}
             {currentStep < steps.length - 1 && (
-              <div>
-                <div className="flex justify-between">
+              <div className="p-8 pt-0">
+                <div className="flex justify-between gap-4">
                   <Button
                     disabled={currentStep === 0}
                     onClick={() => goToStep(currentStep - 1)}
