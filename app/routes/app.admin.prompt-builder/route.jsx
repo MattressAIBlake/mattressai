@@ -78,12 +78,28 @@ export async function loader({ request }) {
       throw new Error('No session found');
     }
     
+    // Try to load the active prompt version
+    let activePrompt = null;
+    try {
+      const { getActivePromptVersion } = await import('~/lib/domain/promptVersion.server');
+      activePrompt = await getActivePromptVersion(session.shop);
+    } catch (error) {
+      console.error('Error loading active prompt:', error);
+      // Continue without active prompt
+    }
+    
     return json({
       steps: STEPS,
       toneOptions: TONE_OPTIONS,
       positionOptions: POSITION_OPTIONS,
       fieldOptions: FIELD_OPTIONS,
-      shop: session.shop
+      shop: session.shop,
+      activePrompt: activePrompt ? {
+        id: activePrompt.id,
+        runtimeRules: activePrompt.runtimeRules,
+        compiledPrompt: activePrompt.compiledPrompt,
+        createdAt: activePrompt.createdAt
+      } : null
     });
   } catch (error) {
     console.error('Error in prompt builder loader:', error);
@@ -222,7 +238,7 @@ export async function action({ request }) {
 
 // Main component
 export default function PromptBuilder() {
-  const { steps, toneOptions, positionOptions, fieldOptions } = useLoaderData();
+  const { steps, toneOptions, positionOptions, fieldOptions, activePrompt } = useLoaderData();
   const actionData = useActionData();
   const navigation = useNavigation();
   const fetcher = useFetcher();
@@ -244,6 +260,7 @@ export default function PromptBuilder() {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [newQuestion, setNewQuestion] = useState('');
   const [activationSuccess, setActivationSuccess] = useState(false);
+  const [showCurrentPrompt, setShowCurrentPrompt] = useState(true);
 
   // Handle compile fetcher response
   useEffect(() => {
@@ -310,6 +327,25 @@ export default function PromptBuilder() {
     if (stepIndex >= 0 && stepIndex < steps.length) {
       setCurrentStep(stepIndex);
       setShowPreview(false);
+    }
+  };
+
+  // Load current active prompt into form
+  const handleLoadCurrentPrompt = () => {
+    if (activePrompt && activePrompt.runtimeRules) {
+      const rules = activePrompt.runtimeRules;
+      setFormData({
+        tone: rules.tone || 'friendly',
+        questionLimit: rules.questionLimit || 3,
+        earlyExit: rules.earlyExit || false,
+        leadCaptureEnabled: rules.leadCapture?.enabled || false,
+        leadCapturePosition: rules.leadCapture?.position || 'end',
+        leadCaptureFields: rules.leadCapture?.fields || [],
+        maxRecommendations: rules.maxRecommendations || 3,
+        customQuestions: rules.customQuestions || []
+      });
+      setShowCurrentPrompt(false);
+      setCurrentStep(0);
     }
   };
 
@@ -744,6 +780,83 @@ export default function PromptBuilder() {
     >
       <Layout>
         <Layout.Section>
+          {/* Current Active Prompt Card */}
+          {activePrompt && showCurrentPrompt && (
+            <Card>
+              <div className="p-8">
+                <div className="flex items-start justify-between mb-6">
+                  <div>
+                    <Text variant="headingLg" as="h2" fontWeight="semibold">
+                      Current Active Prompt
+                    </Text>
+                    <div className="mt-2">
+                      <Text variant="bodyMd" as="p" tone="subdued">
+                        Activated on {new Date(activePrompt.createdAt).toLocaleDateString('en-US', { 
+                          year: 'numeric', 
+                          month: 'long', 
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </Text>
+                    </div>
+                  </div>
+                  <Button onClick={() => setShowCurrentPrompt(false)}>
+                    Dismiss
+                  </Button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
+                  <div className="p-5 bg-gray-50 rounded-lg">
+                    <Text variant="headingSm" as="h4" fontWeight="semibold">Tone</Text>
+                    <div className="mt-2">
+                      <Text variant="bodyMd" as="p">
+                        {toneOptions.find(t => t.value === activePrompt.runtimeRules.tone)?.label || activePrompt.runtimeRules.tone}
+                      </Text>
+                    </div>
+                  </div>
+                  <div className="p-5 bg-gray-50 rounded-lg">
+                    <Text variant="headingSm" as="h4" fontWeight="semibold">Question Limit</Text>
+                    <div className="mt-2">
+                      <Text variant="bodyMd" as="p">{activePrompt.runtimeRules.questionLimit} questions</Text>
+                    </div>
+                  </div>
+                  <div className="p-5 bg-gray-50 rounded-lg">
+                    <Text variant="headingSm" as="h4" fontWeight="semibold">Early Exit</Text>
+                    <div className="mt-2">
+                      <Text variant="bodyMd" as="p">{activePrompt.runtimeRules.earlyExit ? 'Enabled' : 'Disabled'}</Text>
+                    </div>
+                  </div>
+                  <div className="p-5 bg-gray-50 rounded-lg">
+                    <Text variant="headingSm" as="h4" fontWeight="semibold">Lead Capture</Text>
+                    <div className="mt-2">
+                      <Text variant="bodyMd" as="p">{activePrompt.runtimeRules.leadCapture?.enabled ? 'Enabled' : 'Disabled'}</Text>
+                    </div>
+                  </div>
+                  {activePrompt.runtimeRules.customQuestions && activePrompt.runtimeRules.customQuestions.length > 0 && (
+                    <div className="p-5 bg-gray-50 rounded-lg md:col-span-2">
+                      <Text variant="headingSm" as="h4" fontWeight="semibold">Custom Questions</Text>
+                      <div className="mt-2">
+                        <Text variant="bodyMd" as="p">{activePrompt.runtimeRules.customQuestions.length} question(s)</Text>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <Divider />
+
+                <div className="mt-6 flex gap-4">
+                  <Button primary onClick={handleLoadCurrentPrompt}>
+                    Load & Edit This Prompt
+                  </Button>
+                  <Button onClick={() => window.location.href = '/app/admin/prompt/versions'}>
+                    View All Versions
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          )}
+
           {/* Step content */}
           <Card>
             <div className="p-8">
