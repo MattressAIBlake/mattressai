@@ -242,8 +242,8 @@ export const loader = async ({ request }) => {
       const loadingId = this.addLoadingMessage();
       
       try {
-        // Send to chat API
-        const response = await fetch('/chat', {
+        // Send to chat API through app proxy
+        const response = await fetch('/apps/mattressai/chat', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
