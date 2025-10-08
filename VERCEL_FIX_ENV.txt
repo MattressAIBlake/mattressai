@@ -1,0 +1,13 @@
+# === FIX FOR: https://https ERROR ===
+# Go to: https://vercel.com/blake-austins-projects/mattressaishopify/settings/environment-variables
+# 
+# EDIT (or DELETE and re-add) these variables:
+
+# HOST should NOT have https://
+HOST=mattressaishopify-h5o6k4th9-blake-austins-projects.vercel.app
+
+# SHOPIFY_APP_URL SHOULD have https://
+SHOPIFY_APP_URL=https://mattressaishopify-h5o6k4th9-blake-austins-projects.vercel.app
+
+# Then REDEPLOY (or wait for auto-deploy)
+

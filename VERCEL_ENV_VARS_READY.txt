@@ -9,8 +9,10 @@ SHOPIFY_API_KEY=6b1ed5786311fcaad075b3a7cc5f348e
 # GET THIS: Go to https://partners.shopify.com/181356265473/apps → MattressAI → Configuration → Client credentials → Copy "Client secret"
 SHOPIFY_API_SECRET=PASTE_YOUR_SHOPIFY_CLIENT_SECRET_HERE
 
+# ⚠️ IMPORTANT: HOST should NOT have https:// (we add it in the code)
 HOST=mattressaishopify-h5o6k4th9-blake-austins-projects.vercel.app
 
+# ⚠️ IMPORTANT: SHOPIFY_APP_URL SHOULD have https://
 SHOPIFY_APP_URL=https://mattressaishopify-h5o6k4th9-blake-austins-projects.vercel.app
 
 SCOPES=read_customers,read_inventory,read_orders,read_products
