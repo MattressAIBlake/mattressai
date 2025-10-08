@@ -12,6 +12,7 @@ import {
   InlineStack,
   ProgressBar
 } from '@shopify/polaris';
+import { TitleBar } from '@shopify/app-bridge-react';
 import { authenticate } from '~/shopify.server';
 
 export const loader = async ({ request }) => {
@@ -72,13 +73,17 @@ export default function AnalyticsDashboard() {
   ]);
 
   return (
-    <Page
-      title="Analytics Dashboard"
-      subtitle="Track conversion funnel performance and product insights"
-      breadcrumbs={[
-        { content: 'Home', url: '/app' }
-      ]}
-    >
+    <Page>
+      <TitleBar 
+        title="Analytics Dashboard"
+        primaryAction={null}
+        secondaryActions={[
+          {
+            content: 'Back to Dashboard',
+            onAction: () => window.location.href = '/app'
+          }
+        ]}
+      />
       <Layout>
         <Layout.Section>
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>

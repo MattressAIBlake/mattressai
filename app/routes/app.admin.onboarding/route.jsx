@@ -1,6 +1,7 @@
 import { json } from '@remix-run/node';
 import { authenticate } from '~/shopify.server';
 import { Card, Page, Layout, Button, Text, BlockStack, List, Divider } from '@shopify/polaris';
+import { TitleBar } from '@shopify/app-bridge-react';
 
 export const loader = async ({ request }) => {
   await authenticate.admin(request);
@@ -15,12 +16,17 @@ export default function Onboarding() {
   };
 
   return (
-    <Page 
-      title="Welcome to MattressAI"
-      breadcrumbs={[
-        { content: 'Home', url: '/app' }
-      ]}
-    >
+    <Page>
+      <TitleBar 
+        title="Welcome to MattressAI"
+        primaryAction={null}
+        secondaryActions={[
+          {
+            content: 'Back to Dashboard',
+            onAction: () => window.location.href = '/app'
+          }
+        ]}
+      />
       <Layout>
         <Layout.Section>
           <Card>

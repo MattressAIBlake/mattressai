@@ -16,6 +16,7 @@ import {
   InlineStack,
   Banner
 } from '@shopify/polaris';
+import { TitleBar } from '@shopify/app-bridge-react';
 import { authenticate } from '~/shopify.server';
 
 export const loader = async ({ request }) => {
@@ -121,13 +122,17 @@ export default function AlertsManagement() {
   });
 
   return (
-    <Page 
-      title="Alert Settings" 
-      subtitle="Configure notifications for chat events"
-      breadcrumbs={[
-        { content: 'Home', url: '/app' }
-      ]}
-    >
+    <Page>
+      <TitleBar 
+        title="Alert Settings"
+        primaryAction={null}
+        secondaryActions={[
+          {
+            content: 'Back to Dashboard',
+            onAction: () => window.location.href = '/app'
+          }
+        ]}
+      />
       <Layout>
         {settingsFetcher.data?.success && (
           <Layout.Section>

@@ -14,6 +14,7 @@ import {
   ButtonGroup,
   Filters,
 } from '@shopify/polaris';
+import { TitleBar } from '@shopify/app-bridge-react';
 import { authenticate } from '~/shopify.server';
 
 export const loader = async ({ request }) => {
@@ -102,17 +103,20 @@ export default function LeadsManagement() {
   });
 
   return (
-    <Page
-      title="Lead Management"
-      subtitle={`${total} total leads captured`}
-      breadcrumbs={[
-        { content: 'Home', url: '/app' }
-      ]}
-      primaryAction={{
-        content: 'Export CSV',
-        onAction: handleExport
-      }}
-    >
+    <Page>
+      <TitleBar 
+        title="Lead Management"
+        primaryAction={{
+          content: 'Export CSV',
+          onAction: handleExport
+        }}
+        secondaryActions={[
+          {
+            content: 'Back to Dashboard',
+            onAction: () => window.location.href = '/app'
+          }
+        ]}
+      />
       <Layout>
         <Layout.Section>
           <Card>

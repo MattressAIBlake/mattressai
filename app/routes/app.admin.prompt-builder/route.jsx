@@ -19,6 +19,7 @@ import {
   Box,
   Badge
 } from '@shopify/polaris';
+import { TitleBar } from '@shopify/app-bridge-react';
 import { authenticate } from '~/shopify.server';
 import { createCompiledPrompt, validateRuntimeRules } from '~/lib/domain/runtimeRules';
 import { createPromptVersion } from '~/lib/domain/promptVersion.server';
@@ -866,13 +867,17 @@ export default function PromptBuilder() {
   };
 
   return (
-    <Page
-      title="Prompt Builder"
-      subtitle="Configure your AI assistant's behavior and conversation flow"
-      breadcrumbs={[
-        { content: 'Home', url: '/app' }
-      ]}
-    >
+    <Page>
+      <TitleBar 
+        title="Prompt Builder"
+        primaryAction={null}
+        secondaryActions={[
+          {
+            content: 'Back to Dashboard',
+            onAction: () => window.location.href = '/app'
+          }
+        ]}
+      />
       <Layout>
         <Layout.Section>
           {/* Current Active Prompt Card */}

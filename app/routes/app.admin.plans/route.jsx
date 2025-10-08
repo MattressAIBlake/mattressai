@@ -15,6 +15,7 @@ import {
   List,
   Divider
 } from '@shopify/polaris';
+import { TitleBar } from '@shopify/app-bridge-react';
 import { authenticate } from '~/shopify.server';
 import { getTenantPlan, getUsageStats, getPlanComparison, getOrCreateTenant } from '~/lib/billing/billing.service';
 
@@ -211,13 +212,17 @@ export default function PlansPage() {
   };
 
   return (
-    <Page
-      title="Plans & Billing"
-      subtitle="Manage your subscription and monitor usage metrics"
-      breadcrumbs={[
-        { content: 'Home', url: '/app' }
-      ]}
-    >
+    <Page>
+      <TitleBar 
+        title="Plans & Billing"
+        primaryAction={null}
+        secondaryActions={[
+          {
+            content: 'Back to Dashboard',
+            onAction: () => window.location.href = '/app'
+          }
+        ]}
+      />
       <Layout>
         {/* Current Plan & Trial */}
         <Layout.Section>

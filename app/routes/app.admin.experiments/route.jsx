@@ -11,6 +11,7 @@ import {
   Text,
   BlockStack
 } from '@shopify/polaris';
+import { TitleBar } from '@shopify/app-bridge-react';
 import { authenticate } from '~/shopify.server';
 import { listExperiments } from '~/lib/experiments/ab-testing.service';
 
@@ -78,17 +79,20 @@ export default function ExperimentsPage() {
   ]);
 
   return (
-    <Page
-      title="A/B Testing"
-      breadcrumbs={[
-        { content: 'Home', url: '/app' }
-      ]}
-      primaryAction={{
-        content: 'Create Experiment',
-        onAction: handleCreateExperiment
-      }}
-      subtitle="Test different prompts and recommendation strategies to optimize conversions"
-    >
+    <Page>
+      <TitleBar 
+        title="A/B Testing"
+        primaryAction={{
+          content: 'Create Experiment',
+          onAction: handleCreateExperiment
+        }}
+        secondaryActions={[
+          {
+            content: 'Back to Dashboard',
+            onAction: () => window.location.href = '/app'
+          }
+        ]}
+      />
       <Layout>
         <Layout.Section>
           {experiments.length === 0 ? (

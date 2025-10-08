@@ -13,6 +13,7 @@ import {
   Text,
   Banner
 } from '@shopify/polaris';
+import { TitleBar } from '@shopify/app-bridge-react';
 import { useState } from 'react';
 import { authenticate } from '~/shopify.server';
 import { createExperiment } from '~/lib/experiments/ab-testing.service';
@@ -151,24 +152,24 @@ export default function NewExperimentPage() {
   const totalSplit = variants.reduce((sum, v) => sum + v.splitPercent, 0);
 
   return (
-    <Page
-      title="Create A/B Test"
-      subtitle="Compare different prompts and recommendation strategies to optimize performance"
-      breadcrumbs={[
-        { content: 'Home', url: '/app' },
-        { content: 'A/B Testing', url: '/app/admin/experiments' }
-      ]}
-      primaryAction={{
-        content: 'Create Experiment',
-        onAction: handleSubmit
-      }}
-      secondaryActions={[
-        {
-          content: 'Cancel',
-          onAction: () => navigate('/app/admin/experiments')
-        }
-      ]}
-    >
+    <Page>
+      <TitleBar 
+        title="Create A/B Test"
+        primaryAction={{
+          content: 'Create Experiment',
+          onAction: handleSubmit
+        }}
+        secondaryActions={[
+          {
+            content: 'Cancel',
+            onAction: () => navigate('/app/admin/experiments')
+          },
+          {
+            content: 'Back to Experiments',
+            onAction: () => navigate('/app/admin/experiments')
+          }
+        ]}
+      />
       <Layout>
         <Layout.Section>
           {error && (

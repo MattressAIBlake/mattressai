@@ -13,6 +13,7 @@ import {
   InlineStack,
   ProgressBar
 } from '@shopify/polaris';
+import { TitleBar } from '@shopify/app-bridge-react';
 import { authenticate } from '~/shopify.server';
 import { getExperimentMetrics, updateExperimentStatus, calculateSignificance } from '~/lib/experiments/ab-testing.service';
 
@@ -143,17 +144,18 @@ export default function ExperimentDetailPage() {
   ]);
 
   return (
-    <Page
-      title={experiment.name}
-      titleMetadata={getStatusBadge(experiment.status)}
-      subtitle={`Started ${new Date(experiment.startAt).toLocaleDateString()}`}
-      breadcrumbs={[
-        { content: 'Home', url: '/app' },
-        { content: 'A/B Testing', url: '/app/admin/experiments' }
-      ]}
-      primaryAction={primaryAction()}
-      secondaryActions={secondaryActions()}
-    >
+    <Page>
+      <TitleBar 
+        title={experiment.name}
+        primaryAction={primaryAction()}
+        secondaryActions={[
+          ...secondaryActions(),
+          {
+            content: 'Back to Experiments',
+            onAction: () => navigate('/app/admin/experiments')
+          }
+        ]}
+      />
       <Layout>
         {/* Overview Cards */}
         <Layout.Section>

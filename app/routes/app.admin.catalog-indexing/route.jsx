@@ -23,6 +23,7 @@ import {
   Toast,
   Frame
 } from '@shopify/polaris';
+import { TitleBar } from '@shopify/app-bridge-react';
 import {
   DatabaseIcon,
   CheckCircleIcon,
@@ -252,13 +253,17 @@ export default function CatalogIndexing() {
   const isLoading = fetcher.state === 'loading' || fetcher.state === 'submitting';
 
   return (
-    <Page
-      title="Catalog Indexing"
-      subtitle="Index your mattress catalog for AI-powered recommendations and search"
-      breadcrumbs={[
-        { content: 'Home', url: '/app' }
-      ]}
-    >
+    <Page>
+      <TitleBar 
+        title="Catalog Indexing"
+        primaryAction={null}
+        secondaryActions={[
+          {
+            content: 'Back to Dashboard',
+            onAction: () => window.location.href = '/app'
+          }
+        ]}
+      />
       <Layout>
         {/* Error Banner for Job Already Running */}
         {hasConflictError && (
