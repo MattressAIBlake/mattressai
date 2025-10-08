@@ -1,0 +1,295 @@
+/* Modern Admin Dashboard Styling */
+/* Inspired by contemporary SaaS design with gradient accents */
+
+/* Import Inter font for modern typography */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+/* Root variables for consistent theming */
+:root {
+  --gradient-primary: linear-gradient(135deg, #5B8DEE 0%, #0BC5EA 50%, #48BB78 100%);
+  --gradient-primary-hover: linear-gradient(135deg, #4A7BDD 0%, #0AB4D9 50%, #3AAA67 100%);
+  --color-blue: #5B8DEE;
+  --color-teal: #0BC5EA;
+  --color-green: #48BB78;
+  --color-text-primary: #1A202C;
+  --color-text-secondary: #718096;
+  --color-border: #E2E8F0;
+  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* Enhanced Typography */
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Gradient Primary Buttons */
+.Polaris-Button--primary,
+button[class*="Polaris-Button--primary"] {
+  background: var(--gradient-primary) !important;
+  border: none !important;
+  box-shadow: var(--shadow-md) !important;
+  transition: all 0.3s ease !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.01em !important;
+}
+
+.Polaris-Button--primary:hover,
+button[class*="Polaris-Button--primary"]:hover {
+  background: var(--gradient-primary-hover) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: var(--shadow-lg) !important;
+}
+
+.Polaris-Button--primary:active,
+button[class*="Polaris-Button--primary"]:active {
+  transform: translateY(0) !important;
+}
+
+/* Enhanced Cards */
+.Polaris-Card {
+  box-shadow: var(--shadow-sm) !important;
+  border: 1px solid var(--color-border) !important;
+  transition: all 0.2s ease !important;
+}
+
+.Polaris-Card:hover {
+  box-shadow: var(--shadow-md) !important;
+}
+
+/* Modern Headings */
+.Polaris-Text--headingXl,
+.Polaris-Text--headingLg,
+.Polaris-Text--headingMd {
+  letter-spacing: -0.02em !important;
+  color: var(--color-text-primary) !important;
+}
+
+/* Subdued text with better contrast */
+.Polaris-Text--subdued {
+  color: var(--color-text-secondary) !important;
+}
+
+/* Enhanced Badges with gradient accents */
+.Polaris-Badge--toneSuccess {
+  background: linear-gradient(135deg, #48BB78 0%, #38A169 100%) !important;
+  color: white !important;
+  font-weight: 600 !important;
+  border: none !important;
+}
+
+.Polaris-Badge--toneInfo {
+  background: linear-gradient(135deg, #5B8DEE 0%, #4A7BDD 100%) !important;
+  color: white !important;
+  font-weight: 600 !important;
+  border: none !important;
+}
+
+.Polaris-Badge--toneCritical {
+  background: linear-gradient(135deg, #F56565 0%, #E53E3E 100%) !important;
+  color: white !important;
+  font-weight: 600 !important;
+  border: none !important;
+}
+
+.Polaris-Badge--toneWarning {
+  background: linear-gradient(135deg, #ED8936 0%, #DD6B20 100%) !important;
+  color: white !important;
+  font-weight: 600 !important;
+  border: none !important;
+}
+
+/* Progress Bars with gradient */
+.Polaris-ProgressBar__Progress {
+  background: var(--gradient-primary) !important;
+}
+
+.Polaris-ProgressBar__Progress[style*="tone: success"] {
+  background: linear-gradient(90deg, #48BB78 0%, #38A169 100%) !important;
+}
+
+.Polaris-ProgressBar__Progress[style*="tone: critical"] {
+  background: linear-gradient(90deg, #F56565 0%, #E53E3E 100%) !important;
+}
+
+/* Enhanced Links */
+.Polaris-Link {
+  color: var(--color-blue) !important;
+  font-weight: 500 !important;
+  transition: color 0.2s ease !important;
+}
+
+.Polaris-Link:hover {
+  color: var(--color-teal) !important;
+}
+
+/* Modern Page Header */
+.Polaris-Page-Header__Title {
+  background: var(--gradient-primary) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.02em !important;
+}
+
+/* Enhanced DataTable */
+.Polaris-DataTable__Table {
+  border-radius: 8px !important;
+  overflow: hidden !important;
+}
+
+.Polaris-DataTable__Cell--header {
+  background: linear-gradient(180deg, #F7FAFC 0%, #EDF2F7 100%) !important;
+  font-weight: 600 !important;
+  color: var(--color-text-primary) !important;
+  text-transform: uppercase !important;
+  font-size: 11px !important;
+  letter-spacing: 0.05em !important;
+}
+
+/* Accent color for interactive elements */
+.Polaris-TextField__Input:focus,
+.Polaris-Select__Input:focus {
+  border-color: var(--color-blue) !important;
+  box-shadow: 0 0 0 1px var(--color-blue) !important;
+}
+
+/* Enhanced Dividers */
+.Polaris-Divider {
+  border-color: var(--color-border) !important;
+}
+
+/* Statistics Cards - Special styling for metric displays */
+.Polaris-Card [class*="heading2xl"] {
+  background: var(--gradient-primary) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+  font-weight: 800 !important;
+}
+
+/* Button Group enhancements */
+.Polaris-ButtonGroup {
+  gap: 12px !important;
+}
+
+/* Modern Banner styling */
+.Polaris-Banner {
+  border-left: 4px solid var(--color-blue) !important;
+  box-shadow: var(--shadow-sm) !important;
+}
+
+.Polaris-Banner--statusInfo {
+  border-left-color: var(--color-teal) !important;
+}
+
+.Polaris-Banner--statusSuccess {
+  border-left-color: var(--color-green) !important;
+}
+
+/* Smooth transitions for all interactive elements */
+.Polaris-Button,
+.Polaris-Card,
+.Polaris-TextField,
+.Polaris-Select {
+  transition: all 0.2s ease !important;
+}
+
+/* Enhanced spacing for better readability */
+.Polaris-Page {
+  padding: 24px !important;
+}
+
+/* Custom gradient text class for special headings */
+.gradient-text {
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 700;
+}
+
+/* Improved button sizing and padding */
+.Polaris-Button--sizeLarge {
+  padding: 14px 28px !important;
+  font-size: 16px !important;
+  font-weight: 600 !important;
+}
+
+/* Secondary buttons with modern styling */
+.Polaris-Button--outline {
+  border-color: var(--color-blue) !important;
+  color: var(--color-blue) !important;
+  font-weight: 600 !important;
+  transition: all 0.2s ease !important;
+}
+
+.Polaris-Button--outline:hover {
+  background: rgba(91, 141, 238, 0.05) !important;
+  border-color: var(--color-teal) !important;
+  color: var(--color-teal) !important;
+}
+
+/* Loading states with gradient */
+.Polaris-Spinner svg {
+  color: var(--color-blue) !important;
+}
+
+/* Enhanced form elements */
+.Polaris-Checkbox__Input:checked + .Polaris-Checkbox__Backdrop {
+  background: var(--gradient-primary) !important;
+  border-color: transparent !important;
+}
+
+.Polaris-RadioButton__Input:checked + .Polaris-RadioButton__Backdrop {
+  background: var(--gradient-primary) !important;
+  border-color: transparent !important;
+}
+
+/* Modern Range Slider */
+.Polaris-RangeSlider__TrackFill {
+  background: var(--gradient-primary) !important;
+}
+
+/* Enhanced empty states */
+.Polaris-EmptyState__Image {
+  opacity: 0.8;
+}
+
+/* Modern Tab styling */
+.Polaris-Tabs__Tab--selected {
+  border-bottom: 3px solid var(--color-blue) !important;
+  color: var(--color-blue) !important;
+  font-weight: 600 !important;
+}
+
+/* Subtle animations for cards on hover */
+@keyframes cardHover {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-2px);
+  }
+}
+
+.Polaris-Card:hover {
+  animation: cardHover 0.2s ease forwards;
+}
+
+/* Improve contrast for better accessibility */
+.Polaris-Text--bodyLg {
+  line-height: 1.6 !important;
+}
+
+/* Modern tooltip styling */
+.Polaris-Tooltip {
+  background: var(--color-text-primary) !important;
+  box-shadow: var(--shadow-lg) !important;
+  border-radius: 8px !important;
+}
+
