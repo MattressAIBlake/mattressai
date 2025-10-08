@@ -466,15 +466,15 @@ export const loader = async ({ request }) => {
     /* Chat Bubble */
     .mattressai-chat-bubble {
       position: fixed;
-      bottom: 24px;
-      right: 24px;
-      width: 60px;
-      height: 60px;
+      bottom: 20px;
+      right: 20px;
+      width: 56px;
+      height: 56px;
       border-radius: 50%;
       background: var(--mattress-primary, #2c5f2d);
       color: white;
       border: none;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
       cursor: pointer;
       display: flex;
       align-items: center;
@@ -485,34 +485,34 @@ export const loader = async ({ request }) => {
     }
     
     .mattressai-chat-bubble:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+      transform: scale(1.05);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
     }
     
     .mattressai-chat-bubble svg {
-      width: 28px;
-      height: 28px;
+      width: 24px;
+      height: 24px;
     }
     
     /* Chat Widget */
     .mattressai-widget {
       position: fixed;
-      bottom: 24px;
-      right: 24px;
-      width: 420px;
-      max-width: calc(100vw - 48px);
-      height: 650px;
-      max-height: calc(100vh - 48px);
+      bottom: 20px;
+      right: 20px;
+      width: 360px;
+      max-width: calc(100vw - 40px);
+      height: 550px;
+      max-height: calc(100vh - 100px);
       background: white;
-      border-radius: 16px;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+      border-radius: 12px;
+      box-shadow: 0 5px 40px rgba(0, 0, 0, 0.16);
       display: flex;
       flex-direction: column;
       z-index: 10000;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-      transform: translateY(calc(100% + 48px));
+      transform: translateY(calc(100% + 40px));
       opacity: 0;
-      transition: transform 0.3s ease, opacity 0.3s ease;
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
     }
     
     .mattressai-widget--open {
@@ -522,10 +522,10 @@ export const loader = async ({ request }) => {
     
     /* Widget Header */
     .mattressai-widget__header {
-      padding: 20px;
+      padding: 16px 20px;
       background: var(--mattress-primary, #2c5f2d);
       color: white;
-      border-radius: 16px 16px 0 0;
+      border-radius: 12px 12px 0 0;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -533,13 +533,13 @@ export const loader = async ({ request }) => {
     
     .mattressai-widget__title {
       margin: 0;
-      font-size: 18px;
+      font-size: 16px;
       font-weight: 600;
     }
     
     .mattressai-widget__subtitle {
-      margin: 4px 0 0;
-      font-size: 13px;
+      margin: 2px 0 0;
+      font-size: 12px;
       opacity: 0.9;
     }
     
@@ -569,11 +569,11 @@ export const loader = async ({ request }) => {
     .mattressai-widget__messages {
       flex: 1;
       overflow-y: auto;
-      padding: 20px;
+      padding: 16px;
       background: #f9fafb;
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 12px;
     }
     
     .mattressai-widget__messages::-webkit-scrollbar {
@@ -617,12 +617,12 @@ export const loader = async ({ request }) => {
     
     .mattressai-message__content {
       background: white;
-      padding: 12px 16px;
+      padding: 10px 14px;
       border-radius: 12px;
-      max-width: 280px;
+      max-width: 240px;
       word-wrap: break-word;
       box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-      line-height: 1.5;
+      line-height: 1.4;
       font-size: 14px;
       color: #374151;
     }
@@ -805,13 +805,20 @@ export const loader = async ({ request }) => {
       .mattressai-chat-bubble {
         bottom: 16px;
         right: 16px;
-        width: 56px;
-        height: 56px;
+        width: 52px;
+        height: 52px;
+      }
+      
+      .mattressai-chat-bubble svg {
+        width: 22px;
+        height: 22px;
       }
       
       .mattressai-widget {
         bottom: 0;
         right: 0;
+        left: 0;
+        top: 0;
         width: 100%;
         max-width: 100%;
         height: 100%;
@@ -821,10 +828,15 @@ export const loader = async ({ request }) => {
       
       .mattressai-widget__header {
         border-radius: 0;
+        padding: 14px 16px;
+      }
+      
+      .mattressai-widget__messages {
+        padding: 12px;
       }
       
       .mattressai-message__content {
-        max-width: 240px;
+        max-width: 75%;
       }
     }
   \`;
