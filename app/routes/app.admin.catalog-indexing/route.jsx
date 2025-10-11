@@ -167,10 +167,44 @@ export async function action({ request }) {
 
   if (actionType === 'stop') {
     // Stop indexing job
-    return json({
-      success: true,
-      message: 'Indexing job stopped'
-    });
+    try {
+      // Find the currently running job
+      const currentJob = await prisma.indexJob.findFirst({
+        where: {
+          tenant: session.shop,
+          status: { in: ['pending', 'running'] }
+        },
+        orderBy: { startedAt: 'desc' }
+      });
+
+      if (!currentJob) {
+        return json({
+          error: 'No active indexing job found'
+        }, { status: 404 });
+      }
+
+      // Mark the job as cancelled
+      await prisma.indexJob.update({
+        where: { id: currentJob.id },
+        data: {
+          status: 'failed',
+          finishedAt: new Date(),
+          errorMessage: 'Indexing job cancelled by user'
+        }
+      });
+
+      console.log(`Indexing job ${currentJob.id} cancelled by user for ${session.shop}`);
+
+      return json({
+        success: true,
+        message: 'Indexing job stopped successfully'
+      });
+    } catch (error) {
+      console.error('Failed to stop indexing job:', error);
+      return json({
+        error: 'Failed to stop indexing job'
+      }, { status: 500 });
+    }
   }
 
   return json({ error: 'Invalid action' }, { status: 400 });
@@ -279,14 +313,6 @@ export default function CatalogIndexing() {
     } else {
       return `${secs}s`;
     }
-  };
-
-  // Format cost
-  const formatCost = (cost) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(cost || 0);
   };
 
   const currentJob = data.currentJob;
@@ -503,39 +529,15 @@ export default function CatalogIndexing() {
                     </div>
                   )}
 
-                  {/* Metrics */}
+                  {/* Metrics - Simplified for merchants */}
                   {currentJob && (
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
-                      <div className="text-center">
-                        <Text variant="headingSm" as="h3">
-                          {currentJob.metrics?.tokensUsed || 0}
+                    <div className="mt-4">
+                      <div className="flex items-center justify-center gap-2 p-4 bg-gray-50 rounded-lg">
+                        <Text variant="headingLg" as="h3">
+                          {currentJob.processedProducts || 0}
                         </Text>
-                        <Text variant="bodySm" color="subdued">
-                          Tokens Used
-                        </Text>
-                      </div>
-                      <div className="text-center">
-                        <Text variant="headingSm" as="h3">
-                          {formatCost(currentJob.metrics?.actualCost || currentJob.metrics?.costEstimate)}
-                        </Text>
-                        <Text variant="bodySm" color="subdued">
-                          Cost
-                        </Text>
-                      </div>
-                      <div className="text-center">
-                        <Text variant="headingSm" as="h3">
-                          {currentJob.metrics?.failedProducts || 0}
-                        </Text>
-                        <Text variant="bodySm" color="subdued">
-                          Failed
-                        </Text>
-                      </div>
-                      <div className="text-center">
-                        <Text variant="headingSm" as="h3">
-                          {currentJob.metrics?.processedProducts || 0}
-                        </Text>
-                        <Text variant="bodySm" color="subdued">
-                          Processed
+                        <Text variant="bodyLg" color="subdued">
+                          / {currentJob.totalProducts || 0} products indexed
                         </Text>
                       </div>
                     </div>
@@ -586,18 +588,13 @@ export default function CatalogIndexing() {
                             </Badge>
                             <div>
                               <Text variant="bodyMd" as="p">
-                                {job.totalProducts} mattresses • {formatCost(job.actualCost || job.costEstimate)}
+                                {job.totalProducts} products indexed
                               </Text>
                               <Text variant="bodySm" color="subdued">
                                 {job.startedAt && new Date(job.startedAt).toLocaleString()}
                                 {job.finishedAt && ` • ${formatDuration(job.duration)}`}
                               </Text>
                             </div>
-                          </div>
-                          <div className="text-right">
-                            <Text variant="bodySm" color="subdued">
-                              {job.tokensUsed} tokens
-                            </Text>
                           </div>
                         </div>
                       </List.Item>
