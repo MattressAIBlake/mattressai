@@ -17,6 +17,11 @@ class MCPClient {
     this.tools = [];
     this.customerTools = [];
     this.storefrontTools = [];
+    this.customTools = [];
+    
+    // IMPORTANT: Store shop domain for tenant-specific queries
+    this.shopDomain = hostUrl.replace(/^https?:\/\//, '');
+    
     // TODO: Make this dynamic, for that first we need to allow access of mcp tools on password proteted demo stores.
     this.storefrontMcpEndpoint = `${hostUrl}/api/mcp`;
 
@@ -25,6 +30,65 @@ class MCPClient {
     this.customerAccessToken = "";
     this.conversationId = conversationId;
     this.shopId = shopId;
+    
+    // Define custom mattress search tools
+    this.customTools = [
+      {
+        name: 'search_mattresses',
+        description: 'Search our enriched mattress catalog based on customer preferences. This uses AI-powered vector search with enriched product attributes (firmness, materials, cooling features, etc.). ALWAYS use this tool instead of generic product search when customers ask about mattresses or need mattress recommendations.',
+        input_schema: {
+          type: 'object',
+          properties: {
+            firmness: { 
+              type: 'string', 
+              enum: ['soft', 'medium-soft', 'medium', 'medium-firm', 'firm'],
+              description: 'Desired mattress firmness level'
+            },
+            sleepPosition: { 
+              type: 'string', 
+              enum: ['side', 'back', 'stomach', 'combination'],
+              description: 'Primary sleep position'
+            },
+            budget: { 
+              type: 'object', 
+              properties: { 
+                min: { type: 'number', description: 'Minimum price' }, 
+                max: { type: 'number', description: 'Maximum price' } 
+              },
+              description: 'Price range budget'
+            },
+            coolingPreference: { 
+              type: 'boolean',
+              description: 'Whether customer prefers cooling features for hot sleepers'
+            },
+            motionIsolation: {
+              type: 'boolean',
+              description: 'Whether customer needs motion isolation (for couples)'
+            },
+            edgeSupport: {
+              type: 'boolean',
+              description: 'Whether customer needs strong edge support'
+            },
+            organic: {
+              type: 'boolean',
+              description: 'Whether customer prefers organic/natural materials'
+            },
+            rawQuery: { 
+              type: 'string', 
+              description: 'Free-text search query for any other preferences' 
+            }
+          }
+        }
+      },
+      {
+        name: 'check_index_status',
+        description: 'Check if the mattress catalog has been indexed and is ready for recommendations. Call this at the start of conversations to verify product availability.',
+        input_schema: { 
+          type: 'object', 
+          properties: {} 
+        }
+      }
+    ];
   }
 
   /**
@@ -102,7 +166,8 @@ class MCPClient {
       const storefrontTools = this._formatToolsData(toolsData);
 
       this.storefrontTools = storefrontTools;
-      this.tools = [...this.tools, ...storefrontTools];
+      // IMPORTANT: Add custom tools first so they take priority
+      this.tools = [...this.customTools, ...storefrontTools, ...this.tools];
 
       return storefrontTools;
     } catch (e) {
@@ -120,7 +185,10 @@ class MCPClient {
    * @throws {Error} If tool is not found or call fails
    */
   async callTool(toolName, toolArgs) {
-    if (this.customerTools.some(tool => tool.name === toolName)) {
+    // Check custom tools first (highest priority)
+    if (this.customTools.some(tool => tool.name === toolName)) {
+      return this.callCustomTool(toolName, toolArgs);
+    } else if (this.customerTools.some(tool => tool.name === toolName)) {
       return this.callCustomerTool(toolName, toolArgs);
     } else if (this.storefrontTools.some(tool => tool.name === toolName)) {
       return this.callStorefrontTool(toolName, toolArgs);
@@ -267,6 +335,190 @@ class MCPClient {
     }
 
     return await response.json();
+  }
+
+  /**
+   * Calls a custom tool (local implementation without MCP protocol).
+   * Handles mattress search and indexing status checks.
+   *
+   * @param {string} toolName - Name of the custom tool to call
+   * @param {Object} toolArgs - Arguments to pass to the tool
+   * @returns {Promise<Object>} Result from the tool call
+   * @throws {Error} If the tool call fails
+   */
+  async callCustomTool(toolName, toolArgs) {
+    try {
+      console.log(`Calling custom tool: ${toolName}`, toolArgs);
+      
+      // Import services dynamically
+      const { getProductRecommendations } = await import('./lib/recommendations/recommendation.service');
+      const { PrismaClient } = await import('@prisma/client');
+      const prisma = new PrismaClient();
+      
+      if (toolName === 'search_mattresses') {
+        try {
+          // CRITICAL: Pass shop domain for tenant-specific search
+          const recommendations = await getProductRecommendations(
+            this.shopDomain,  // Tenant identifier
+            toolArgs,
+            { topK: 5 }
+          );
+          
+          if (recommendations.length === 0) {
+            // Check if indexing is in progress
+            const activeJob = await prisma.indexJob.findFirst({
+              where: { 
+                tenant: this.shopDomain, 
+                status: { in: ['pending', 'running'] } 
+              }
+            });
+            
+            if (activeJob) {
+              return {
+                content: [{
+                  type: 'text',
+                  text: 'Our mattress catalog is currently being indexed. This typically takes 5-10 minutes for completion. Would you like general mattress shopping guidance in the meantime, or would you prefer to wait until our full catalog is available?'
+                }]
+              };
+            }
+            
+            // No products indexed at all
+            const tenant = await prisma.tenant.findUnique({ 
+              where: { shop: this.shopDomain } 
+            });
+            
+            const fallbackMessage = tenant?.fallbackContactInfo 
+              ? `Please contact us at ${tenant.fallbackContactInfo} for personalized assistance.`
+              : 'Please contact our team for personalized assistance.';
+            
+            return {
+              content: [{
+                type: 'text',
+                text: `I don't have access to our mattress catalog yet. ${fallbackMessage}`
+              }]
+            };
+          }
+          
+          // Format recommendations for the AI
+          const formattedResults = recommendations.map(product => ({
+            productId: product.productId,
+            title: product.title,
+            vendor: product.vendor,
+            score: product.score,
+            fitScore: product.fitScore,
+            firmness: product.firmness,
+            material: product.material,
+            height: product.height,
+            features: product.features,
+            certifications: product.certifications,
+            whyItFits: product.whyItFits,
+            price: product.price,
+            availableForSale: product.availableForSale
+          }));
+          
+          return { 
+            content: [{ 
+              type: 'text', 
+              text: JSON.stringify({
+                success: true,
+                count: recommendations.length,
+                products: formattedResults
+              }, null, 2)
+            }] 
+          };
+          
+        } catch (error) {
+          console.error('Error in search_mattresses:', error);
+          return {
+            content: [{
+              type: 'text',
+              text: `I encountered an error searching our mattress catalog: ${error.message}. Please try again or contact our support team.`
+            }]
+          };
+        } finally {
+          await prisma.$disconnect();
+        }
+      }
+      
+      if (toolName === 'check_index_status') {
+        try {
+          // Check indexed product count FOR THIS TENANT ONLY
+          const { getVectorStoreProvider } = await import('./lib/ports/provider-registry');
+          const vectorStore = getVectorStoreProvider(this.shopDomain);
+          
+          // Try a simple search to check if any products exist
+          const testEmbedding = new Array(1536).fill(0); // OpenAI embedding dimension
+          const results = await vectorStore.search(testEmbedding, {
+            topK: 1,
+            filter: { tenant_id: this.shopDomain }
+          });
+          
+          const productCount = results.length;
+          const isIndexed = productCount > 0;
+          
+          // Check for active indexing job
+          const activeJob = await prisma.indexJob.findFirst({
+            where: { 
+              tenant: this.shopDomain, 
+              status: { in: ['pending', 'running'] } 
+            },
+            orderBy: { startedAt: 'desc' }
+          });
+          
+          const lastCompletedJob = await prisma.indexJob.findFirst({
+            where: { 
+              tenant: this.shopDomain,
+              status: 'completed'
+            },
+            orderBy: { finishedAt: 'desc' }
+          });
+          
+          return {
+            content: [{
+              type: 'text',
+              text: JSON.stringify({
+                indexed: isIndexed,
+                shop: this.shopDomain,
+                productCount: productCount,
+                indexingInProgress: !!activeJob,
+                lastIndexed: lastCompletedJob?.finishedAt,
+                message: isIndexed 
+                  ? `Catalog is indexed and ready with ${productCount > 0 ? 'products' : 'no products yet'} available`
+                  : activeJob 
+                    ? 'Catalog is currently being indexed...'
+                    : 'Catalog not indexed yet'
+              }, null, 2)
+            }]
+          };
+          
+        } catch (error) {
+          console.error('Error in check_index_status:', error);
+          return {
+            content: [{
+              type: 'text',
+              text: JSON.stringify({ 
+                indexed: false, 
+                error: error.message,
+                message: 'Unable to check index status'
+              }, null, 2)
+            }]
+          };
+        } finally {
+          await prisma.$disconnect();
+        }
+      }
+      
+      throw new Error(`Unknown custom tool: ${toolName}`);
+      
+    } catch (error) {
+      console.error(`Error calling custom tool ${toolName}:`, error);
+      return {
+        content: [{
+          type: 'text',
+          text: `Error executing ${toolName}: ${error.message}`
+        }]
+      };
+    }
   }
 
   /**

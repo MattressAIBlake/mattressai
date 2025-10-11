@@ -116,6 +116,9 @@ export function initializeProviders() {
   // vectorStoreProviders.register('pgvector', () => createPgVectorStoreDriver());
 }
 
+// Auto-initialize providers on module load
+initializeProviders();
+
 /**
  * Get embedding provider for a tenant
  */

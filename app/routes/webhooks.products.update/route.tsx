@@ -38,21 +38,21 @@ export async function action({ request }) {
 
     console.log(`Processing product update webhook for ${shopifyProductId} in ${shopDomain}`);
 
-    // Check if we have an active indexing job for this shop
-    const activeJob = await prisma.indexJob.findFirst({
-      where: {
-        tenant: shopDomain,
-        status: { in: ['pending', 'running'] }
-      }
-    });
-
-    // If there's an active indexing job, let it handle this update
-    // Otherwise, process the update immediately
-    if (!activeJob) {
+    // Always process product updates to keep vector database in sync
+    // This ensures real-time updates even during bulk indexing
+    try {
       await processProductUpdate(shopifyProductId, shopDomain);
+      console.log(`Successfully processed product update for ${shopifyProductId}`);
+      return json({ success: true, processed: true });
+    } catch (error) {
+      console.error(`Failed to process product update for ${shopifyProductId}:`, error);
+      // Return success to prevent Shopify from retrying (we'll log the error)
+      return json({ 
+        success: false, 
+        processed: false,
+        error: error.message 
+      }, { status: 200 }); // Still return 200 to prevent retries
     }
-
-    return json({ success: true, processed: true });
 
   } catch (error) {
     console.error('Product update webhook error:', error);

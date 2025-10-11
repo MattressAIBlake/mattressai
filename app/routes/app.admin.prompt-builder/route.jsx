@@ -1,6 +1,6 @@
 import { json, redirect } from '@remix-run/node';
 import { useState, useEffect } from 'react';
-import { useLoaderData, useActionData, useNavigation, useFetcher } from '@remix-run/react';
+import { useLoaderData, useActionData, useNavigation, useFetcher, useNavigate } from '@remix-run/react';
 import {
   Page,
   Layout,
@@ -306,6 +306,7 @@ export default function PromptBuilder() {
   const navigation = useNavigation();
   const fetcher = useFetcher();
   const activateFetcher = useFetcher();
+  const navigate = useNavigate();
 
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState({
@@ -856,7 +857,7 @@ export default function PromptBuilder() {
 
                 {activationSuccess ? (
                   <div style={{ display: 'flex', gap: '16px', justifyContent: 'flex-end' }}>
-                    <Button onClick={() => window.location.href = '/app'} size="large">
+                    <Button onClick={() => navigate('/app')} size="large">
                       Back to Dashboard
                     </Button>
                     <Button
@@ -898,16 +899,7 @@ export default function PromptBuilder() {
 
   return (
     <Page>
-      <TitleBar 
-        title="Prompt Builder"
-        primaryAction={null}
-        secondaryActions={[
-          {
-            content: 'Back to Dashboard',
-            onAction: () => window.location.href = '/app'
-          }
-        ]}
-      />
+      <TitleBar title="Prompt Builder" />
       <Layout>
         <Layout.Section>
           {/* Current Active Prompt Card */}
@@ -993,7 +985,7 @@ export default function PromptBuilder() {
                     <Button onClick={handleOpenAdvancedEditor}>
                       Edit Prompt Text Directly
                     </Button>
-                    <Button onClick={() => window.location.href = '/app/admin/prompt/versions'}>
+                    <Button onClick={() => navigate('/app/admin/prompt/versions')}>
                       View All Versions
                     </Button>
                   </div>
@@ -1075,7 +1067,7 @@ export default function PromptBuilder() {
 
                 {activationSuccess ? (
                   <div style={{ display: 'flex', gap: '16px' }}>
-                    <Button onClick={() => window.location.href = '/app'} size="large">
+                    <Button onClick={() => navigate('/app')} size="large">
                       Back to Dashboard
                     </Button>
                     <Button

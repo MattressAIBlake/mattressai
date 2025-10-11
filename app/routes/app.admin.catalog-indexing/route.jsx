@@ -1,6 +1,6 @@
 import { json } from '@remix-run/node';
 import { useState, useEffect } from 'react';
-import { useLoaderData, useFetcher } from '@remix-run/react';
+import { useLoaderData, useFetcher, useNavigate } from '@remix-run/react';
 import {
   Page,
   Layout,
@@ -40,13 +40,52 @@ const prisma = new PrismaClient();
 export async function loader({ request }) {
   const { session } = await authenticate.admin(request);
 
-  // In a real implementation, this would call the status endpoint
-  // For now, return mock data
+  // Check for active indexing job
+  const currentJob = await prisma.indexJob.findFirst({
+    where: {
+      tenant: session.shop,
+      status: { in: ['pending', 'running'] }
+    },
+    orderBy: { startedAt: 'desc' }
+  });
+
+  // Get recent completed jobs
+  const recentJobs = await prisma.indexJob.findMany({
+    where: {
+      tenant: session.shop,
+      status: { in: ['completed', 'failed'] }
+    },
+    orderBy: { startedAt: 'desc' },
+    take: 5
+  });
+
+  // Check indexed product count
+  let productCount = 0;
+  let isIndexed = false;
+  try {
+    const { getVectorStoreProvider } = await import('~/lib/ports/provider-registry');
+    const vectorStore = getVectorStoreProvider(session.shop);
+    
+    // Try a simple search to estimate product count
+    const testEmbedding = new Array(1536).fill(0);
+    const results = await vectorStore.search(testEmbedding, {
+      topK: 1,
+      filter: { tenant_id: session.shop }
+    });
+    
+    isIndexed = results.length > 0;
+    // Note: This is just checking if ANY products exist
+    // For actual count, we'd need to query Pinecone's stats API
+  } catch (error) {
+    console.error('Error checking product count:', error);
+  }
+
   return json({
     shop: session.shop,
-    currentJob: null, // Will be populated by the status endpoint
-    recentJobs: [],
-    isIndexing: false,
+    currentJob,
+    recentJobs,
+    isIndexing: !!currentJob,
+    isIndexed,
     configuration: {
       useAIEnrichment: true,
       confidenceThreshold: 0.7
@@ -144,6 +183,7 @@ export default function CatalogIndexing() {
   const data = useLoaderData();
   const fetcher = useFetcher();
   const fallbackFetcher = useFetcher();
+  const navigate = useNavigate();
 
   const [isStarting, setIsStarting] = useState(false);
   const [showNoMattressesModal, setShowNoMattressesModal] = useState(false);
@@ -254,17 +294,38 @@ export default function CatalogIndexing() {
 
   return (
     <Page>
-      <TitleBar 
-        title="Catalog Indexing"
-        primaryAction={null}
-        secondaryActions={[
-          {
-            content: 'Back to Dashboard',
-            onAction: () => window.location.href = '/app'
-          }
-        ]}
-      />
+      <TitleBar title="Catalog Indexing" />
       <Layout>
+        {/* Critical Warning: Products Not Indexed */}
+        {!data.isIndexed && !data.isIndexing && (
+          <Layout.Section>
+            <Banner
+              title="⚠️ Widget Not Functional - Products Not Indexed"
+              tone="critical"
+            >
+              <p>
+                <strong>Your chat widget cannot provide product recommendations until you index your mattress catalog.</strong> 
+                {' '}Click "Start Indexing" below to analyze your products and enable AI-powered recommendations. 
+                This typically takes 5-10 minutes depending on your catalog size.
+              </p>
+            </Banner>
+          </Layout.Section>
+        )}
+        
+        {/* Success Banner: Products Indexed */}
+        {data.isIndexed && !data.isIndexing && (
+          <Layout.Section>
+            <Banner
+              title="✅ Catalog Indexed - Widget is Ready"
+              tone="success"
+            >
+              <p>
+                Your mattress catalog has been indexed and the chat widget can now provide AI-powered product recommendations!
+              </p>
+            </Banner>
+          </Layout.Section>
+        )}
+
         {/* Error Banner for Job Already Running */}
         {hasConflictError && (
           <Layout.Section>

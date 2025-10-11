@@ -100,24 +100,8 @@
 
 ---
 
-### Option 4: Hybrid Approach (What I Recommend)
+### 
 
-```
-Vercel (Remix Backend)
-   ↓
-Cloudflare (DNS + CDN + Security)
-   ↓
-Supabase (PostgreSQL Database)
-   ↓
-Firebase (Optional: Real-time features for Phase 6+)
-```
-
-**Why This Works:**
-
-1. **Vercel** handles your Remix app (what it's designed for)
-2. **Cloudflare** protects and speeds up Vercel (DDoS, caching)
-3. **Supabase** gives you PostgreSQL (required for Prisma migrations)
-4. **Firebase** sits idle until you need real-time features
 
 **Total Cost:**
 - Vercel Pro: $20/month
