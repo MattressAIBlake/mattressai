@@ -547,6 +547,9 @@ export const loader = async ({ request }) => {
                 } else if (data.type === 'product_results') {
                   // Display product recommendations
                   this.displayProducts(data.products);
+                } else if (data.type === 'show_lead_form') {
+                  // Display lead capture form
+                  this.displayLeadForm(data.prefill, data.fields);
                 } else if (data.type === 'end_turn') {
                   this.setTyping(false);
                   currentMessage = '';
@@ -670,6 +673,220 @@ export const loader = async ({ request }) => {
       
       messagesContainer.appendChild(productsDiv);
       this.scrollToBottom();
+    },
+    
+    displayLeadForm: function(prefill = {}, fields = ['email', 'name', 'phone', 'zip']) {
+      // Check if form already shown
+      const formShown = sessionStorage.getItem('mattressai_lead_form_shown');
+      if (formShown === 'true') {
+        return;
+      }
+      
+      // Mark as shown
+      sessionStorage.setItem('mattressai_lead_form_shown', 'true');
+      
+      const messagesContainer = document.querySelector('#mattressai-messages');
+      const formDiv = document.createElement('div');
+      formDiv.className = 'mattressai-lead-form';
+      formDiv.id = 'mattressai-lead-form-container';
+      
+      // Build form fields HTML
+      let fieldsHTML = '';
+      
+      if (fields.includes('name')) {
+        fieldsHTML += \`
+          <div class="mattressai-lead-form__field">
+            <label for="mattressai-lead-name" class="mattressai-lead-form__label">Name</label>
+            <input 
+              type="text" 
+              id="mattressai-lead-name" 
+              name="name" 
+              class="mattressai-lead-form__input"
+              placeholder="Your name"
+              value="\${prefill.name || ''}"
+              required
+            />
+          </div>
+        \`;
+      }
+      
+      if (fields.includes('email')) {
+        fieldsHTML += \`
+          <div class="mattressai-lead-form__field">
+            <label for="mattressai-lead-email" class="mattressai-lead-form__label">Email *</label>
+            <input 
+              type="email" 
+              id="mattressai-lead-email" 
+              name="email" 
+              class="mattressai-lead-form__input"
+              placeholder="your@email.com"
+              value="\${prefill.email || ''}"
+              required
+            />
+          </div>
+        \`;
+      }
+      
+      if (fields.includes('phone')) {
+        fieldsHTML += \`
+          <div class="mattressai-lead-form__field">
+            <label for="mattressai-lead-phone" class="mattressai-lead-form__label">Phone</label>
+            <input 
+              type="tel" 
+              id="mattressai-lead-phone" 
+              name="phone" 
+              class="mattressai-lead-form__input"
+              placeholder="(123) 456-7890"
+              value="\${prefill.phone || ''}"
+            />
+          </div>
+        \`;
+      }
+      
+      if (fields.includes('zip')) {
+        fieldsHTML += \`
+          <div class="mattressai-lead-form__field">
+            <label for="mattressai-lead-zip" class="mattressai-lead-form__label">ZIP Code</label>
+            <input 
+              type="text" 
+              id="mattressai-lead-zip" 
+              name="zip" 
+              class="mattressai-lead-form__input"
+              placeholder="12345"
+              value="\${prefill.zip || ''}"
+              maxlength="5"
+            />
+          </div>
+        \`;
+      }
+      
+      formDiv.innerHTML = \`
+        <div class="mattressai-lead-form__card">
+          <h4 class="mattressai-lead-form__heading">Help us assist you better</h4>
+          <p class="mattressai-lead-form__description">
+            We'll use this information to follow up with personalized recommendations
+          </p>
+          
+          <form id="mattressai-lead-form-element" class="mattressai-lead-form__form">
+            \${fieldsHTML}
+            
+            <div class="mattressai-lead-form__consent">
+              <label class="mattressai-lead-form__consent-label">
+                <input 
+                  type="checkbox" 
+                  id="mattressai-lead-consent" 
+                  name="consent" 
+                  class="mattressai-lead-form__checkbox"
+                  required
+                />
+                <span>I consent to being contacted about my mattress search</span>
+              </label>
+            </div>
+            
+            <div class="mattressai-lead-form__actions">
+              <button 
+                type="submit" 
+                class="mattressai-lead-form__submit"
+                disabled
+              >
+                Submit
+              </button>
+              <button 
+                type="button" 
+                class="mattressai-lead-form__skip"
+              >
+                Skip for now
+              </button>
+            </div>
+          </form>
+        </div>
+      \`;
+      
+      messagesContainer.appendChild(formDiv);
+      this.scrollToBottom();
+      
+      // Setup form listeners
+      const form = formDiv.querySelector('#mattressai-lead-form-element');
+      const submitBtn = formDiv.querySelector('.mattressai-lead-form__submit');
+      const skipBtn = formDiv.querySelector('.mattressai-lead-form__skip');
+      const consentCheckbox = formDiv.querySelector('#mattressai-lead-consent');
+      
+      // Enable submit only when consent is checked
+      consentCheckbox.addEventListener('change', () => {
+        submitBtn.disabled = !consentCheckbox.checked;
+      });
+      
+      // Handle form submission
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const formData = new FormData(form);
+        await this.submitLead({
+          name: formData.get('name'),
+          email: formData.get('email'),
+          phone: formData.get('phone'),
+          zip: formData.get('zip'),
+          consent: true
+        });
+      });
+      
+      // Handle skip
+      skipBtn.addEventListener('click', () => {
+        formDiv.remove();
+        this.addMessage('assistant', 'No problem! Feel free to reach out anytime.');
+      });
+    },
+    
+    submitLead: async function(data) {
+      const form = document.querySelector('#mattressai-lead-form-element');
+      const submitBtn = form?.querySelector('.mattressai-lead-form__submit');
+      
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Submitting...';
+      }
+      
+      try {
+        const response = await fetch('/apps/mattressai/lead', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            tenantId: this.config.tenant,
+            sessionId: this.sessionId,
+            conversationId: this.getConversationId(),
+            email: data.email,
+            phone: data.phone,
+            name: data.name,
+            zip: data.zip,
+            consent: data.consent
+          })
+        });
+        
+        const result = await response.json();
+        
+        if (result.ok) {
+          // Remove form
+          const formContainer = document.querySelector('#mattressai-lead-form-container');
+          if (formContainer) formContainer.remove();
+          
+          // Show success message
+          this.addMessage('assistant', 'Thank you! We\\'ll be in touch soon with personalized recommendations.');
+          
+          // Track event
+          this.trackEvent('lead_captured', { leadId: result.leadId });
+        } else {
+          throw new Error(result.error || 'Failed to submit');
+        }
+      } catch (error) {
+        console.error('Failed to submit lead:', error);
+        
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Submit';
+        }
+        
+        this.addMessage('assistant', 'Sorry, there was an error submitting your information. Please try again.');
+      }
     },
     
     trackEvent: async function(type, metadata = {}) {
@@ -1254,6 +1471,145 @@ export const loader = async ({ request }) => {
     
     .mattressai-product-card__button:hover {
       background: #1e293b;
+    }
+    
+    /* Lead Form */
+    .mattressai-lead-form {
+      margin: 16px 0;
+      animation: slideUp 0.3s ease;
+    }
+    
+    .mattressai-lead-form__card {
+      background: var(--mattress-bg, white);
+      border: 2px solid var(--mattress-primary, #0F172A);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    
+    .mattressai-lead-form__heading {
+      margin: 0 0 8px;
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--mattress-text, #111827);
+    }
+    
+    .mattressai-lead-form__description {
+      margin: 0 0 16px;
+      font-size: 14px;
+      color: var(--mattress-text-light, #6b7280);
+      line-height: 1.5;
+    }
+    
+    .mattressai-lead-form__form {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    
+    .mattressai-lead-form__field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    
+    .mattressai-lead-form__label {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--mattress-text, #374151);
+    }
+    
+    .mattressai-lead-form__input {
+      padding: 10px 12px;
+      border: 1px solid var(--mattress-border, #d1d5db);
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: inherit;
+      background: var(--mattress-surface, #f9fafb);
+      color: var(--mattress-text, #374151);
+      transition: all 0.2s ease;
+      outline: none;
+    }
+    
+    .mattressai-lead-form__input:focus {
+      border-color: var(--mattress-primary, #0F172A);
+      background: var(--mattress-bg, white);
+      box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.1);
+    }
+    
+    .mattressai-lead-form__input::placeholder {
+      color: var(--mattress-text-light, #9ca3af);
+    }
+    
+    .mattressai-lead-form__consent {
+      margin-top: 4px;
+    }
+    
+    .mattressai-lead-form__consent-label {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 13px;
+      color: var(--mattress-text, #374151);
+      line-height: 1.5;
+      cursor: pointer;
+    }
+    
+    .mattressai-lead-form__checkbox {
+      margin-top: 2px;
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+      flex-shrink: 0;
+      accent-color: var(--mattress-primary, #0F172A);
+    }
+    
+    .mattressai-lead-form__actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 8px;
+    }
+    
+    .mattressai-lead-form__submit {
+      flex: 1;
+      padding: 12px 20px;
+      background: var(--mattress-primary, #0F172A);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    
+    .mattressai-lead-form__submit:hover:not(:disabled) {
+      background: #1e293b;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    }
+    
+    .mattressai-lead-form__submit:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+    
+    .mattressai-lead-form__skip {
+      padding: 12px 20px;
+      background: transparent;
+      color: var(--mattress-text-light, #6b7280);
+      border: 1px solid var(--mattress-border, #d1d5db);
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    
+    .mattressai-lead-form__skip:hover {
+      background: var(--mattress-surface, #f9fafb);
+      border-color: var(--mattress-text-light, #9ca3af);
     }
     
     /* Input Container */

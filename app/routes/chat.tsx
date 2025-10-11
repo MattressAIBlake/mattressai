@@ -10,6 +10,8 @@ import { createSseStream } from "../services/streaming.server";
 import { createOpenAIService } from "../services/openai.server";
 import { createToolService } from "../services/tool.server";
 import { unauthenticated } from "../shopify.server";
+import { extractLeadFromConversation, shouldTriggerLeadForm, getFormFields } from "../services/lead-extractor.server";
+import { getActivePromptVersion } from "~/lib/domain/promptVersion.server";
 
 
 /**
@@ -281,6 +283,33 @@ async function handleChatSession({
         type: 'product_results',
         products: productsToDisplay
       });
+    }
+
+    // Check for lead capture opportunity
+    try {
+      const promptVersion = await getActivePromptVersion(shopDomain);
+      if (promptVersion && promptVersion.runtimeRules) {
+        const runtimeRules = promptVersion.runtimeRules;
+        
+        // Check if we should show the lead form
+        // Note: We track if form was shown using session storage on client side
+        // Backend can't track this, so we send the event and let client decide
+        const leadData = extractLeadFromConversation(conversationHistory);
+        const hasEnoughData = leadData.email || leadData.phone || leadData.name;
+        
+        if (runtimeRules.leadCapture?.enabled && hasEnoughData) {
+          const fields = getFormFields(leadData, runtimeRules.leadCapture.fields);
+          
+          stream.sendMessage({
+            type: 'show_lead_form',
+            prefill: leadData,
+            fields: fields
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error checking for lead capture:', error);
+      // Don't throw - lead capture is optional
     }
   } catch (error) {
     // The streaming handler takes care of error handling
