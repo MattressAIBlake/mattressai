@@ -777,6 +777,18 @@ Configure which events trigger notifications:
 }
 ```
 
+**5. Podium CRM Integration**
+- Direct lead submission to Podium platform
+- Configurable per merchant (Location ID + API Key)
+- GDPR-compliant (requires consent)
+- Test endpoint: `/app/admin/integrations/test`
+
+**6. Birdeye CRM Integration**
+- Direct customer submission to Birdeye platform
+- Configurable per merchant (Business ID + API Key)
+- GDPR-compliant (requires consent)
+- Test endpoint: `/app/admin/integrations/test`
+
 #### **Smart Throttling & Quiet Hours**
 - **Per-Hour Limit**: Max alerts per tenant per hour (default: 20)
 - **Per-Session Limit**: Max alerts per session (default: 2)
@@ -1032,6 +1044,14 @@ TWILIO_FROM_NUMBER=+1234567890
 
 # Slack Alerts (optional, can be set per-tenant in UI)
 SLACK_WEBHOOK_URL=https://hooks.slack.com/services/xxx
+
+# Podium CRM Integration (optional)
+PODIUM_API_URL=https://api.podium.com/v4
+PODIUM_API_KEY=your_global_podium_key    # Optional global key
+
+# Birdeye CRM Integration (optional)
+BIRDEYE_API_URL=https://api.birdeye.com/v2
+BIRDEYE_API_KEY=your_global_birdeye_key  # Optional global key
 
 # Alert Configuration
 ALERTS_MAX_PER_HOUR=50           # Global safety cap

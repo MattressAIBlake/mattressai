@@ -1,10 +1,12 @@
 /**
  * Alert Service
- * Handles alert delivery across multiple channels: email, SMS, Slack, webhook
+ * Handles alert delivery across multiple channels: email, SMS, Slack, webhook, Podium, Birdeye
  */
 
 import prisma from '~/db.server';
 import crypto from 'crypto';
+import { sendLeadToPodium } from '~/lib/integrations/podium.service';
+import { sendLeadToBirdeye } from '~/lib/integrations/birdeye.service';
 
 interface AlertPayload {
   sessionId: string;
@@ -82,6 +84,12 @@ export const sendAlert = async (alertId: string): Promise<void> => {
         break;
       case 'webhook':
         await sendWebhookAlert(alert.tenantId, sanitizedPayload, payload.config);
+        break;
+      case 'podium':
+        await sendPodiumAlert(alert.tenantId, sanitizedPayload, payload.config, consent);
+        break;
+      case 'birdeye':
+        await sendBirdeyeAlert(alert.tenantId, sanitizedPayload, payload.config, consent);
         break;
       default:
         throw new Error(`Unknown channel: ${alert.channel}`);
@@ -430,6 +438,100 @@ const sendWebhookAlert = async (
 };
 
 /**
+ * Send Podium alert
+ */
+const sendPodiumAlert = async (
+  tenantId: string,
+  payload: AlertPayload,
+  config: any,
+  consent: boolean
+): Promise<void> => {
+  if (!consent) {
+    throw new Error('Cannot send lead to Podium without user consent (GDPR compliance)');
+  }
+
+  const locationId = config.locationId;
+  const apiKey = config.apiKey || process.env.PODIUM_API_KEY;
+
+  if (!locationId || !apiKey) {
+    throw new Error('Podium locationId and apiKey are required in channel config');
+  }
+
+  // Fetch lead details from session
+  const lead = await prisma.lead.findFirst({
+    where: {
+      sessionId: payload.sessionId,
+      tenantId
+    },
+    orderBy: {
+      createdAt: 'desc'
+    }
+  });
+
+  if (!lead) {
+    throw new Error(`No lead found for session ${payload.sessionId}`);
+  }
+
+  await sendLeadToPodium({
+    locationId,
+    apiKey,
+    leadEmail: lead.email || undefined,
+    leadName: lead.name || undefined,
+    leadPhone: lead.phone || undefined,
+    intentScore: payload.intentScore,
+    summary: payload.summary,
+    sessionId: payload.sessionId
+  });
+};
+
+/**
+ * Send Birdeye alert
+ */
+const sendBirdeyeAlert = async (
+  tenantId: string,
+  payload: AlertPayload,
+  config: any,
+  consent: boolean
+): Promise<void> => {
+  if (!consent) {
+    throw new Error('Cannot send lead to Birdeye without user consent (GDPR compliance)');
+  }
+
+  const businessId = config.businessId;
+  const apiKey = config.apiKey || process.env.BIRDEYE_API_KEY;
+
+  if (!businessId || !apiKey) {
+    throw new Error('Birdeye businessId and apiKey are required in channel config');
+  }
+
+  // Fetch lead details from session
+  const lead = await prisma.lead.findFirst({
+    where: {
+      sessionId: payload.sessionId,
+      tenantId
+    },
+    orderBy: {
+      createdAt: 'desc'
+    }
+  });
+
+  if (!lead) {
+    throw new Error(`No lead found for session ${payload.sessionId}`);
+  }
+
+  await sendLeadToBirdeye({
+    businessId,
+    apiKey,
+    leadEmail: lead.email || undefined,
+    leadName: lead.name || undefined,
+    leadPhone: lead.phone || undefined,
+    intentScore: payload.intentScore,
+    summary: payload.summary,
+    sessionId: payload.sessionId
+  });
+};
+
+/**
  * Get or create default alert settings for a tenant
  */
 export const getOrCreateAlertSettings = async (tenantId: string): Promise<any> => {
@@ -454,7 +556,9 @@ export const getOrCreateAlertSettings = async (tenantId: string): Promise<any> =
           email: {},
           sms: {},
           slack: {},
-          webhook: {}
+          webhook: {},
+          podium: {},
+          birdeye: {}
         }),
         throttles: JSON.stringify({
           perDay: 2,
@@ -537,6 +641,8 @@ export const sendTestAlert = async (
     intentScore: 85,
     endReason: 'test',
     summary: 'This is a test alert from MattressAI',
+    leadEmail: 'test@mattressai.app',
+    leadName: 'Test Lead',
     timestamp: new Date().toISOString(),
     config
   };
@@ -553,6 +659,12 @@ export const sendTestAlert = async (
       break;
     case 'webhook':
       await sendWebhookAlert(tenantId, testPayload, config);
+      break;
+    case 'podium':
+      await sendPodiumAlert(tenantId, testPayload, config, true);
+      break;
+    case 'birdeye':
+      await sendBirdeyeAlert(tenantId, testPayload, config, true);
       break;
     default:
       throw new Error(`Unknown channel: ${channel}`);
