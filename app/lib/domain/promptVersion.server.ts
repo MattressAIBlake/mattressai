@@ -74,6 +74,17 @@ export async function activatePromptVersion(tenant: string, versionId: string): 
 }
 
 /**
+ * Deletes a specific prompt version (prevents deleting active version)
+ */
+export async function deletePromptVersion(tenant: string, versionId: string): Promise<boolean> {
+  if (STORAGE_TYPE === 'json') {
+    return await deletePromptVersionFromJson(tenant, versionId);
+  } else {
+    return await deletePromptVersionFromSqlite(tenant, versionId);
+  }
+}
+
+/**
  * SQLite implementation
  */
 async function createPromptVersionInSqlite(
@@ -161,6 +172,32 @@ async function activatePromptVersionInSqlite(tenant: string, versionId: string):
   };
 }
 
+async function deletePromptVersionFromSqlite(tenant: string, versionId: string): Promise<boolean> {
+  // Check if this version is active
+  const version = await prisma.promptVersion.findUnique({
+    where: { id: versionId },
+  });
+
+  if (!version) {
+    throw new Error('Version not found');
+  }
+
+  if (version.tenant !== tenant) {
+    throw new Error('Unauthorized');
+  }
+
+  if (version.isActive) {
+    throw new Error('Cannot delete the active version');
+  }
+
+  // Delete the version
+  await prisma.promptVersion.delete({
+    where: { id: versionId },
+  });
+
+  return true;
+}
+
 /**
  * JSON file implementation (fallback)
  */
@@ -243,6 +280,27 @@ async function activatePromptVersionInJson(tenant: string, versionId: string): P
   }
 
   return null;
+}
+
+async function deletePromptVersionFromJson(tenant: string, versionId: string): Promise<boolean> {
+  const versions = await getPromptVersionsFromJson(tenant);
+  const version = versions.find(v => v.id === versionId);
+
+  if (!version) {
+    throw new Error('Version not found');
+  }
+
+  if (version.isActive) {
+    throw new Error('Cannot delete the active version');
+  }
+
+  // Delete the file
+  const versionsDir = join(process.cwd(), 'data', 'prompt-versions');
+  const filePath = join(versionsDir, `${tenant}-${versionId}.json`);
+  const { unlink } = await import('fs/promises');
+  await unlink(filePath);
+
+  return true;
 }
 
 /**

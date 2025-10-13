@@ -282,6 +282,7 @@ model Tenant {
   shop                 String    @unique
   planName             String    @default("starter")
   billingId            String?
+  billingStatus        String?
   trialEndsAt          DateTime?
   quotas               String?
   fallbackMessageType  String?
@@ -292,6 +293,7 @@ model Tenant {
 
   @@index([shop])
   @@index([planName])
+  @@index([billingStatus])
 }
 
 model Plan {

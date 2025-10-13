@@ -525,3 +525,134 @@ h3[class*="Polaris-Text"] {
   border-radius: 8px;
 }
 
+/* ===== PROMPT VERSIONS PAGE STYLING ===== */
+
+/* Version card styling */
+.version-card {
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.version-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.version-card-active {
+  border-left: 8px solid var(--color-green);
+  background: linear-gradient(90deg, #F0FFF4 0%, #FFFFFF 20%);
+}
+
+/* Version summary grid */
+.version-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+/* Version detail box */
+.version-detail-box {
+  padding: 16px;
+  background-color: #F7FAFC;
+  border-radius: 8px;
+  border-left: 4px solid var(--color-blue);
+}
+
+.version-detail-box-alt {
+  padding: 16px;
+  background-color: #F7FAFC;
+  border-radius: 8px;
+  border-left: 4px solid var(--color-teal);
+}
+
+/* Comparison panel styling */
+.comparison-panel {
+  padding: 24px;
+  background-color: #F0F9FF;
+  border: 2px solid var(--color-blue);
+  border-radius: 12px;
+  box-shadow: var(--shadow-md);
+}
+
+.comparison-panel-alt {
+  padding: 24px;
+  background-color: #ECFEFF;
+  border: 2px solid var(--color-teal);
+  border-radius: 12px;
+  box-shadow: var(--shadow-md);
+}
+
+/* Compiled prompt display */
+.compiled-prompt-display {
+  padding: 20px;
+  background-color: #1A202C;
+  color: #E2E8F0;
+  border-radius: 8px;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  overflow-x: auto;
+  box-shadow: var(--shadow-sm);
+}
+
+/* Compare mode highlight */
+.compare-mode-active {
+  background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%);
+  border: 2px solid #F59E0B;
+}
+
+/* Version action buttons */
+.version-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* Selected version indicator */
+.version-selected-badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 32px;
+  height: 32px;
+  background: var(--gradient-primary);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: bold;
+  font-size: 14px;
+  box-shadow: var(--shadow-md);
+  z-index: 10;
+}
+
+/* Empty state styling for versions */
+.versions-empty-state {
+  text-align: center;
+  padding: 80px 40px;
+  background: linear-gradient(135deg, #F0F9FF 0%, #ECFEFF 100%);
+  border-radius: 12px;
+  border: 2px dashed var(--color-blue);
+}
+
+/* Version metadata styling */
+.version-metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+/* Expandable section animation */
+.version-expandable {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease-out;
+}
+
+.version-expandable.expanded {
+  max-height: 2000px;
+  transition: max-height 0.5s ease-in;
+}
+

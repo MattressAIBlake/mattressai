@@ -65,7 +65,7 @@ export const loader = async ({ request }) => {
         avatarImage: root.dataset.avatarImage || '',
         avatarBackground: root.dataset.avatarBackground || '#0F172A',
         bubbleStyle: root.dataset.bubbleStyle || 'text',
-        bubbleText: root.dataset.bubbleText || 'MattressAI',
+        bubbleText: root.dataset.bubbleText || 'Mattress Match',
         bubbleSize: parseInt(root.dataset.bubbleSize || '64', 10),
         positionHorizontal: root.dataset.positionHorizontal || 'right',
         positionBottom: parseInt(root.dataset.positionBottom || '20', 10),

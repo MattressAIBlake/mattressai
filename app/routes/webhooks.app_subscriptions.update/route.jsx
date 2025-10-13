@@ -39,18 +39,15 @@ export const action = async ({ request }) => {
     });
 
     // Handle subscription status changes
-    if (app_subscription.status === 'ACTIVE') {
-      // Subscription is active - upgrade the plan
-      const planName = app_subscription.name.toLowerCase().replace(' plan', '');
-      
-      if (planName === 'pro' || planName === 'enterprise') {
-        await upgradePlan(shopDomain, planName, app_subscription.id);
-        console.log(`Upgraded ${shopDomain} to ${planName} plan`);
-      }
-    } else if (app_subscription.status === 'CANCELLED' || app_subscription.status === 'EXPIRED') {
+    // Note: ACTIVE status is handled by the billing callback route, not here
+    // This webhook only processes cancellations and expirations
+    if (app_subscription.status === 'CANCELLED' || app_subscription.status === 'EXPIRED') {
       // Subscription cancelled or expired - downgrade to starter
       await downgradePlan(shopDomain);
-      console.log(`Downgraded ${shopDomain} to starter plan`);
+      console.log(`Downgraded ${shopDomain} to starter plan due to ${app_subscription.status}`);
+    } else if (app_subscription.status === 'ACTIVE') {
+      // Log for monitoring, but don't process - callback handles activation
+      console.log(`ACTIVE subscription webhook received for ${shopDomain} - skipping (handled by callback)`);
     }
 
     return json({ success: true, processed: true });

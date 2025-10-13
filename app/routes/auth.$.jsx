@@ -17,7 +17,7 @@ export const loader = async ({ request }) => {
   
   // For other auth paths, use authenticate.admin()
   // This handles OAuth callbacks and other auth flows
-  const { session } = await authenticate.admin(request);
+  const { session, admin } = await authenticate.admin(request);
   
   // Check if this is a first-time install and trigger automatic indexing
   if (session?.shop) {
@@ -33,6 +33,35 @@ export const loader = async ({ request }) => {
           firstIndexCompleted: false
         }
       });
+      
+      // Check if this is a reinstall with a previous paid plan
+      if (tenant.planName !== 'starter' && !tenant.billingId) {
+        console.log(`Reinstall detected for ${session.shop} with previous plan: ${tenant.planName}`);
+        
+        // Import billing service
+        const { requestBillingApproval } = await import('~/lib/billing/billing.service');
+        
+        try {
+          const appUrl = process.env.SHOPIFY_APP_URL || process.env.HOST || 'mattressaishopify.vercel.app';
+          const returnUrl = `https://${appUrl}/app/admin/billing/callback?plan=${tenant.planName}&reinstall=true`;
+          
+          const { confirmationUrl } = await requestBillingApproval(
+            session.shop,
+            admin,
+            tenant.planName,
+            returnUrl
+          );
+          
+          if (confirmationUrl) {
+            console.log(`Redirecting ${session.shop} to billing approval for ${tenant.planName} plan`);
+            // Redirect to billing approval
+            return redirect(confirmationUrl);
+          }
+        } catch (error) {
+          console.error('Failed to request billing approval on reinstall:', error);
+          // Continue to app even if billing fails
+        }
+      }
       
       // If first-time install, trigger automatic indexing
       if (!tenant.firstIndexCompleted) {

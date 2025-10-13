@@ -1,5 +1,5 @@
 import { json, redirect } from '@remix-run/node';
-import { useLoaderData, useSubmit, useActionData, useNavigation } from '@remix-run/react';
+import { useLoaderData, useSubmit, useActionData, useNavigation, useSearchParams } from '@remix-run/react';
 import { useEffect } from 'react';
 import {
   Page,
@@ -13,7 +13,8 @@ import {
   Badge,
   ProgressBar,
   List,
-  Divider
+  Divider,
+  Banner
 } from '@shopify/polaris';
 import { TitleBar } from '@shopify/app-bridge-react';
 import { authenticate } from '~/shopify.server';
@@ -69,7 +70,7 @@ export const action = async ({ request }) => {
     try {
       // Get the app URL from environment
       const appUrl = process.env.SHOPIFY_APP_URL || process.env.HOST || 'mattressaishopify.vercel.app';
-      const returnUrl = `https://${appUrl}/app/admin/plans`;
+      const returnUrl = `https://${appUrl}/app/admin/billing/callback?plan=${planName}`;
       
       // Create app subscription using GraphQL Admin API
       const response = await admin.graphql(
@@ -174,6 +175,11 @@ export default function PlansPage() {
   const actionData = useActionData();
   const navigation = useNavigation();
 
+  // Get status from URL params (from billing callback)
+  const [searchParams] = useSearchParams();
+  const billingStatus = searchParams.get('status');
+  const billingMessage = searchParams.get('message');
+
   // Handle redirect to Shopify billing confirmation
   useEffect(() => {
     if (actionData?.redirectToShopify && actionData?.confirmationUrl) {
@@ -224,6 +230,32 @@ export default function PlansPage() {
         ]}
       />
       <Layout>
+        {/* Billing Status Messages */}
+        {billingStatus && (
+          <Layout.Section>
+            {billingStatus === 'success' && (
+              <Banner tone="success" onDismiss={() => window.history.replaceState({}, '', '/app/admin/plans')}>
+                <p>{billingMessage || 'Plan upgraded successfully!'}</p>
+              </Banner>
+            )}
+            {billingStatus === 'declined' && (
+              <Banner tone="warning" onDismiss={() => window.history.replaceState({}, '', '/app/admin/plans')}>
+                <p>Billing approval was declined. You can upgrade your plan anytime.</p>
+              </Banner>
+            )}
+            {billingStatus === 'pending' && (
+              <Banner tone="info" onDismiss={() => window.history.replaceState({}, '', '/app/admin/plans')}>
+                <p>Your billing approval is still pending. Please complete the approval process.</p>
+              </Banner>
+            )}
+            {billingStatus === 'error' && (
+              <Banner tone="critical" onDismiss={() => window.history.replaceState({}, '', '/app/admin/plans')}>
+                <p>{billingMessage || 'An error occurred while processing your billing. Please try again.'}</p>
+              </Banner>
+            )}
+          </Layout.Section>
+        )}
+
         {/* Current Plan & Trial */}
         <Layout.Section>
           <Card>

@@ -171,6 +171,7 @@ export async function upgradePlan(shop: string, planName: 'pro' | 'enterprise', 
     data: {
       planName,
       billingId,
+      billingStatus: 'ACTIVE',
       quotas: JSON.stringify(config.features)
     }
   });
@@ -185,6 +186,7 @@ export async function downgradePlan(shop: string) {
     data: {
       planName: 'starter',
       billingId: null,
+      billingStatus: null,
       quotas: JSON.stringify(PLAN_CONFIGS.starter.features)
     }
   });
@@ -304,6 +306,124 @@ export function requiresPlanUpgrade(currentPlan: string, requiredPlan: 'pro' | '
   const requiredIndex = planHierarchy.indexOf(requiredPlan);
   
   return currentIndex < requiredIndex;
+}
+
+/**
+ * Get active subscription from Shopify
+ * Returns the current active subscription if it exists
+ */
+export async function getActiveSubscription(shop: string, admin: any) {
+  try {
+    const response = await admin.graphql(
+      `#graphql
+        query {
+          currentAppInstallation {
+            activeSubscriptions {
+              id
+              name
+              status
+              test
+              lineItems {
+                id
+                plan {
+                  pricingDetails {
+                    ... on AppRecurringPricing {
+                      price {
+                        amount
+                        currencyCode
+                      }
+                      interval
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }`
+    );
+
+    const data = await response.json();
+    const subscriptions = data.data?.currentAppInstallation?.activeSubscriptions || [];
+    
+    // Return the first active subscription (there should only be one)
+    return subscriptions.find((sub: any) => sub.status === 'ACTIVE');
+  } catch (error) {
+    console.error('Error fetching active subscription:', error);
+    return null;
+  }
+}
+
+/**
+ * Request billing approval for a plan
+ * Creates a subscription and returns the confirmation URL
+ */
+export async function requestBillingApproval(
+  shop: string,
+  admin: any,
+  planName: 'pro' | 'enterprise',
+  returnUrl: string
+) {
+  const planConfigs = {
+    pro: { price: 49, name: 'Pro Plan' },
+    enterprise: { price: 199, name: 'Enterprise Plan' }
+  };
+
+  const planConfig = planConfigs[planName];
+  
+  if (!planConfig) {
+    throw new Error(`Invalid plan: ${planName}`);
+  }
+
+  const response = await admin.graphql(
+    `#graphql
+      mutation AppSubscriptionCreate($name: String!, $returnUrl: URL!, $test: Boolean, $lineItems: [AppSubscriptionLineItemInput!]!) {
+        appSubscriptionCreate(
+          name: $name
+          returnUrl: $returnUrl
+          test: $test
+          lineItems: $lineItems
+        ) {
+          userErrors {
+            field
+            message
+          }
+          confirmationUrl
+          appSubscription {
+            id
+            status
+          }
+        }
+      }`,
+    {
+      variables: {
+        name: planConfig.name,
+        returnUrl: returnUrl,
+        test: process.env.NODE_ENV !== 'production',
+        lineItems: [
+          {
+            plan: {
+              appRecurringPricingDetails: {
+                price: { amount: planConfig.price, currencyCode: 'USD' },
+                interval: 'EVERY_30_DAYS'
+              }
+            }
+          }
+        ]
+      }
+    }
+  );
+
+  const data = await response.json();
+  const result = data.data?.appSubscriptionCreate;
+
+  if (result?.userErrors && result.userErrors.length > 0) {
+    throw new Error(`Billing API error: ${result.userErrors.map((e: any) => e.message).join(', ')}`);
+  }
+
+  return {
+    confirmationUrl: result?.confirmationUrl,
+    subscriptionId: result?.appSubscription?.id
+  };
 }
 
 
