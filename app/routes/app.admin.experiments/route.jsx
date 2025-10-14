@@ -86,12 +86,6 @@ export default function ExperimentsPage() {
           content: 'Create Experiment',
           onAction: handleCreateExperiment
         }}
-        secondaryActions={[
-          {
-            content: 'Back to Dashboard',
-            onAction: () => window.location.href = '/app'
-          }
-        ]}
       />
       <Layout>
         <Layout.Section>

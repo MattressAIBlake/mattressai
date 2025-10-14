@@ -110,12 +110,6 @@ export default function LeadsManagement() {
           content: 'Export CSV',
           onAction: handleExport
         }}
-        secondaryActions={[
-          {
-            content: 'Back to Dashboard',
-            onAction: () => window.location.href = '/app'
-          }
-        ]}
       />
       <Layout>
         <Layout.Section>

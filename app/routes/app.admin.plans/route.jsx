@@ -317,16 +317,7 @@ export default function PlansPage() {
 
   return (
     <Page>
-      <TitleBar 
-        title="Plans & Billing"
-        primaryAction={null}
-        secondaryActions={[
-          {
-            content: 'Back to Dashboard',
-            onAction: () => window.location.href = '/app'
-          }
-        ]}
-      />
+      <TitleBar title="Plans & Billing" />
       <Layout>
         {/* Billing Status Messages */}
         {billingStatus && (

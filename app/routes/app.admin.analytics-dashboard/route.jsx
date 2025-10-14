@@ -74,16 +74,7 @@ export default function AnalyticsDashboard() {
 
   return (
     <Page>
-      <TitleBar 
-        title="Analytics Dashboard"
-        primaryAction={null}
-        secondaryActions={[
-          {
-            content: 'Back to Dashboard',
-            onAction: () => window.location.href = '/app'
-          }
-        ]}
-      />
+      <TitleBar title="Analytics Dashboard" />
       <Layout>
         <Layout.Section>
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>

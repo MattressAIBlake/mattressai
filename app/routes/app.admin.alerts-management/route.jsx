@@ -123,16 +123,7 @@ export default function AlertsManagement() {
 
   return (
     <Page>
-      <TitleBar 
-        title="Alert Settings"
-        primaryAction={null}
-        secondaryActions={[
-          {
-            content: 'Back to Dashboard',
-            onAction: () => window.location.href = '/app'
-          }
-        ]}
-      />
+      <TitleBar title="Alert Settings" />
       <Layout>
         {settingsFetcher.data?.success && (
           <Layout.Section>

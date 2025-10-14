@@ -17,16 +17,7 @@ export default function Onboarding() {
 
   return (
     <Page>
-      <TitleBar 
-        title="Welcome to MattressAI"
-        primaryAction={null}
-        secondaryActions={[
-          {
-            content: 'Back to Dashboard',
-            onAction: () => window.location.href = '/app'
-          }
-        ]}
-      />
+      <TitleBar title="Welcome to MattressAI" />
       <Layout>
         <Layout.Section>
           <Card>

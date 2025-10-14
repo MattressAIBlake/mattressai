@@ -159,16 +159,6 @@ export default function NewExperimentPage() {
           content: 'Create Experiment',
           onAction: handleSubmit
         }}
-        secondaryActions={[
-          {
-            content: 'Cancel',
-            onAction: () => navigate('/app/admin/experiments')
-          },
-          {
-            content: 'Back to Experiments',
-            onAction: () => navigate('/app/admin/experiments')
-          }
-        ]}
       />
       <Layout>
         <Layout.Section>

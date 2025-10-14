@@ -148,13 +148,6 @@ export default function ExperimentDetailPage() {
       <TitleBar 
         title={experiment.name}
         primaryAction={primaryAction()}
-        secondaryActions={[
-          ...secondaryActions(),
-          {
-            content: 'Back to Experiments',
-            onAction: () => navigate('/app/admin/experiments')
-          }
-        ]}
       />
       <Layout>
         {/* Overview Cards */}
