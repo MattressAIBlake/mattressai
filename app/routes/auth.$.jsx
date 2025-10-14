@@ -42,7 +42,9 @@ export const loader = async ({ request }) => {
         const { requestBillingApproval } = await import('~/lib/billing/billing.service');
         
         try {
-          const appUrl = process.env.SHOPIFY_APP_URL || process.env.HOST || 'mattressaishopify.vercel.app';
+          let appUrl = process.env.SHOPIFY_APP_URL || process.env.HOST || 'mattressaishopify.vercel.app';
+          // Remove https:// or http:// if present to avoid double protocol
+          appUrl = appUrl.replace(/^https?:\/\//, '');
           const returnUrl = `https://${appUrl}/app/admin/billing/callback?plan=${tenant.planName}&reinstall=true`;
           
           const { confirmationUrl } = await requestBillingApproval(

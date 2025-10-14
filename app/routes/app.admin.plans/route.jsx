@@ -69,7 +69,9 @@ export const action = async ({ request }) => {
 
     try {
       // Get the app URL from environment
-      const appUrl = process.env.SHOPIFY_APP_URL || process.env.HOST || 'mattressaishopify.vercel.app';
+      let appUrl = process.env.SHOPIFY_APP_URL || process.env.HOST || 'mattressaishopify.vercel.app';
+      // Remove https:// or http:// if present to avoid double protocol
+      appUrl = appUrl.replace(/^https?:\/\//, '');
       const returnUrl = `https://${appUrl}/app/admin/billing/callback?plan=${planName}`;
       
       // Create app subscription using GraphQL Admin API
