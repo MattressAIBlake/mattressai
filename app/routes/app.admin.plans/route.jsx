@@ -39,7 +39,7 @@ export const loader = async ({ request }) => {
   // Get active subscription from Shopify
   const activeSubscription = await getActiveSubscription(shop, admin);
   
-  // Parse subscription details
+  // Parse subscription details and sync with database if needed
   let subscriptionDetails = null;
   if (activeSubscription) {
     const price = activeSubscription.lineItems[0]?.plan?.pricingDetails?.price?.amount || 0;
@@ -50,6 +50,31 @@ export const loader = async ({ request }) => {
       isTest: activeSubscription.test,
       price: parseFloat(price)
     };
+
+    // AUTO-SYNC: If Shopify has an active subscription but our DB doesn't match, sync it
+    const priceNum = parseFloat(price);
+    let shopifyPlanName = 'starter';
+    if (priceNum === 49) shopifyPlanName = 'pro';
+    else if (priceNum === 199) shopifyPlanName = 'enterprise';
+
+    if (activeSubscription.status === 'ACTIVE' && currentPlan.name !== shopifyPlanName) {
+      console.log(`🔄 Auto-syncing plan: DB says ${currentPlan.name}, Shopify says ${shopifyPlanName}`);
+      const { upgradePlan } = await import('~/lib/billing/billing.service');
+      await upgradePlan(shop, shopifyPlanName, activeSubscription.id);
+      
+      // Reload the plan after sync
+      const syncedPlan = await getTenantPlan(shop);
+      return json({
+        currentPlan: syncedPlan.name,
+        inTrial,
+        trialDaysLeft,
+        usage,
+        plans,
+        quotas: syncedPlan.features,
+        activeSubscription: subscriptionDetails,
+        synced: true // Flag to show sync message
+      });
+    }
   }
 
   return json({
@@ -251,7 +276,7 @@ export const action = async ({ request }) => {
 };
 
 export default function PlansPage() {
-  const { currentPlan, inTrial, trialDaysLeft, usage, plans, quotas, activeSubscription } = useLoaderData();
+  const { currentPlan, inTrial, trialDaysLeft, usage, plans, quotas, activeSubscription, synced } = useLoaderData();
   const submit = useSubmit();
   const actionData = useActionData();
   const navigation = useNavigation();
@@ -319,6 +344,15 @@ export default function PlansPage() {
     <Page>
       <TitleBar title="Plans & Billing" />
       <Layout>
+        {/* Sync Message */}
+        {synced && (
+          <Layout.Section>
+            <Banner tone="info">
+              <p>✅ Your plan has been synced with Shopify. You are now on the {currentPlan.charAt(0).toUpperCase() + currentPlan.slice(1)} plan.</p>
+            </Banner>
+          </Layout.Section>
+        )}
+
         {/* Billing Status Messages */}
         {billingStatus && (
           <Layout.Section>
