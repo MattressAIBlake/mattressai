@@ -72,7 +72,29 @@ export const loader = async ({ request }) => {
     );
 
     const data = await response.json();
+    
+    // Check for GraphQL errors (like "cannot accept charge")
+    if (data.errors && data.errors.length > 0) {
+      const errorMessage = data.errors[0].message;
+      console.log('GraphQL error when querying subscription:', errorMessage);
+      
+      // If it's a "cannot accept" error, user likely declined
+      if (errorMessage.includes('cannot accept') || errorMessage.includes('not found')) {
+        console.log('Subscription was declined or not found');
+        return redirect('/app/admin/plans?status=declined');
+      }
+      
+      // Other errors
+      throw new Error(errorMessage);
+    }
+    
     const subscription = data.data?.node;
+    
+    // Handle case where subscription is null (declined/deleted)
+    if (!subscription) {
+      console.log('Subscription not found - likely declined');
+      return redirect('/app/admin/plans?status=declined');
+    }
 
     console.log('Subscription status:', {
       id: subscription?.id,
