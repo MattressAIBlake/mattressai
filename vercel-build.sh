@@ -7,9 +7,8 @@ echo "🔨 Starting Vercel build..."
 echo "📦 Generating Prisma Client..."
 npx prisma generate
 
-# Push database schema (creates tables if they don't exist)
-echo "🗄️  Pushing database schema..."
-npx prisma db push --accept-data-loss || echo "⚠️  Database push skipped (may not be configured yet)"
+# Skip db push in build - use migrations instead
+# Database schema is managed separately
 
 # Build Remix app
 echo "🎨 Building Remix app..."
