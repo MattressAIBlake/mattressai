@@ -1,12 +1,15 @@
 import { json } from '@remix-run/node';
-import { useState, useEffect } from 'react';
-import { useLoaderData, useFetcher, useNavigate } from '@remix-run/react';
+import { useState, useEffect, useCallback } from 'react';
+import { useLoaderData, useFetcher, useNavigate, useSearchParams } from '@remix-run/react';
 import {
   Page,
   Layout,
   Card,
   Button,
   Text,
+  DataTable,
+  Pagination,
+  Select,
   ProgressBar,
   Banner,
   Box,
@@ -35,10 +38,79 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 /**
- * Loader function - get current indexing status
+ * Helper function to create embedding content from product profile
+ */
+function createEmbeddingContent(profile) {
+  const parts = [
+    profile.title,
+    profile.body,
+    profile.vendor,
+    profile.productType,
+    profile.firmness && `Firmness: ${profile.firmness}`,
+    profile.height && `Height: ${profile.height}`,
+    profile.material && `Material: ${profile.material}`,
+    profile.certifications && `Certifications: ${profile.certifications}`,
+    profile.features && `Features: ${profile.features}`,
+    profile.supportFeatures && `Support: ${profile.supportFeatures}`
+  ].filter(Boolean);
+  
+  return parts.join(' | ');
+}
+
+/**
+ * Loader function - get indexed products and indexing status
  */
 export async function loader({ request }) {
   const { session } = await authenticate.admin(request);
+  const url = new URL(request.url);
+
+  // Pagination and filters
+  const page = parseInt(url.searchParams.get('page') || '1');
+  const pageSize = 20;
+  const search = url.searchParams.get('search') || '';
+  const filterFirmness = url.searchParams.get('firmness') || '';
+  const filterVendor = url.searchParams.get('vendor') || '';
+
+  // Build where clause
+  const where = {
+    tenant: session.shop,
+    ...(search && {
+      OR: [
+        { title: { contains: search, mode: 'insensitive' } },
+        { vendor: { contains: search, mode: 'insensitive' } },
+        { shopifyProductId: { contains: search } }
+      ]
+    }),
+    ...(filterFirmness && { firmness: filterFirmness }),
+    ...(filterVendor && { vendor: filterVendor })
+  };
+
+  // Fetch products and count in parallel
+  const [products, totalCount] = await Promise.all([
+    prisma.productProfile.findMany({
+      where,
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+      orderBy: { updatedAt: 'desc' }
+    }),
+    prisma.productProfile.count({ where })
+  ]);
+
+  // Get unique filter values
+  const [vendors, firmnessValues] = await Promise.all([
+    prisma.productProfile.findMany({
+      where: { tenant: session.shop },
+      select: { vendor: true },
+      distinct: ['vendor'],
+      orderBy: { vendor: 'asc' }
+    }),
+    prisma.productProfile.findMany({
+      where: { tenant: session.shop, firmness: { not: null } },
+      select: { firmness: true },
+      distinct: ['firmness'],
+      orderBy: { firmness: 'asc' }
+    })
+  ]);
 
   // Check for active indexing job
   const currentJob = await prisma.indexJob.findFirst({
@@ -56,99 +128,169 @@ export async function loader({ request }) {
       status: { in: ['completed', 'failed'] }
     },
     orderBy: { startedAt: 'desc' },
-    take: 5
+    take: 3
   });
 
-  // Check indexed product count
-  let productCount = 0;
-  let isIndexed = false;
-  try {
-    const { getVectorStoreProvider } = await import('~/lib/ports/provider-registry');
-    const vectorStore = getVectorStoreProvider(session.shop);
-    
-    // Try a simple search to estimate product count
-    const testEmbedding = new Array(1536).fill(0);
-    const results = await vectorStore.search(testEmbedding, {
-      topK: 1,
-      filter: { tenant_id: session.shop }
-    });
-    
-    isIndexed = results.length > 0;
-    // Note: This is just checking if ANY products exist
-    // For actual count, we'd need to query Pinecone's stats API
-  } catch (error) {
-    console.error('Error checking product count:', error);
-  }
+  // Check indexed product count from database
+  const productCount = await prisma.productProfile.count({
+    where: { tenant: session.shop }
+  });
+  
+  const isIndexed = productCount > 0;
 
   return json({
     shop: session.shop,
+    products,
+    totalCount,
+    page,
+    pageSize,
+    currentFilters: {
+      search,
+      firmness: filterFirmness,
+      vendor: filterVendor
+    },
+    vendors: vendors.map(v => v.vendor).filter(Boolean),
+    firmnessOptions: firmnessValues.map(f => f.firmness).filter(Boolean),
     currentJob,
     recentJobs,
     isIndexing: !!currentJob,
     isIndexed,
-    configuration: {
-      useAIEnrichment: true,
-      confidenceThreshold: 0.7
-    }
+    productCount
   });
 }
 
 /**
- * Action function - handle start/stop indexing and save fallback preferences
+ * Action function - handle edit/delete products and indexing operations
  */
 export async function action({ request }) {
   const { session } = await authenticate.admin(request);
-
   const formData = await request.formData();
-  const actionType = formData.get('action');
+  const actionType = formData.get('actionType');
 
-  if (actionType === 'saveFallback') {
-    // Save fallback message preferences
-    const fallbackMessageType = formData.get('fallbackMessageType');
-    const fallbackContactInfo = formData.get('fallbackContactInfo');
-
+  // Edit Product Action
+  if (actionType === 'editProduct') {
+    const productId = formData.get('productId');
+    const criticalFieldChanged = formData.get('criticalFieldChanged') === 'true';
+    
+    const updates = {
+      title: formData.get('title'),
+      vendor: formData.get('vendor'),
+      productType: formData.get('productType'),
+      body: formData.get('body'),
+      tags: formData.get('tags'),
+      firmness: formData.get('firmness') || null,
+      height: formData.get('height') || null,
+      material: formData.get('material') || null,
+      certifications: formData.get('certifications') || null,
+      features: formData.get('features') || null,
+      supportFeatures: formData.get('supportFeatures') || null
+    };
+    
     try {
-      // Ensure tenant exists or update it
-      await prisma.tenant.upsert({
-        where: { shop: session.shop },
-        update: {
-          fallbackMessageType,
-          fallbackContactInfo
-        },
-        create: {
-          id: session.shop,
-          shop: session.shop,
-          fallbackMessageType,
-          fallbackContactInfo
-        }
+      // Update PostgreSQL
+      const updatedProduct = await prisma.productProfile.update({
+        where: { id: productId },
+        data: updates
       });
-
-      return json({
-        success: true,
-        message: 'Fallback preferences saved successfully'
-      });
+      
+      // Always update Pinecone to ensure consistency
+      // Only regenerate embedding if critical fields changed (for cost optimization)
+      const { getEmbeddingProvider, getVectorStoreProvider } = await import('~/lib/ports/provider-registry');
+      const vectorStoreProvider = getVectorStoreProvider(session.shop);
+      
+      if (criticalFieldChanged) {
+        // Regenerate embedding for better search accuracy
+        const embeddingProvider = getEmbeddingProvider(session.shop);
+        const contentForEmbedding = createEmbeddingContent(updatedProduct);
+        const embeddings = await embeddingProvider.generateEmbeddings([contentForEmbedding]);
+        
+        await vectorStoreProvider.upsert([{
+          id: `product-${updatedProduct.shopifyProductId}`,
+          vector: embeddings[0],
+          metadata: {
+            tenant_id: session.shop,
+            shopify_product_id: updatedProduct.shopifyProductId,
+            title: updatedProduct.title,
+            product_type: updatedProduct.productType,
+            vendor: updatedProduct.vendor,
+            enriched_profile: JSON.stringify(updatedProduct),
+            updated_at: new Date().toISOString()
+          }
+        }]);
+        
+        console.log(`Product ${productId} updated with new embedding (critical fields changed)`);
+      } else {
+        // For non-critical changes, regenerate embedding to ensure metadata sync
+        // This is more reliable than trying to preserve the old vector
+        const embeddingProvider = getEmbeddingProvider(session.shop);
+        const contentForEmbedding = createEmbeddingContent(updatedProduct);
+        const embeddings = await embeddingProvider.generateEmbeddings([contentForEmbedding]);
+        
+        await vectorStoreProvider.upsert([{
+          id: `product-${updatedProduct.shopifyProductId}`,
+          vector: embeddings[0],
+          metadata: {
+            tenant_id: session.shop,
+            shopify_product_id: updatedProduct.shopifyProductId,
+            title: updatedProduct.title,
+            product_type: updatedProduct.productType,
+            vendor: updatedProduct.vendor,
+            enriched_profile: JSON.stringify(updatedProduct),
+            updated_at: new Date().toISOString()
+          }
+        }]);
+        
+        console.log(`Product ${productId} updated with refreshed embedding`);
+      }
+      
+      return json({ success: true, message: 'Product updated successfully' });
     } catch (error) {
-      console.error('Failed to save fallback preferences:', error);
+      console.error('Failed to update product:', error);
       return json(
-        { error: 'Failed to save preferences' },
+        { error: 'Failed to update product', details: error.message },
         { status: 500 }
       );
     }
   }
 
-  if (actionType === 'start') {
-    // Start indexing job with hardcoded optimal settings
-    const useAIEnrichment = true; // Always enabled for best results
-    const confidenceThreshold = 0.7; // 70% - optimal balance
+  // Delete Product Action
+  if (actionType === 'deleteProduct') {
+    const productId = formData.get('productId');
+    const shopifyProductId = formData.get('shopifyProductId');
+    
+    try {
+      // Delete from PostgreSQL
+      await prisma.productProfile.delete({
+        where: { id: productId }
+      });
+      
+      // Delete from Pinecone
+      const { getVectorStoreProvider } = await import('~/lib/ports/provider-registry');
+      const vectorStoreProvider = getVectorStoreProvider(session.shop);
+      await vectorStoreProvider.delete([`product-${shopifyProductId}`]);
+      
+      console.log(`Product ${productId} deleted from both databases`);
+      
+      return json({ success: true, message: 'Product deleted successfully' });
+    } catch (error) {
+      console.error('Failed to delete product:', error);
+      return json(
+        { error: 'Failed to delete product', details: error.message },
+        { status: 500 }
+      );
+    }
+  }
 
-    // Forward the request to the actual indexing endpoint
+  // Start Indexing Action
+  if (actionType === 'start') {
+    const useAIEnrichment = true;
+    const confidenceThreshold = 0.7;
+    
     const startIndexForm = new FormData();
     startIndexForm.append('useAIEnrichment', useAIEnrichment.toString());
     startIndexForm.append('confidenceThreshold', confidenceThreshold.toString());
-
+    
     try {
-      // In production, this would call the actual /admin/index/start endpoint
-      // For now, return a success response
       return json({
         success: true,
         message: 'Indexing job started',
@@ -165,10 +307,9 @@ export async function action({ request }) {
     }
   }
 
+  // Stop Indexing Action
   if (actionType === 'stop') {
-    // Stop indexing job
     try {
-      // Find the currently running job
       const currentJob = await prisma.indexJob.findFirst({
         where: {
           tenant: session.shop,
@@ -176,14 +317,11 @@ export async function action({ request }) {
         },
         orderBy: { startedAt: 'desc' }
       });
-
+      
       if (!currentJob) {
-        return json({
-          error: 'No active indexing job found'
-        }, { status: 404 });
+        return json({ error: 'No active indexing job found' }, { status: 404 });
       }
-
-      // Mark the job as cancelled
+      
       await prisma.indexJob.update({
         where: { id: currentJob.id },
         data: {
@@ -192,18 +330,11 @@ export async function action({ request }) {
           errorMessage: 'Indexing job cancelled by user'
         }
       });
-
-      console.log(`Indexing job ${currentJob.id} cancelled by user for ${session.shop}`);
-
-      return json({
-        success: true,
-        message: 'Indexing job stopped successfully'
-      });
+      
+      return json({ success: true, message: 'Indexing job stopped successfully' });
     } catch (error) {
       console.error('Failed to stop indexing job:', error);
-      return json({
-        error: 'Failed to stop indexing job'
-      }, { status: 500 });
+      return json({ error: 'Failed to stop indexing job' }, { status: 500 });
     }
   }
 
@@ -211,524 +342,535 @@ export async function action({ request }) {
 }
 
 /**
+ * Edit Product Modal Component
+ */
+function EditProductModal({ product, active, onClose, onSave }) {
+  const [formData, setFormData] = useState({
+    title: '',
+    vendor: '',
+    productType: '',
+    body: '',
+    tags: '',
+    firmness: '',
+    height: '',
+    material: '',
+    certifications: '',
+    features: '',
+    supportFeatures: ''
+  });
+  
+  const [originalData, setOriginalData] = useState({});
+
+  // Initialize form when product changes
+  useEffect(() => {
+    if (product) {
+      const initialData = {
+        title: product.title || '',
+        vendor: product.vendor || '',
+        productType: product.productType || '',
+        body: product.body || '',
+        tags: product.tags || '',
+        firmness: product.firmness || '',
+        height: product.height || '',
+        material: product.material || '',
+        certifications: product.certifications || '',
+        features: product.features || '',
+        supportFeatures: product.supportFeatures || ''
+      };
+      setFormData(initialData);
+      setOriginalData(initialData);
+    }
+  }, [product]);
+
+  const handleChange = (field) => (value) => {
+    setFormData({ ...formData, [field]: value });
+  };
+  
+  const handleSave = () => {
+    // Check if critical fields changed
+    const criticalFields = ['firmness', 'material', 'features', 'supportFeatures', 'height'];
+    const criticalFieldChanged = criticalFields.some(field => 
+      formData[field] !== originalData[field]
+    );
+    
+    onSave({
+      ...formData,
+      productId: product.id,
+      shopifyProductId: product.shopifyProductId,
+      criticalFieldChanged
+    });
+  };
+  
+  if (!product) return null;
+
+  return (
+    <Modal
+      open={active}
+      onClose={onClose}
+      title="Edit Product"
+      primaryAction={{
+        content: 'Save Changes',
+        onAction: handleSave
+      }}
+      secondaryActions={[{
+        content: 'Cancel',
+        onAction: onClose
+      }]}
+    >
+      <Modal.Section>
+        <BlockStack gap="400">
+          <TextField
+            label="Title"
+            value={formData.title}
+            onChange={handleChange('title')}
+            autoComplete="off"
+          />
+          <TextField
+            label="Vendor"
+            value={formData.vendor}
+            onChange={handleChange('vendor')}
+            autoComplete="off"
+          />
+          <TextField
+            label="Product Type"
+            value={formData.productType}
+            onChange={handleChange('productType')}
+            autoComplete="off"
+          />
+          <TextField
+            label="Description"
+            value={formData.body}
+            onChange={handleChange('body')}
+            multiline={4}
+            autoComplete="off"
+          />
+          <TextField
+            label="Tags (comma-separated)"
+            value={formData.tags}
+            onChange={handleChange('tags')}
+            autoComplete="off"
+          />
+          
+          <Divider />
+          <Text variant="headingSm" as="h3">Mattress Attributes</Text>
+          <Text variant="bodySm" as="p" tone="subdued">
+            Changes to these fields will regenerate AI embeddings
+          </Text>
+          
+          <TextField
+            label="Firmness"
+            value={formData.firmness}
+            onChange={handleChange('firmness')}
+            helpText="e.g., soft, medium, firm"
+            autoComplete="off"
+          />
+          <TextField
+            label="Height"
+            value={formData.height}
+            onChange={handleChange('height')}
+            helpText="e.g., 10 inches, 12 inches"
+            autoComplete="off"
+          />
+          <TextField
+            label="Material"
+            value={formData.material}
+            onChange={handleChange('material')}
+            helpText="e.g., memory foam, latex, hybrid"
+            autoComplete="off"
+          />
+          <TextField
+            label="Certifications (comma-separated)"
+            value={formData.certifications}
+            onChange={handleChange('certifications')}
+            helpText="e.g., CertiPUR-US, OEKO-TEX"
+            autoComplete="off"
+          />
+          <TextField
+            label="Features (comma-separated)"
+            value={formData.features}
+            onChange={handleChange('features')}
+            helpText="e.g., cooling-gel, pressure-relief"
+            autoComplete="off"
+          />
+          <TextField
+            label="Support Features (comma-separated)"
+            value={formData.supportFeatures}
+            onChange={handleChange('supportFeatures')}
+            helpText="e.g., edge-support, pocketed-coils"
+            autoComplete="off"
+          />
+        </BlockStack>
+      </Modal.Section>
+    </Modal>
+  );
+}
+
+/**
  * Main component
  */
-export default function CatalogIndexing() {
+export default function ProductInventory() {
   const data = useLoaderData();
   const fetcher = useFetcher();
-  const fallbackFetcher = useFetcher();
   const navigate = useNavigate();
-
-  const [isStarting, setIsStarting] = useState(false);
-  const [showNoMattressesModal, setShowNoMattressesModal] = useState(false);
-  const [fallbackMessageType, setFallbackMessageType] = useState('call_store');
-  const [fallbackContactInfo, setFallbackContactInfo] = useState('');
+  const [searchParams, setSearchParams] = useSearchParams();
+  
+  // State management
+  const [searchQuery, setSearchQuery] = useState(data.currentFilters.search);
+  const [selectedFirmness, setSelectedFirmness] = useState(data.currentFilters.firmness);
+  const [selectedVendor, setSelectedVendor] = useState(data.currentFilters.vendor);
+  const [editingProduct, setEditingProduct] = useState(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [productToDelete, setProductToDelete] = useState(null);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
 
-  // Poll for status updates when indexing is active
-  useEffect(() => {
-    if (data.isIndexing) {
-      const interval = setInterval(() => {
-        fetcher.load('/app/admin/index/status');
-      }, 2000);
-
-      return () => clearInterval(interval);
+  // Handle search with debounce
+  const handleSearch = useCallback((value) => {
+    setSearchQuery(value);
+    const params = new URLSearchParams(searchParams);
+    if (value) {
+      params.set('search', value);
+    } else {
+      params.delete('search');
     }
-  }, [data.isIndexing, fetcher]);
+    params.set('page', '1'); // Reset to page 1 on search
+    setSearchParams(params);
+  }, [searchParams, setSearchParams]);
 
-  // Reset isStarting when fetcher completes
-  useEffect(() => {
-    if (fetcher.state === 'idle' && isStarting) {
-      setIsStarting(false);
+  // Handle filter changes
+  const handleFilterChange = useCallback((type, value) => {
+    const params = new URLSearchParams(searchParams);
+    if (value) {
+      params.set(type, value);
+    } else {
+      params.delete(type);
     }
-  }, [fetcher.state, isStarting]);
+    params.set('page', '1'); // Reset to page 1 on filter change
+    
+    if (type === 'firmness') setSelectedFirmness(value);
+    if (type === 'vendor') setSelectedVendor(value);
+    
+    setSearchParams(params);
+  }, [searchParams, setSearchParams]);
 
-  // Check if indexing completed with 0 mattresses
-  useEffect(() => {
-    if (fetcher.data?.currentJob?.status === 'completed' && 
-        fetcher.data?.currentJob?.errorMessage === 'NO_MATTRESSES_FOUND') {
-      setToastMessage('Our AI found 0 mattresses in your catalog');
-      setShowToast(true);
-      setShowNoMattressesModal(true);
-    }
-  }, [fetcher.data]);
+  // Handle pagination
+  const handlePageChange = useCallback((newPage) => {
+    const params = new URLSearchParams(searchParams);
+    params.set('page', newPage.toString());
+    setSearchParams(params);
+  }, [searchParams, setSearchParams]);
 
-  // Handle fallback preferences save success
-  useEffect(() => {
-    if (fallbackFetcher.data?.success) {
-      setToastMessage('Fallback message preferences saved successfully!');
-      setShowToast(true);
-      setShowNoMattressesModal(false);
-    }
-  }, [fallbackFetcher.data]);
+  // Handle edit product
+  const handleEdit = (product) => {
+    setEditingProduct(product);
+    setShowEditModal(true);
+  };
 
-  // Check for conflict error (job already running)
-  const hasConflictError = fetcher.data?.error?.includes('already running') || 
-                           fetcher.data?.error === 'An indexing job is already running for this shop';
+  // Handle save product
+  const handleSaveProduct = (productData) => {
+    const formData = new FormData();
+    formData.append('actionType', 'editProduct');
+    formData.append('productId', productData.productId);
+    formData.append('criticalFieldChanged', productData.criticalFieldChanged.toString());
+    
+    Object.keys(productData).forEach(key => {
+      if (key !== 'productId' && key !== 'criticalFieldChanged' && key !== 'shopifyProductId') {
+        formData.append(key, productData[key] || '');
+      }
+    });
+    
+    fetcher.submit(formData, { method: 'POST' });
+    setShowEditModal(false);
+  };
+
+  // Handle delete product
+  const handleDelete = (product) => {
+    setProductToDelete(product);
+    setShowDeleteConfirm(true);
+  };
+
+  // Handle confirm delete
+  const handleConfirmDelete = () => {
+    if (!productToDelete) return;
+    
+    const formData = new FormData();
+    formData.append('actionType', 'deleteProduct');
+    formData.append('productId', productToDelete.id);
+    formData.append('shopifyProductId', productToDelete.shopifyProductId);
+    
+    fetcher.submit(formData, { method: 'POST' });
+    setShowDeleteConfirm(false);
+    setProductToDelete(null);
+  };
 
   // Handle start indexing
   const handleStartIndexing = () => {
-    setIsStarting(true);
-
     const formData = new FormData();
     formData.append('useAIEnrichment', 'true');
     formData.append('confidenceThreshold', '0.7');
-
-    // Submit to the actual indexing endpoint
+    
     fetcher.submit(formData, { 
       method: 'POST',
       action: '/app/admin/index/start'
     });
   };
 
-  // Handle stop indexing
-  const handleStopIndexing = async () => {
-    const formData = new FormData();
-    formData.append('action', 'stop');
-
-    await fetcher.submit(formData, { method: 'POST' });
-  };
-
-  // Handle save fallback preferences
-  const handleSaveFallbackPreferences = () => {
-    const formData = new FormData();
-    formData.append('action', 'saveFallback');
-    formData.append('fallbackMessageType', fallbackMessageType);
-    formData.append('fallbackContactInfo', fallbackContactInfo);
-
-    fallbackFetcher.submit(formData, { method: 'POST' });
-  };
-
-  // Format duration
-  const formatDuration = (seconds) => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const secs = Math.floor(seconds % 60);
-
-    if (hours > 0) {
-      return `${hours}h ${minutes}m ${secs}s`;
-    } else if (minutes > 0) {
-      return `${minutes}m ${secs}s`;
-    } else {
-      return `${secs}s`;
+  // Show toast on action completion
+  useEffect(() => {
+    if (fetcher.data?.success) {
+      setToastMessage(fetcher.data.message);
+      setShowToast(true);
+    } else if (fetcher.data?.error) {
+      setToastMessage(fetcher.data.error);
+      setShowToast(true);
     }
-  };
+  }, [fetcher.data]);
+
+  // Build product rows for table
+  const productRows = data.products.map(product => [
+    product.title || 'Untitled',
+    product.vendor || '-',
+    product.productType || '-',
+    product.firmness || '-',
+    product.material || '-',
+    <Badge tone={product.confidence > 0.8 ? 'success' : product.confidence > 0.5 ? 'info' : 'warning'}>
+      {Math.round(product.confidence * 100)}%
+    </Badge>,
+    <InlineStack gap="200">
+      <Button size="slim" onClick={() => handleEdit(product)}>Edit</Button>
+      <Button size="slim" tone="critical" onClick={() => handleDelete(product)}>Delete</Button>
+    </InlineStack>
+  ]);
 
   const currentJob = data.currentJob;
-  const isLoading = fetcher.state === 'loading' || fetcher.state === 'submitting';
+  const totalPages = Math.ceil(data.totalCount / data.pageSize);
 
   return (
     <Page>
-      <TitleBar title="Catalog Indexing" />
+      <TitleBar title="Product Inventory" />
       <Layout>
-        {/* Critical Warning: Products Not Indexed */}
-        {!data.isIndexed && !data.isIndexing && (
-          <Layout.Section>
-            <Banner
-              title="⚠️ Widget Not Functional - Products Not Indexed"
-              tone="critical"
-            >
-              <p>
-                <strong>Your chat widget cannot provide product recommendations until you index your mattress catalog.</strong> 
-                {' '}Click "Start Indexing" below to analyze your products and enable AI-powered recommendations. 
-                This typically takes 5-10 minutes depending on your catalog size.
-              </p>
-            </Banner>
-          </Layout.Section>
-        )}
-        
-        {/* Success Banner: Products Indexed */}
-        {data.isIndexed && !data.isIndexing && (
-          <Layout.Section>
-            <Banner
-              title="✅ Catalog Indexed - Widget is Ready"
-              tone="success"
-            >
-              <p>
-                Your mattress catalog has been indexed and the chat widget can now provide AI-powered product recommendations!
-              </p>
-            </Banner>
-          </Layout.Section>
-        )}
-
-        {/* Error Banner for Job Already Running */}
-        {hasConflictError && (
-          <Layout.Section>
-            <Banner
-              title="Indexing Job Already Running"
-              tone="warning"
-              onDismiss={() => fetcher.load('/app/admin/index/status')}
-            >
-              <p>
-                There's already an indexing job in progress. Please wait for it to complete before starting a new one. 
-                If the job appears stuck, it will automatically timeout after 30 minutes, or you can refresh this page and try again.
-              </p>
-            </Banner>
-          </Layout.Section>
-        )}
-
-        {/* Current Job Status */}
+        {/* Condensed Indexing Status Section */}
         <Layout.Section>
           <Card>
-            <div>
-              <div className="flex justify-between items-center mb-4">
-                <Text variant="headingMd" as="h2" fontWeight="semibold">
-                  Current Status
-                </Text>
-                <div className="flex gap-2">
-                  {!currentJob && !isStarting && (
-                    <Button
-                      primary
-                      onClick={handleStartIndexing}
-                      loading={isLoading}
-                    >
-                      Start Indexing
-                    </Button>
-                  )}
-                  {currentJob && currentJob.status === 'running' && (
-                    <Button
-                      destructive
-                      onClick={handleStopIndexing}
-                      loading={isLoading}
-                    >
-                      Stop Indexing
-                    </Button>
-                  )}
-                </div>
-              </div>
-
-              {!currentJob && !isStarting ? (
-                <div className="py-12 px-6">
-                  <BlockStack gap="600" align="center">
-                    <div className="flex justify-center items-center w-20 h-20 rounded-full bg-gradient-to-br from-blue-50 to-indigo-100">
-                      <Icon
-                        source={DatabaseIcon}
-                        tone="info"
-                      />
-                    </div>
-                    
-                    <BlockStack gap="200" align="center">
-                      <Text variant="headingLg" as="h3" alignment="center">
-                        Ready to Index Your Mattress Catalog
-                      </Text>
-                      <div className="max-w-lg">
-                        <Text variant="bodyMd" as="p" alignment="center" tone="subdued">
-                          Your mattress catalog hasn't been indexed yet. Start indexing to enable AI-powered mattress recommendations for your customers.
-                        </Text>
-                      </div>
-                    </BlockStack>
-
-                    <div className="w-full max-w-2xl">
-                      <Card background="bg-surface-secondary">
-                        <BlockStack gap="400">
-                          <div className="flex items-start gap-3">
-                            <div className="mt-1">
-                              <Icon source={CheckCircleIcon} tone="success" />
-                            </div>
-                            <BlockStack gap="100">
-                              <Text variant="headingSm" as="h4">
-                                Step 1: Ensure you have mattresses in your Shopify store
-                              </Text>
-                              <Text variant="bodyMd" as="p" tone="subdued">
-                                Make sure your mattresses are properly configured with titles, descriptions, specifications, and relevant details like firmness, size, and materials.
-                              </Text>
-                            </BlockStack>
-                          </div>
-
-                          <Divider />
-
-                          <div className="flex items-start gap-3">
-                            <div className="mt-1">
-                              <Icon source={CheckCircleIcon} tone="success" />
-                            </div>
-                            <BlockStack gap="100">
-                              <Text variant="headingSm" as="h4">
-                                Step 2: Click "Start Indexing" above
-                              </Text>
-                              <Text variant="bodyMd" as="p" tone="subdued">
-                                Our AI will automatically analyze your entire mattress catalog, extracting key attributes like firmness, materials, support type, and sleep position compatibility using optimal settings.
-                              </Text>
-                            </BlockStack>
-                          </div>
-
-                          <Divider />
-
-                          <div className="flex items-start gap-3">
-                            <div className="mt-1">
-                              <Icon source={CheckCircleIcon} tone="success" />
-                            </div>
-                            <BlockStack gap="100">
-                              <Text variant="headingSm" as="h4">
-                                Step 3: Monitor progress
-                              </Text>
-                              <Text variant="bodyMd" as="p" tone="subdued">
-                                The indexing typically processes 50-100 mattresses per minute. You can leave this page and come back to check progress anytime.
-                              </Text>
-                            </BlockStack>
-                          </div>
-                        </BlockStack>
-                      </Card>
-                    </div>
-
-                    <Banner tone="info">
-                      <p>
-                        <strong>First time indexing?</strong> Depending on your catalog size, this may take several minutes. You'll see detailed progress updates once indexing begins.
-                      </p>
-                    </Banner>
-                  </BlockStack>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {/* Status Badge */}
-                  <div className="flex items-center gap-3">
-                    <Badge
-                      status={
-                        currentJob?.status === 'completed' ? 'success' :
-                        currentJob?.status === 'running' ? 'info' :
-                        currentJob?.status === 'failed' ? 'critical' :
-                        'attention'
-                      }
-                    >
-                      {currentJob?.status || 'starting'}
-                    </Badge>
-                    {currentJob?.startedAt && (
-                      <Text variant="bodySm" color="subdued">
-                        Started {new Date(currentJob.startedAt).toLocaleString()}
-                      </Text>
-                    )}
-                  </div>
-
-                  {/* Progress Bar */}
-                  {currentJob && currentJob.totalProducts > 0 && (
-                    <div>
-                      <div className="flex justify-between mb-2">
-                        <Text variant="bodyMd" as="p">
-                          Progress: {currentJob.processedProducts || 0} / {currentJob.totalProducts} mattresses
-                        </Text>
-                        <Text variant="bodyMd" as="p">
-                          {((currentJob.progress || 0) * 100).toFixed(1)}%
-                        </Text>
-                      </div>
-                      <ProgressBar
-                        progress={currentJob.progress || 0}
-                        size="medium"
-                      />
-                    </div>
-                  )}
-
-                  {/* ETA */}
-                  {currentJob?.eta && (
-                    <div className="flex items-center gap-2">
-                      <Text variant="bodySm" color="subdued">
-                        Estimated completion:
-                      </Text>
-                      <Text variant="bodyMd" as="p">
-                        {new Date(currentJob.eta).toLocaleString()}
-                      </Text>
-                    </div>
-                  )}
-
-                  {/* Metrics - Simplified for merchants */}
-                  {currentJob && (
-                    <div className="mt-4">
-                      <div className="flex items-center justify-center gap-2 p-4 bg-gray-50 rounded-lg">
-                        <Text variant="headingLg" as="h3">
-                          {currentJob.processedProducts || 0}
-                        </Text>
-                        <Text variant="bodyLg" color="subdued">
-                          / {currentJob.totalProducts || 0} products indexed
-                        </Text>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Error Message */}
-                  {currentJob?.errorMessage && (
-                    <Banner status="critical">
-                      <p>{currentJob.errorMessage}</p>
-                    </Banner>
-                  )}
-                </div>
-              )}
-            </div>
-          </Card>
-        </Layout.Section>
-
-        {/* Recent Jobs */}
-        <Layout.Section>
-          <Card>
-            <div>
-              <Text variant="headingMd" as="h2" fontWeight="semibold">
-                Recent Jobs
-              </Text>
-
-              {data.recentJobs.length === 0 ? (
-                <div className="mt-4">
-                  <Text variant="bodyMd" color="subdued">
-                    No indexing jobs yet. Start your first indexing job above to analyze your mattress catalog.
+            <InlineStack align="space-between" blockAlign="center">
+              <BlockStack gap="200">
+                <Text variant="headingMd" as="h2">Catalog Status</Text>
+                <InlineStack gap="400">
+                  <Text variant="bodyMd" tone="subdued">
+                    {data.isIndexed 
+                      ? `${data.productCount} products indexed`
+                      : 'No products indexed yet'}
                   </Text>
-                </div>
-              ) : (
-                <div className="mt-4">
-                  <List>
-                    {data.recentJobs.map((job) => (
-                      <List.Item key={job.id}>
-                        <div className="flex justify-between items-center py-2">
-                          <div className="flex items-center gap-3">
-                            <Badge
-                              status={
-                                job.status === 'completed' ? 'success' :
-                                job.status === 'failed' ? 'critical' :
-                                job.status === 'running' ? 'info' :
-                                'attention'
-                              }
-                            >
-                              {job.status}
-                            </Badge>
-                            <div>
-                              <Text variant="bodyMd" as="p">
-                                {job.totalProducts} products indexed
-                              </Text>
-                              <Text variant="bodySm" color="subdued">
-                                {job.startedAt && new Date(job.startedAt).toLocaleString()}
-                                {job.finishedAt && ` • ${formatDuration(job.duration)}`}
-                              </Text>
-                            </div>
-                          </div>
-                        </div>
-                      </List.Item>
-                    ))}
-                  </List>
-                </div>
+                  {currentJob && (
+                    <Badge tone={currentJob.status === 'running' ? 'info' : 'attention'}>
+                      {currentJob.status}
+                    </Badge>
+                  )}
+                </InlineStack>
+              </BlockStack>
+              {!currentJob && (
+                <Button primary onClick={handleStartIndexing}>
+                  Re-Index Catalog
+                </Button>
               )}
-            </div>
+              {currentJob && currentJob.status === 'running' && (
+                <Button tone="critical" onClick={() => {
+                  const formData = new FormData();
+                  formData.append('actionType', 'stop');
+                  fetcher.submit(formData, { method: 'POST' });
+                }}>
+                  Stop Indexing
+                </Button>
+              )}
+            </InlineStack>
+            
+            {/* Show progress if indexing */}
+            {currentJob && currentJob.totalProducts > 0 && (
+              <Box paddingBlockStart="400">
+                <BlockStack gap="200">
+                  <Text variant="bodySm" tone="subdued">
+                    Progress: {currentJob.processedProducts || 0} / {currentJob.totalProducts} products
+                  </Text>
+                  <ProgressBar
+                    progress={(currentJob.processedProducts || 0) / currentJob.totalProducts * 100}
+                    size="small"
+                  />
+                </BlockStack>
+              </Box>
+            )}
           </Card>
         </Layout.Section>
+        
+        {/* Warning if not indexed */}
+        {!data.isIndexed && !currentJob && (
+          <Layout.Section>
+            <Banner tone="warning">
+              <p>
+                <strong>No products indexed yet.</strong> Click "Re-Index Catalog" above to start indexing your mattress products.
+              </p>
+            </Banner>
+          </Layout.Section>
+        )}
 
-        {/* Information Section */}
+        {/* Current Inventory Section */}
         <Layout.Section>
           <Card>
             <BlockStack gap="400">
-              <Text variant="headingMd" as="h2" fontWeight="semibold">
-                About Catalog Indexing
-              </Text>
+              <InlineStack align="space-between">
+                <Text variant="headingLg" as="h2">Current Inventory</Text>
+                <Text variant="bodyMd" tone="subdued">
+                  {data.totalCount} total products
+                </Text>
+              </InlineStack>
               
-              <Text variant="bodyMd" as="p">
-                Catalog indexing analyzes your mattress catalog and creates intelligent embeddings for AI-powered recommendations. Our system automatically extracts key mattress attributes and uses optimal settings to ensure the best customer experience.
-              </Text>
+              {/* Search and Filters */}
+              <InlineStack gap="400" wrap={false}>
+                <div style={{ flex: 2 }}>
+                  <TextField
+                    placeholder="Search by title, vendor, or ID..."
+                    value={searchQuery}
+                    onChange={handleSearch}
+                    autoComplete="off"
+                    clearButton
+                    onClearButtonClick={() => handleSearch('')}
+                  />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <Select
+                    label="Firmness"
+                    labelInline
+                    options={[
+                      { label: 'All', value: '' },
+                      ...data.firmnessOptions.map(f => ({ label: f, value: f }))
+                    ]}
+                    value={selectedFirmness}
+                    onChange={(value) => handleFilterChange('firmness', value)}
+                  />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <Select
+                    label="Vendor"
+                    labelInline
+                    options={[
+                      { label: 'All', value: '' },
+                      ...data.vendors.map(v => ({ label: v, value: v }))
+                    ]}
+                    value={selectedVendor}
+                    onChange={(value) => handleFilterChange('vendor', value)}
+                  />
+                </div>
+              </InlineStack>
+              
+              {/* Data Table */}
+              {data.products.length > 0 ? (
+                <>
+                  <DataTable
+                    columnContentTypes={['text', 'text', 'text', 'text', 'text', 'text', 'text']}
+                    headings={[
+                      'Title',
+                      'Vendor',
+                      'Type',
+                      'Firmness',
+                      'Material',
+                      'Confidence',
+                      'Actions'
+                    ]}
+                    rows={productRows}
+                  />
+                  
+                  {/* Pagination */}
+                  {totalPages > 1 && (
+                    <InlineStack align="center" blockAlign="center">
+                      <Pagination
+                        hasPrevious={data.page > 1}
+                        onPrevious={() => handlePageChange(data.page - 1)}
+                        hasNext={data.page < totalPages}
+                        onNext={() => handlePageChange(data.page + 1)}
+                        label={`Page ${data.page} of ${totalPages}`}
+                      />
+                    </InlineStack>
+                  )}
+                </>
+              ) : (
+                <Box padding="600">
+                  <InlineStack align="center">
+                    <Text variant="bodyMd" tone="subdued">
+                      {searchQuery || selectedFirmness || selectedVendor
+                        ? 'No products match your filters'
+                        : 'No products indexed yet. Start indexing to see your inventory.'}
+                    </Text>
+                  </InlineStack>
+                </Box>
+              )}
+            </BlockStack>
+          </Card>
+        </Layout.Section>
 
-              <BlockStack gap="200">
-                <Text variant="headingSm" as="h3">
-                  What happens during indexing:
+        {/* Recent Indexing Jobs (condensed) */}
+        <Layout.Section>
+          <Card>
+            <BlockStack gap="400">
+              <Text variant="headingMd" as="h2">Recent Indexing Jobs</Text>
+              
+              {data.recentJobs.length === 0 ? (
+                <Text variant="bodyMd" tone="subdued">
+                  No indexing jobs yet.
                 </Text>
+              ) : (
                 <List>
-                  <List.Item>Extract mattress information from your Shopify catalog</List.Item>
-                  <List.Item>AI analyzes descriptions to identify firmness, materials, support type, and sleep position compatibility</List.Item>
-                  <List.Item>Generate vector embeddings for intelligent mattress matching</List.Item>
-                  <List.Item>Store embeddings for instant recommendation delivery</List.Item>
+                  {data.recentJobs.map((job) => (
+                    <List.Item key={job.id}>
+                      <InlineStack gap="300" align="space-between">
+                        <InlineStack gap="200">
+                          <Badge tone={job.status === 'completed' ? 'success' : 'critical'}>
+                            {job.status}
+                          </Badge>
+                          <Text variant="bodyMd">
+                            {job.totalProducts} products
+                          </Text>
+                        </InlineStack>
+                        <Text variant="bodySm" tone="subdued">
+                          {new Date(job.startedAt).toLocaleString()}
+                        </Text>
+                      </InlineStack>
+                    </List.Item>
+                  ))}
                 </List>
-              </BlockStack>
-
-              <BlockStack gap="200">
-                <Text variant="headingSm" as="h3">
-                  Optimized for mattress retail:
-                </Text>
-                <List>
-                  <List.Item>
-                    <strong>AI Enrichment:</strong> Automatically extracts firmness levels, materials, support types, cooling features, and sleep position compatibility
-                  </List.Item>
-                  <List.Item>
-                    <strong>Confidence Threshold:</strong> Set to 70% for optimal balance between coverage and accuracy
-                  </List.Item>
-                  <List.Item>
-                    <strong>Processing Speed:</strong> Typically 50-100 mattresses per minute
-                  </List.Item>
-                </List>
-              </BlockStack>
-
-              <Banner tone="info">
-                <p>
-                  <strong>Pro Tip:</strong> Re-index your catalog periodically (e.g., monthly) to keep your AI recommendations up-to-date with new mattresses, pricing changes, and updated descriptions.
-                </p>
-              </Banner>
+              )}
             </BlockStack>
           </Card>
         </Layout.Section>
       </Layout>
-
-      {/* No Mattresses Modal */}
+      
+      {/* Edit Modal */}
+      <EditProductModal
+        product={editingProduct}
+        active={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        onSave={handleSaveProduct}
+      />
+      
+      {/* Delete Confirmation Modal */}
       <Modal
-        open={showNoMattressesModal}
-        onClose={() => setShowNoMattressesModal(false)}
-        title="No Mattresses Found"
+        open={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        title="Delete Product"
         primaryAction={{
-          content: 'Save Preferences',
-          onAction: handleSaveFallbackPreferences,
-          loading: fallbackFetcher.state === 'submitting'
+          content: 'Delete',
+          destructive: true,
+          onAction: handleConfirmDelete
         }}
-        secondaryActions={[
-          {
-            content: 'Close',
-            onAction: () => setShowNoMattressesModal(false)
-          }
-        ]}
+        secondaryActions={[{
+          content: 'Cancel',
+          onAction: () => setShowDeleteConfirm(false)
+        }]}
       >
         <Modal.Section>
-          <BlockStack gap="400">
-            <Banner tone="warning">
-              <p>
-                Our AI didn't find any mattresses in your Shopify catalog. Please add mattresses to your store to enable AI-powered recommendations.
-              </p>
-            </Banner>
-
-            <BlockStack gap="200">
-              <Text variant="headingSm" as="h3">
-                In the meantime, what would you like to tell shoppers?
-              </Text>
-              <Text variant="bodyMd" as="p" tone="subdued">
-                Choose what message the AI widget should show at the end of conversations when no mattresses are indexed:
-              </Text>
-            </BlockStack>
-
-            <BlockStack gap="300">
-              <RadioButton
-                label="Call your store"
-                helpText="The AI will suggest customers call your store for assistance"
-                checked={fallbackMessageType === 'call_store'}
-                id="call_store"
-                name="fallbackMessageType"
-                onChange={() => setFallbackMessageType('call_store')}
-              />
-              
-              {fallbackMessageType === 'call_store' && (
-                <div className="ml-8">
-                  <TextField
-                    label="Store phone number"
-                    value={fallbackContactInfo}
-                    onChange={setFallbackContactInfo}
-                    placeholder="(555) 123-4567"
-                    autoComplete="tel"
-                  />
-                </div>
-              )}
-
-              <RadioButton
-                label="Generic mattress shopping guidance"
-                helpText="The AI will provide general advice about mattress shopping"
-                checked={fallbackMessageType === 'generic_guidance'}
-                id="generic_guidance"
-                name="fallbackMessageType"
-                onChange={() => setFallbackMessageType('generic_guidance')}
-              />
-            </BlockStack>
-
-            <Banner tone="info">
-              <p>
-                <strong>Next steps:</strong> Add mattresses to your Shopify store and run the indexing again to enable personalized recommendations.
-              </p>
-            </Banner>
-          </BlockStack>
+          <Text>
+            Are you sure you want to delete "{productToDelete?.title}"? 
+            This will remove it from your searchable catalog and cannot be undone.
+          </Text>
         </Modal.Section>
       </Modal>
 
@@ -745,5 +887,3 @@ export default function CatalogIndexing() {
     </Page>
   );
 }
-
-

@@ -48,8 +48,8 @@ export class ProductIndexer {
       // Poll for bulk operation completion
       const bulkData = await this.pollBulkOperation(operationId, session.accessToken);
 
-      // Filter for mattress products only
-      const mattresses = this.filterMattresses(bulkData.products);
+      // Filter for mattress products only using hybrid AI approach
+      const mattresses = await this.filterMattressesHybrid(bulkData.products);
 
       // Check if we found any mattresses
       if (mattresses.length === 0) {
@@ -119,7 +119,8 @@ export class ProductIndexer {
   }
 
   /**
-   * Filter products to only include mattresses
+   * Filter products to only include mattresses (legacy keyword-only method)
+   * Kept as fallback for the hybrid approach
    */
   private filterMattresses(products: any[]): any[] {
     return products.filter(product => {
@@ -138,6 +139,183 @@ export class ProductIndexer {
 
       return isMattress;
     });
+  }
+
+  /**
+   * Two-stage hybrid filtering: keyword first, then AI for uncertain cases
+   * Stage 1: Quick multilingual keyword filtering (free, instant)
+   * Stage 2: AI classification for uncertain products (accurate, low cost)
+   */
+  private async filterMattressesHybrid(products: any[]): Promise<any[]> {
+    const definitelyMattresses: any[] = [];
+    const uncertainProducts: any[] = [];
+    
+    console.log(`Starting hybrid filter for ${products.length} total products...`);
+    
+    // Stage 1: Quick keyword filtering with multilingual support
+    for (const product of products) {
+      const text = `${product.title} ${product.description} ${product.productType} ${product.tags?.join(' ')}`.toLowerCase();
+      
+      // Strong positive signals (mattress keywords in multiple languages)
+      const strongMattressKeywords = [
+        'mattress', 'colchón', 'colchon', 'matelas', 'materasso', 
+        'matratze', 'colchão', 'colchao', 'matras', 'madrass',
+        'マットレス', '床垫', '床墊', '매트리스', 'مرتبة'
+      ];
+      
+      // Strong negative signals (accessories, not actual mattresses)
+      const notMattressKeywords = [
+        'topper', 'protector', 'cover', 'pillow', 'sheet',
+        'frame', 'foundation', 'accessory', 'pet bed', 'dog bed',
+        'air mattress', 'inflatable', 'pad only', 'cover only'
+      ];
+      
+      const hasStrongPositive = strongMattressKeywords.some(kw => text.includes(kw));
+      const hasStrongNegative = notMattressKeywords.some(kw => text.includes(kw));
+      
+      if (hasStrongPositive && !hasStrongNegative) {
+        // Clear mattress - add immediately
+        definitelyMattresses.push(product);
+      } else if (!hasStrongNegative && text.length > 10) {
+        // Uncertain - could be a mattress with unusual naming
+        // Only include products that might be beds/sleep products
+        const mightBeMattress = 
+          text.includes('bed') || 
+          text.includes('sleep') || 
+          text.includes('comfort') ||
+          text.includes('rest') ||
+          text.includes('foam') ||
+          text.includes('spring');
+        
+        if (mightBeMattress) {
+          uncertainProducts.push(product);
+        }
+      }
+    }
+    
+    console.log(`Stage 1 (Keyword Filter): ${definitelyMattresses.length} definite mattresses, ${uncertainProducts.length} uncertain products`);
+    
+    // Stage 2: AI classification for uncertain products only
+    let aiClassifiedMattresses: any[] = [];
+    
+    if (uncertainProducts.length > 0 && uncertainProducts.length < 200) {
+      // Only use AI if we have a reasonable number of uncertain products
+      try {
+        console.log(`Stage 2 (AI Classification): Analyzing ${uncertainProducts.length} uncertain products...`);
+        aiClassifiedMattresses = await this.classifyProductsWithAI(uncertainProducts);
+        console.log(`Stage 2 (AI Classification): Found ${aiClassifiedMattresses.length} additional mattresses`);
+      } catch (error) {
+        console.error('AI classification failed, using keyword fallback:', error);
+        // Fallback: be conservative with uncertain products that have strong bed indicators
+        aiClassifiedMattresses = uncertainProducts.filter(p => {
+          const text = `${p.title} ${p.productType}`.toLowerCase();
+          return text.includes('bed mattress') || text.includes('sleeping mattress');
+        });
+        console.log(`Stage 2 (Fallback): Classified ${aiClassifiedMattresses.length} products using conservative keywords`);
+      }
+    } else if (uncertainProducts.length >= 200) {
+      // Too many uncertain products - log warning and use permissive keyword fallback
+      console.warn(`Too many uncertain products (${uncertainProducts.length}). Using keyword fallback to avoid high AI costs.`);
+      aiClassifiedMattresses = uncertainProducts.filter(p => {
+        const text = `${p.title} ${p.productType}`.toLowerCase();
+        return text.includes('bed') && !text.includes('pet');
+      });
+    }
+    
+    const totalMattresses = definitelyMattresses.length + aiClassifiedMattresses.length;
+    console.log(`Hybrid filter complete: ${totalMattresses} total mattresses found (${definitelyMattresses.length} keyword + ${aiClassifiedMattresses.length} AI)`);
+    
+    return [...definitelyMattresses, ...aiClassifiedMattresses];
+  }
+
+  /**
+   * Use OpenAI to classify products as mattresses or not
+   * Processes products in batches to optimize API usage
+   */
+  private async classifyProductsWithAI(products: any[]): Promise<any[]> {
+    const OpenAI = (await import('openai')).default;
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    
+    const batchSize = 15; // Process 15 products per API call for optimal token usage
+    const mattresses: any[] = [];
+    
+    for (let i = 0; i < products.length; i += batchSize) {
+      const batch = products.slice(i, i + batchSize);
+      
+      // Create compact product descriptions to minimize token usage
+      const productDescriptions = batch.map((p, idx) => ({
+        index: idx,
+        title: p.title || 'Untitled',
+        type: p.productType || '',
+        description: (p.description || '').substring(0, 150), // First 150 chars only
+        tags: (p.tags || []).slice(0, 5) // First 5 tags only
+      }));
+      
+      try {
+        const response = await openai.chat.completions.create({
+          model: 'gpt-4o-mini', // Cost-effective model: ~$0.15 per 1M input tokens
+          messages: [
+            {
+              role: 'system',
+              content: 'You are a product classifier specializing in identifying mattresses. A mattress is a large rectangular pad for supporting a person while sleeping, typically placed on a bed frame. It is NOT: air mattresses, pet beds, mattress toppers, mattress protectors, pillows, or other accessories. Respond ONLY with a JSON array of booleans, nothing else.'
+            },
+            {
+              role: 'user',
+              content: `Classify these products as mattresses (true) or not mattresses (false). Return only a JSON array: [true, false, true, ...]\n\nProducts:\n${JSON.stringify(productDescriptions, null, 2)}`
+            }
+          ],
+          temperature: 0.1, // Low temperature for consistent, deterministic results
+          max_tokens: 300
+        });
+        
+        const content = response.choices[0].message.content.trim();
+        
+        // Parse response, handling both array format and potential variations
+        let classifications: boolean[];
+        
+        try {
+          // Try to parse as JSON array
+          if (content.startsWith('[')) {
+            classifications = JSON.parse(content);
+          } else {
+            // Extract array from response if wrapped in text
+            const arrayMatch = content.match(/\[[\s\S]*\]/);
+            if (arrayMatch) {
+              classifications = JSON.parse(arrayMatch[0]);
+            } else {
+              throw new Error('No array found in response');
+            }
+          }
+          
+          // Validate array length
+          if (classifications.length !== batch.length) {
+            console.warn(`AI returned ${classifications.length} classifications for ${batch.length} products. Skipping batch.`);
+            continue;
+          }
+          
+          // Add classified mattresses to results
+          batch.forEach((product, idx) => {
+            if (classifications[idx] === true) {
+              mattresses.push(product);
+            }
+          });
+          
+        } catch (parseError) {
+          console.error('Failed to parse AI classification response:', content);
+          console.error('Parse error:', parseError);
+          // Skip this batch on parse error
+        }
+        
+        // Rate limit protection: wait between API calls
+        await new Promise(resolve => setTimeout(resolve, 250));
+        
+      } catch (error) {
+        console.error(`AI classification batch error (batch ${i / batchSize + 1}):`, error.message);
+        // Continue with next batch instead of failing completely
+      }
+    }
+    
+    return mattresses;
   }
 
   /**
