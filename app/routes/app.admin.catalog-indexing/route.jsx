@@ -361,9 +361,9 @@ function EditProductModal({ product, active, onClose, onSave }) {
   
   const [originalData, setOriginalData] = useState({});
 
-  // Initialize form when product changes
+  // Initialize form when product changes - only when modal is active to prevent hydration issues
   useEffect(() => {
-    if (product) {
+    if (product && active) {
       const initialData = {
         title: product.title || '',
         vendor: product.vendor || '',
@@ -380,7 +380,7 @@ function EditProductModal({ product, active, onClose, onSave }) {
       setFormData(initialData);
       setOriginalData(initialData);
     }
-  }, [product]);
+  }, [product, active]);
 
   const handleChange = (field) => (value) => {
     setFormData({ ...formData, [field]: value });
@@ -514,16 +514,23 @@ export default function ProductInventory() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   
-  // State management
-  const [searchQuery, setSearchQuery] = useState(data.currentFilters.search);
-  const [selectedFirmness, setSelectedFirmness] = useState(data.currentFilters.firmness);
-  const [selectedVendor, setSelectedVendor] = useState(data.currentFilters.vendor);
+  // State management - initialize with empty strings to prevent hydration errors
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedFirmness, setSelectedFirmness] = useState('');
+  const [selectedVendor, setSelectedVendor] = useState('');
   const [editingProduct, setEditingProduct] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [productToDelete, setProductToDelete] = useState(null);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+
+  // Sync state with loader data to prevent hydration mismatches
+  useEffect(() => {
+    setSearchQuery(data.currentFilters.search || '');
+    setSelectedFirmness(data.currentFilters.firmness || '');
+    setSelectedVendor(data.currentFilters.vendor || '');
+  }, [data.currentFilters]);
 
   // Handle search with debounce
   const handleSearch = useCallback((value) => {
