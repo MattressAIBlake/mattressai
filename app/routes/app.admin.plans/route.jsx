@@ -18,10 +18,10 @@ import {
 } from '@shopify/polaris';
 import { TitleBar } from '@shopify/app-bridge-react';
 import { authenticate } from '~/shopify.server';
-import { getTenantPlan, getUsageStats, getPlanComparison, getOrCreateTenant } from '~/lib/billing/billing.service';
+import { getTenantPlan, getUsageStats, getPlanComparison, getOrCreateTenant, getActiveSubscription } from '~/lib/billing/billing.service';
 
 export const loader = async ({ request }) => {
-  const { session } = await authenticate.admin(request);
+  const { admin, session } = await authenticate.admin(request);
   const shop = session.shop;
 
   const tenant = await getOrCreateTenant(shop);
@@ -36,13 +36,30 @@ export const loader = async ({ request }) => {
     ? Math.ceil((tenant.trialEndsAt - now) / (1000 * 60 * 60 * 24))
     : 0;
 
+  // Get active subscription from Shopify
+  const activeSubscription = await getActiveSubscription(shop, admin);
+  
+  // Parse subscription details
+  let subscriptionDetails = null;
+  if (activeSubscription) {
+    const price = activeSubscription.lineItems[0]?.plan?.pricingDetails?.price?.amount || 0;
+    subscriptionDetails = {
+      id: activeSubscription.id,
+      name: activeSubscription.name,
+      status: activeSubscription.status,
+      isTest: activeSubscription.test,
+      price: parseFloat(price)
+    };
+  }
+
   return json({
     currentPlan: currentPlan.name,
     inTrial,
     trialDaysLeft,
     usage,
     plans,
-    quotas: currentPlan.features
+    quotas: currentPlan.features,
+    activeSubscription: subscriptionDetails
   });
 };
 
@@ -54,7 +71,42 @@ export const action = async ({ request }) => {
   const action = formData.get('action');
   const planName = formData.get('planName');
 
+  // Handle cancellation
+  if (action === 'cancel') {
+    const { cancelSubscription, downgradePlan, getActiveSubscription } = await import('~/lib/billing/billing.service');
+    
+    try {
+      // Get active subscription
+      const activeSubscription = await getActiveSubscription(shop, admin);
+      
+      if (!activeSubscription) {
+        return json({ error: 'No active subscription to cancel' }, { status: 400 });
+      }
+
+      // Cancel subscription in Shopify
+      await cancelSubscription(shop, admin, activeSubscription.id);
+      
+      // Downgrade to starter plan in database
+      await downgradePlan(shop);
+      
+      return json({ 
+        success: true, 
+        message: 'Subscription cancelled successfully',
+        cancelled: true 
+      });
+    } catch (error) {
+      console.error('Cancellation error:', error);
+      return json({ 
+        error: 'Failed to cancel subscription', 
+        details: error.message 
+      }, { status: 500 });
+    }
+  }
+
+  // Handle upgrade
   if (action === 'upgrade') {
+    const { getActiveSubscription, cancelSubscription } = await import('~/lib/billing/billing.service');
+    
     // Get plan config
     const planConfigs = {
       pro: { price: 49, name: 'Pro Plan' },
@@ -68,6 +120,33 @@ export const action = async ({ request }) => {
     }
 
     try {
+      // Check for existing active subscription
+      const activeSubscription = await getActiveSubscription(shop, admin);
+      
+      if (activeSubscription) {
+        // Extract the current plan price
+        const currentPrice = parseFloat(activeSubscription.lineItems[0]?.plan?.pricingDetails?.price?.amount || 0);
+        
+        // If trying to upgrade to same plan, return error
+        if (currentPrice === planConfig.price) {
+          return json({ 
+            error: 'Already subscribed', 
+            details: `You are already subscribed to the ${planName} plan.`
+          }, { status: 400 });
+        }
+        
+        // If changing plans, cancel the old subscription first
+        console.log(`Cancelling existing subscription before creating new one for ${planName}`);
+        try {
+          await cancelSubscription(shop, admin, activeSubscription.id);
+          // Wait a moment for cancellation to process
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        } catch (cancelError) {
+          console.error('Failed to cancel old subscription:', cancelError);
+          // Continue anyway - Shopify might handle this
+        }
+      }
+
       // Get the app URL from environment
       let appUrl = process.env.SHOPIFY_APP_URL || process.env.HOST || 'mattressaishopify.vercel.app';
       // Remove https:// or http:// if present to avoid double protocol
@@ -172,7 +251,7 @@ export const action = async ({ request }) => {
 };
 
 export default function PlansPage() {
-  const { currentPlan, inTrial, trialDaysLeft, usage, plans, quotas } = useLoaderData();
+  const { currentPlan, inTrial, trialDaysLeft, usage, plans, quotas, activeSubscription } = useLoaderData();
   const submit = useSubmit();
   const actionData = useActionData();
   const navigation = useNavigation();
@@ -188,6 +267,13 @@ export default function PlansPage() {
       console.log('🔵 Redirecting to Shopify billing:', actionData.confirmationUrl);
       // Use top.location to break out of iframe
       window.top.location.href = actionData.confirmationUrl;
+    }
+  }, [actionData]);
+
+  // Handle successful cancellation - reload page
+  useEffect(() => {
+    if (actionData?.cancelled) {
+      window.location.reload();
     }
   }, [actionData]);
 
@@ -207,6 +293,16 @@ export default function PlansPage() {
       console.error('🔴 Error in handleUpgrade:', error);
       alert('Error: ' + error.message);
     }
+  };
+
+  const handleCancelSubscription = () => {
+    if (!confirm('Are you sure you want to cancel your subscription? You will be downgraded to the Starter plan.')) {
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('action', 'cancel');
+    submit(formData, { method: 'post' });
   };
 
   const getUsagePercent = (used, limit) => {
@@ -258,6 +354,22 @@ export default function PlansPage() {
           </Layout.Section>
         )}
 
+        {/* Action Messages */}
+        {actionData?.success && (
+          <Layout.Section>
+            <Banner tone="success">
+              <p>{actionData.message}</p>
+            </Banner>
+          </Layout.Section>
+        )}
+        {actionData?.error && (
+          <Layout.Section>
+            <Banner tone="critical">
+              <p>{actionData.error}: {actionData.details}</p>
+            </Banner>
+          </Layout.Section>
+        )}
+
         {/* Current Plan & Trial */}
         <Layout.Section>
           <Card>
@@ -267,20 +379,49 @@ export default function PlansPage() {
                   <Text as="h2" variant="headingLg" fontWeight="bold">
                     Current Plan: {currentPlan.charAt(0).toUpperCase() + currentPlan.slice(1)}
                   </Text>
-                  {inTrial && (
-                    <Badge tone="info">
-                      Trial: {trialDaysLeft} days remaining
-                    </Badge>
+                  <InlineStack gap="200">
+                    {inTrial && (
+                      <Badge tone="info">
+                        Trial: {trialDaysLeft} days remaining
+                      </Badge>
+                    )}
+                    {activeSubscription && (
+                      <>
+                        <Badge tone="success">
+                          Active Subscription
+                        </Badge>
+                        {activeSubscription.isTest && (
+                          <Badge tone="warning">
+                            Test Mode
+                          </Badge>
+                        )}
+                      </>
+                    )}
+                  </InlineStack>
+                  {activeSubscription && (
+                    <Text as="p" variant="bodySm" tone="subdued">
+                      ${activeSubscription.price}/month - {activeSubscription.name}
+                    </Text>
                   )}
                 </BlockStack>
-                {currentPlan !== 'enterprise' && (
-                  <Button
-                    variant="primary"
-                    onClick={() => handleUpgrade(currentPlan === 'starter' ? 'pro' : 'enterprise')}
-                  >
-                    Upgrade Plan
-                  </Button>
-                )}
+                <InlineStack gap="200">
+                  {currentPlan !== 'starter' && activeSubscription && (
+                    <Button
+                      onClick={handleCancelSubscription}
+                      tone="critical"
+                    >
+                      Cancel Subscription
+                    </Button>
+                  )}
+                  {currentPlan !== 'enterprise' && (
+                    <Button
+                      variant="primary"
+                      onClick={() => handleUpgrade(currentPlan === 'starter' ? 'pro' : 'enterprise')}
+                    >
+                      {activeSubscription ? 'Change Plan' : 'Upgrade Plan'}
+                    </Button>
+                  )}
+                </InlineStack>
               </InlineStack>
             </BlockStack>
           </Card>

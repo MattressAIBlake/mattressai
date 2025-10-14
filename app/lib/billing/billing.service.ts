@@ -354,6 +354,41 @@ export async function getActiveSubscription(shop: string, admin: any) {
 }
 
 /**
+ * Cancel an existing subscription
+ */
+export async function cancelSubscription(shop: string, admin: any, subscriptionId: string) {
+  const response = await admin.graphql(
+    `#graphql
+      mutation AppSubscriptionCancel($id: ID!) {
+        appSubscriptionCancel(id: $id) {
+          userErrors {
+            field
+            message
+          }
+          appSubscription {
+            id
+            status
+          }
+        }
+      }`,
+    {
+      variables: {
+        id: subscriptionId
+      }
+    }
+  );
+  
+  const data = await response.json();
+  const result = data.data?.appSubscriptionCancel;
+  
+  if (result?.userErrors && result.userErrors.length > 0) {
+    throw new Error(`Cancel failed: ${result.userErrors.map((e: any) => e.message).join(', ')}`);
+  }
+  
+  return result?.appSubscription;
+}
+
+/**
  * Request billing approval for a plan
  * Creates a subscription and returns the confirmation URL
  */
