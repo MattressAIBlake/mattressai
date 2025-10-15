@@ -102,10 +102,14 @@ export class ProductIndexer {
         const batch = mattresses.slice(i, i + batchSize);
 
         try {
+          console.log(`🔄 Processing batch ${i / batchSize + 1} with ${batch.length} products...`);
           const results = await this.processBatch(batch, embeddingProvider, vectorStoreProvider);
 
           processedCount += results.processed;
           failedCount += results.failed;
+          
+          console.log(`✅ Batch complete: ${results.processed} processed, ${results.failed} failed`);
+          console.log(`📊 Total progress: ${processedCount}/${mattresses.length} processed, ${failedCount} failed`);
 
           // Update progress
           await this.updateJobProgress({
@@ -117,6 +121,7 @@ export class ProductIndexer {
           await new Promise(resolve => setTimeout(resolve, INDEXING_CONFIG.BATCH_DELAY_MS));
 
         } catch (error) {
+          console.error(`❌ BATCH ERROR: ${error.message}`, error);
           const errorResult = handleIndexingError(error, ErrorSeverity.BATCH);
           this.errorCounter.increment(errorResult.severity);
           failedCount += batch.length;
@@ -557,19 +562,25 @@ export class ProductIndexer {
 
     for (const product of products) {
       try {
+        console.log(`  🔄 Processing product: "${product.title}" (${product.id})`);
+        
         // Enrich product profile with retry logic
+        console.log(`    📝 Enriching product profile...`);
         const enrichedProfile = await retryIfRetryable(
           () => this.enrichProduct(product),
           { maxRetries: 2, initialDelay: 500 }
         );
+        console.log(`    ✅ Enrichment complete`);
 
         // Generate embedding for the enriched content with retry
+        console.log(`    🔮 Generating embeddings...`);
         const contentForEmbedding = this.createEmbeddingContent(enrichedProfile);
         const embeddings = await retryIfRetryable(
           () => embeddingProvider.generateEmbeddings([contentForEmbedding]),
           { maxRetries: 3, initialDelay: 1000 }
         );
         const embedding = embeddings[0];
+        console.log(`    ✅ Embedding generated (${embedding.length} dimensions)`);
 
         // Prepare vector record
         const vectorRecord = {
@@ -588,8 +599,11 @@ export class ProductIndexer {
 
         vectorsToUpsert.push(vectorRecord);
         processed++;
+        console.log(`    ✅ Product processed successfully`);
 
       } catch (error) {
+        console.error(`    ❌ Failed to process product "${product.title}": ${error.message}`);
+        console.error(`    Error stack:`, error.stack);
         const enrichError = new ProductEnrichmentError(
           `Failed to process product ${product.id}`,
           product.id,
@@ -603,10 +617,14 @@ export class ProductIndexer {
 
     // Upsert vectors in batch with retry
     if (vectorsToUpsert.length > 0) {
+      console.log(`  🚀 Upserting ${vectorsToUpsert.length} vectors to Pinecone...`);
       await retryIfRetryable(
         () => vectorStoreProvider.upsert(vectorsToUpsert),
         { maxRetries: 3, initialDelay: 2000 }
       );
+      console.log(`  ✅ Vectors upserted successfully to Pinecone`);
+    } else {
+      console.log(`  ⚠️  No vectors to upsert (all products failed)`);
     }
 
     return { processed, failed };
@@ -616,6 +634,7 @@ export class ProductIndexer {
    * Enrich a single product
    */
   private async enrichProduct(product: any) {
+    console.log(`      🔍 Checking for existing profile...`);
     // Create content hash for change detection
     const content = JSON.stringify({
       title: product.title,
@@ -634,18 +653,29 @@ export class ProductIndexer {
     });
 
     if (existingProfile) {
+      console.log(`      ♻️  Found existing profile (ID: ${existingProfile.id}), reusing`);
       return existingProfile;
     }
 
+    console.log(`      🆕 No existing profile, creating new one...`);
+
     // Enrich the product profile
+    console.log(`      🤖 Running AI enrichment...`);
     const enrichedProfile = await enrichProductProfile(product, {
       useAIEnrichment: this.useAIEnrichment,
       confidenceThreshold: this.confidenceThreshold,
       tenant: this.tenant
     });
+    console.log(`      ✅ AI enrichment complete:`, {
+      firmness: enrichedProfile.firmness,
+      height: enrichedProfile.height,
+      material: enrichedProfile.material,
+      confidence: enrichedProfile.confidence
+    });
 
     // Store the enriched profile
-    await prisma.productProfile.create({
+    console.log(`      💾 Storing ProductProfile in database...`);
+    const created = await prisma.productProfile.create({
       data: {
         tenant: this.tenant,
         shopifyProductId: product.id,
@@ -658,6 +688,7 @@ export class ProductIndexer {
         ...enrichedProfile
       }
     });
+    console.log(`      ✅ ProductProfile created with ID: ${created.id}`);
 
     return enrichedProfile;
   }
