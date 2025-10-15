@@ -62,6 +62,7 @@ export default defineConfig({
   plugins: [
     remix({
       ignoredRouteFiles: ["**/.*"],
+      serverModuleFormat: "esm",
       future: {
         v3_fetcherPersist: true,
         v3_relativeSplatPath: true,
@@ -73,6 +74,9 @@ export default defineConfig({
     }),
     tsconfigPaths(),
   ],
+  ssr: {
+    noExternal: ["@prisma/client"],
+  },
   build: {
     assetsInlineLimit: 0,
   },
