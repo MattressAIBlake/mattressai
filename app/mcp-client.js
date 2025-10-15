@@ -352,8 +352,7 @@ class MCPClient {
       
       // Import services dynamically
       const { getProductRecommendations } = await import('./lib/recommendations/recommendation.service');
-      const { PrismaClient } = await import('@prisma/client');
-      const prisma = new PrismaClient();
+      const { prisma } = await import('./db.server');
       
       if (toolName === 'search_mattresses') {
         try {

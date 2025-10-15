@@ -1,7 +1,5 @@
 import { getEmbeddingProvider, getVectorStoreProvider } from '../ports/provider-registry';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '~/db.server';
 
 /**
  * Shopper intent data collected from conversation

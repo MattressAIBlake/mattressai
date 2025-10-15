@@ -1,9 +1,8 @@
 import { json } from '@remix-run/node';
 import { authenticateAdmin } from '~/lib/shopify/auth.server';
-import { PrismaClient } from '@prisma/client';
 import { checkIndexingQuota } from '~/lib/quota/quota.service';
-
-const prisma = new PrismaClient();
+import { prisma } from '~/db.server';
+import { INDEXING_CONFIG } from '~/lib/config/indexing.config';
 
 /**
  * POST /admin/index/start
@@ -58,9 +57,9 @@ export async function action({ request }) {
     });
 
     if (existingJob) {
-      // Check if the job is stale (running for more than 30 minutes)
+      // Check if the job is stale (running for more than configured threshold)
       const jobAge = Date.now() - existingJob.startedAt.getTime();
-      const isStale = jobAge > 30 * 60 * 1000; // 30 minutes
+      const isStale = jobAge > INDEXING_CONFIG.STALE_JOB_THRESHOLD_MS;
 
       if (isStale) {
         // Mark stale job as failed
@@ -99,8 +98,7 @@ export async function action({ request }) {
       }
     });
 
-    // TODO: Trigger the actual indexing worker here
-    // For now, we'll simulate starting the job
+    // Trigger background indexing job via Inngest
     await startIndexingJob(indexJob.id, shop, useAIEnrichment, confidenceThreshold);
 
     return json({
@@ -158,29 +156,26 @@ export async function loader({ request }) {
 }
 
 /**
- * Start the indexing job using the worker
+ * Start the indexing job using Inngest (background job queue)
  */
 async function startIndexingJob(jobId: string, shop: string, useAIEnrichment: boolean, confidenceThreshold: number) {
-  // Import the indexer worker
-  const { startIndexingJob: runIndexer } = await import('~/workers/indexer');
+  // Import Inngest client
+  const { inngest } = await import('~/lib/inngest/client');
 
-  // Update job status to running
-  await prisma.indexJob.update({
-    where: { id: jobId },
+  // Trigger Inngest job (queued for background processing)
+  await inngest.send({
+    name: 'product/index.requested',
     data: {
-      status: 'running',
-      startedAt: new Date()
+      jobId,
+      tenant: shop,
+      useAIEnrichment,
+      confidenceThreshold
     }
   });
 
-  // Start the indexer in the background
-  // In production, this should use a job queue (Bull, AWS SQS, etc.)
-  runIndexer(jobId, shop, { useAIEnrichment, confidenceThreshold }).catch(error => {
-    console.error(`Indexing job ${jobId} failed:`, error);
-  });
-
-  console.log(`Indexing job ${jobId} started for shop ${shop}`, {
+  console.log(`Indexing job ${jobId} queued for shop ${shop}`, {
     useAIEnrichment,
-    confidenceThreshold
+    confidenceThreshold,
+    processor: 'inngest'
   });
 }

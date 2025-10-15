@@ -1,11 +1,9 @@
 import { createHash } from 'crypto';
-import { PrismaClient } from '@prisma/client';
 import { ProductProfile, createEmptyProductProfile, mergeProductProfiles } from './product-profile.schema';
 import { createDeterministicMappingService, ShopifyProduct } from './deterministic-mapping.service';
 import { createHeuristicExtractionService } from './heuristic-extraction.service';
 import { createLLMEnrichmentService } from './llm-enrichment.service';
-
-const prisma = new PrismaClient();
+import { prisma } from '~/db.server';
 
 /**
  * Options for product enrichment

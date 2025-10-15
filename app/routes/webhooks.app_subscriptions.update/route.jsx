@@ -1,9 +1,7 @@
 import { json } from '@remix-run/node';
-import { PrismaClient } from '@prisma/client';
 import { verifyWebhookHmac } from '~/lib/shopify/verifyWebhookHmac';
 import { upgradePlan, downgradePlan } from '~/lib/billing/billing.service';
-
-const prisma = new PrismaClient();
+import { prisma } from '~/db.server';
 
 /**
  * POST /webhooks/app_subscriptions/update

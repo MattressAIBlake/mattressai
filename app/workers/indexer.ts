@@ -1,9 +1,18 @@
-import { PrismaClient } from '@prisma/client';
 import { createHash } from 'crypto';
 import { getEmbeddingProvider, getVectorStoreProvider } from '../lib/ports/provider-registry';
 import { enrichProductProfile } from '../lib/enrichment/product-enrichment.service';
-
-const prisma = new PrismaClient();
+import { prisma } from '../db.server';
+import { INDEXING_CONFIG } from '../lib/config/indexing.config';
+import { 
+  ErrorSeverity, 
+  ErrorCounter, 
+  ShopifyAPIError, 
+  BulkOperationError,
+  ProductEnrichmentError,
+  handleIndexingError 
+} from '../lib/errors/indexing-errors';
+import { logger, PerformanceLogger } from '../lib/logger';
+import { retryWithBackoff, retryIfRetryable } from '../lib/utils/retry';
 
 /**
  * Main indexer worker that processes products for a tenant
@@ -13,6 +22,7 @@ export class ProductIndexer {
   private jobId: string;
   private useAIEnrichment: boolean;
   private confidenceThreshold: number;
+  private errorCounter: ErrorCounter;
 
   constructor(
     tenant: string,
@@ -22,15 +32,26 @@ export class ProductIndexer {
     this.tenant = tenant;
     this.jobId = jobId;
     this.useAIEnrichment = options.useAIEnrichment ?? true;
-    this.confidenceThreshold = options.confidenceThreshold ?? 0.7;
+    this.confidenceThreshold = options.confidenceThreshold ?? INDEXING_CONFIG.DEFAULT_CONFIDENCE_THRESHOLD;
+    this.errorCounter = new ErrorCounter();
   }
 
   /**
    * Main indexing workflow
    */
   async run(): Promise<void> {
+    const perfLogger = new PerformanceLogger('Indexing Job', {
+      jobId: this.jobId,
+      tenant: this.tenant
+    });
+    
     try {
-      console.log(`Starting indexing job ${this.jobId} for tenant ${this.tenant}`);
+      logger.info('Starting indexing job', {
+        jobId: this.jobId,
+        tenant: this.tenant,
+        useAIEnrichment: this.useAIEnrichment,
+        confidenceThreshold: this.confidenceThreshold
+      });
 
       // Initialize providers
       const embeddingProvider = getEmbeddingProvider(this.tenant);
@@ -39,7 +60,7 @@ export class ProductIndexer {
       // Get Shopify access token for this tenant
       const session = await this.getShopifySession();
       if (!session?.accessToken) {
-        throw new Error('No valid Shopify session found');
+        throw new ShopifyAPIError('No valid Shopify session found', { tenant: this.tenant });
       }
 
       // Start Shopify bulk operation
@@ -73,7 +94,7 @@ export class ProductIndexer {
       await this.updateJobProgress({ totalProducts: mattresses.length });
 
       // Process products in batches
-      const batchSize = 50;
+      const batchSize = INDEXING_CONFIG.PRODUCT_BATCH_SIZE;
       let processedCount = 0;
       let failedCount = 0;
 
@@ -93,26 +114,45 @@ export class ProductIndexer {
           });
 
           // Small delay to avoid rate limits
-          await new Promise(resolve => setTimeout(resolve, 100));
+          await new Promise(resolve => setTimeout(resolve, INDEXING_CONFIG.BATCH_DELAY_MS));
 
         } catch (error) {
-          console.error(`Batch processing error:`, error);
+          const errorResult = handleIndexingError(error, ErrorSeverity.BATCH);
+          this.errorCounter.increment(errorResult.severity);
           failedCount += batch.length;
 
           await this.updateJobProgress({
             processedProducts: processedCount,
             failedProducts: failedCount
           });
+          
+          // If critical error, re-throw
+          if (!errorResult.shouldContinue) {
+            throw error;
+          }
         }
       }
 
       // Mark job as completed
       await this.completeJob();
 
-      console.log(`Indexing job ${this.jobId} completed successfully`);
+      const errorSummary = this.errorCounter.getSummary();
+      perfLogger.end({
+        status: 'completed',
+        processedProducts: processedCount,
+        failedProducts: failedCount,
+        errors: errorSummary
+      });
 
     } catch (error) {
-      console.error(`Indexing job ${this.jobId} failed:`, error);
+      const errorResult = handleIndexingError(error, ErrorSeverity.CRITICAL);
+      this.errorCounter.increment(errorResult.severity);
+      
+      perfLogger.fail(error, {
+        status: 'failed',
+        errors: this.errorCounter.getSummary()
+      });
+      
       await this.failJob(error.message);
       throw error;
     }
@@ -198,7 +238,7 @@ export class ProductIndexer {
     // Stage 2: AI classification for uncertain products only
     let aiClassifiedMattresses: any[] = [];
     
-    if (uncertainProducts.length > 0 && uncertainProducts.length < 200) {
+    if (uncertainProducts.length > 0 && uncertainProducts.length < INDEXING_CONFIG.MAX_UNCERTAIN_PRODUCTS_FOR_AI) {
       // Only use AI if we have a reasonable number of uncertain products
       try {
         console.log(`Stage 2 (AI Classification): Analyzing ${uncertainProducts.length} uncertain products...`);
@@ -213,7 +253,7 @@ export class ProductIndexer {
         });
         console.log(`Stage 2 (Fallback): Classified ${aiClassifiedMattresses.length} products using conservative keywords`);
       }
-    } else if (uncertainProducts.length >= 200) {
+    } else if (uncertainProducts.length >= INDEXING_CONFIG.MAX_UNCERTAIN_PRODUCTS_FOR_AI) {
       // Too many uncertain products - log warning and use permissive keyword fallback
       console.warn(`Too many uncertain products (${uncertainProducts.length}). Using keyword fallback to avoid high AI costs.`);
       aiClassifiedMattresses = uncertainProducts.filter(p => {
@@ -236,7 +276,7 @@ export class ProductIndexer {
     const OpenAI = (await import('openai')).default;
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
     
-    const batchSize = 15; // Process 15 products per API call for optimal token usage
+    const batchSize = INDEXING_CONFIG.AI_CLASSIFICATION_BATCH_SIZE;
     const mattresses: any[] = [];
     
     for (let i = 0; i < products.length; i += batchSize) {
@@ -307,7 +347,7 @@ export class ProductIndexer {
         }
         
         // Rate limit protection: wait between API calls
-        await new Promise(resolve => setTimeout(resolve, 250));
+        await new Promise(resolve => setTimeout(resolve, INDEXING_CONFIG.AI_BATCH_DELAY_MS));
         
       } catch (error) {
         console.error(`AI classification batch error (batch ${i / batchSize + 1}):`, error.message);
@@ -394,7 +434,10 @@ export class ProductIndexer {
     const result = await response.json();
 
     if (result.errors || result.data?.bulkOperationRunQuery?.userErrors?.length > 0) {
-      throw new Error('Failed to start bulk operation');
+      throw new BulkOperationError('Failed to start bulk operation', {
+        errors: result.errors,
+        userErrors: result.data?.bulkOperationRunQuery?.userErrors
+      });
     }
 
     return result.data.bulkOperationRunQuery.bulkOperation.id;
@@ -403,7 +446,7 @@ export class ProductIndexer {
   /**
    * Poll for bulk operation completion
    */
-  private async pollBulkOperation(operationId: string, accessToken: string, maxAttempts = 60): Promise<any> {
+  private async pollBulkOperation(operationId: string, accessToken: string, maxAttempts = INDEXING_CONFIG.MAX_POLL_ATTEMPTS): Promise<any> {
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       const query = `
         query {
@@ -432,27 +475,50 @@ export class ProductIndexer {
       if (result.data?.node?.status === 'COMPLETED') {
         const operation = result.data.node;
 
-        // Download bulk operation results
+        // Download bulk operation results (JSONL format)
         if (operation.url) {
           const downloadResponse = await fetch(operation.url);
-          const data = await downloadResponse.json();
+          const text = await downloadResponse.text();
+          
+          // Parse JSONL (newline-delimited JSON)
+          const products = text
+            .split('\n')
+            .filter(line => line.trim())
+            .map(line => {
+              try {
+                const parsed = JSON.parse(line);
+                // Filter out metadata rows (have __parentId) and keep only product nodes
+                if (parsed.__parentId || !parsed.id) return null;
+                return parsed;
+              } catch {
+                return null;
+              }
+            })
+            .filter(Boolean);
 
           return {
             operationId,
-            products: data.data.products.edges.map(edge => edge.node)
+            products
           };
         }
       }
 
       if (result.data?.node?.status === 'FAILED') {
-        throw new Error('Bulk operation failed');
+        throw new BulkOperationError('Bulk operation failed', {
+          operationId,
+          status: result.data?.node?.status
+        });
       }
 
       // Wait before next poll
-      await new Promise(resolve => setTimeout(resolve, 10000));
+      await new Promise(resolve => setTimeout(resolve, INDEXING_CONFIG.POLL_INTERVAL_MS));
     }
 
-    throw new Error('Bulk operation timed out');
+    throw new BulkOperationError('Bulk operation timed out', {
+      operationId,
+      maxAttempts,
+      duration: maxAttempts * INDEXING_CONFIG.POLL_INTERVAL_MS
+    });
   }
 
   /**
@@ -470,12 +536,18 @@ export class ProductIndexer {
 
     for (const product of products) {
       try {
-        // Enrich product profile
-        const enrichedProfile = await this.enrichProduct(product);
+        // Enrich product profile with retry logic
+        const enrichedProfile = await retryIfRetryable(
+          () => this.enrichProduct(product),
+          { maxRetries: 2, initialDelay: 500 }
+        );
 
-        // Generate embedding for the enriched content
+        // Generate embedding for the enriched content with retry
         const contentForEmbedding = this.createEmbeddingContent(enrichedProfile);
-        const embeddings = await embeddingProvider.generateEmbeddings([contentForEmbedding]);
+        const embeddings = await retryIfRetryable(
+          () => embeddingProvider.generateEmbeddings([contentForEmbedding]),
+          { maxRetries: 3, initialDelay: 1000 }
+        );
         const embedding = embeddings[0];
 
         // Prepare vector record
@@ -497,14 +569,23 @@ export class ProductIndexer {
         processed++;
 
       } catch (error) {
-        console.error(`Failed to process product ${product.id}:`, error);
+        const enrichError = new ProductEnrichmentError(
+          `Failed to process product ${product.id}`,
+          product.id,
+          { title: product.title }
+        );
+        handleIndexingError(enrichError, ErrorSeverity.PRODUCT);
+        this.errorCounter.increment(ErrorSeverity.PRODUCT);
         failed++;
       }
     }
 
-    // Upsert vectors in batch
+    // Upsert vectors in batch with retry
     if (vectorsToUpsert.length > 0) {
-      await vectorStoreProvider.upsert(vectorsToUpsert);
+      await retryIfRetryable(
+        () => vectorStoreProvider.upsert(vectorsToUpsert),
+        { maxRetries: 3, initialDelay: 2000 }
+      );
     }
 
     return { processed, failed };

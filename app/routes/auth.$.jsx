@@ -1,8 +1,6 @@
 import { redirect } from "@remix-run/node";
 import { login, authenticate } from "../shopify.server";
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from "~/db.server";
 
 export const loader = async ({ request }) => {
   const { pathname } = new URL(request.url);

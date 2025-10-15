@@ -33,9 +33,7 @@ import {
   AlertCircleIcon
 } from '@shopify/polaris-icons';
 import { authenticate } from '~/shopify.server';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '~/db.server';
 
 /**
  * Helper function to create embedding content from product profile

@@ -1,9 +1,7 @@
-import { PrismaClient } from '@prisma/client';
 import { RuntimeRulesType, createCompiledPrompt } from './runtimeRules';
 import { writeFile, readFile, mkdir, readdir } from 'fs/promises';
 import { join } from 'path';
-
-const prisma = new PrismaClient();
+import { prisma } from '~/db.server';
 
 export interface PromptVersion {
   id: string;
