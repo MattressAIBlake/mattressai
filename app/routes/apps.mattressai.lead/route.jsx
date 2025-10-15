@@ -1,7 +1,7 @@
 import { json } from '@remix-run/node';
 import { verifyProxyHmac } from '~/lib/shopify/verifyProxyHmac';
-import { createLead } from '~/lib/leads/lead.service';
-import { endSession } from '~/lib/session/session-orchestrator.service';
+import { createLead } from '~/lib/leads/lead.service.server';
+import { endSession } from '~/lib/session/session-orchestrator.service.server';
 
 export const action = async ({ request }) => {
   const { prisma } = await import('~/db.server');

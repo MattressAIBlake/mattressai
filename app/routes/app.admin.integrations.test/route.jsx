@@ -15,7 +15,7 @@ import {
 } from '@shopify/polaris';
 import { TitleBar } from '@shopify/app-bridge-react';
 import { authenticate } from '~/shopify.server';
-import { sendTestAlert } from '~/lib/alerts/alert.service';
+import { sendTestAlert } from '~/lib/alerts/alert.service.server';
 
 export const loader = async ({ request }) => {
   await authenticate.admin(request);

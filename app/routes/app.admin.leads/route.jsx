@@ -1,6 +1,6 @@
 import { json } from '@remix-run/node';
 import { authenticateAdmin } from '~/lib/shopify/auth.server';
-import { getLeads, updateLeadStatus, exportLeadsToCSV } from '~/lib/leads/lead.service';
+import { getLeads, updateLeadStatus, exportLeadsToCSV } from '~/lib/leads/lead.service.server';
 
 /**
  * GET /admin/leads

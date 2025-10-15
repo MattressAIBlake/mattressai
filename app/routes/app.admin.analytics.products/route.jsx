@@ -1,6 +1,6 @@
 import { json } from '@remix-run/node';
 import { authenticateAdmin } from '~/lib/shopify/auth.server';
-import { getProductInsights } from '~/lib/analytics/analytics.service';
+import { getProductInsights } from '~/lib/analytics/analytics.service.server';
 
 /**
  * GET /admin/analytics/products

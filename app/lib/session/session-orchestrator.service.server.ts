@@ -5,7 +5,7 @@
 
 import prisma from '~/db.server';
 import Anthropic from '@anthropic-ai/sdk';
-import { assignVariant, type VariantAssignment } from '../experiments/ab-testing.service';
+import { assignVariant, type VariantAssignment } from '../experiments/ab-testing.service.server';
 
 interface SessionEndOptions {
   sessionId: string;

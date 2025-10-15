@@ -1,6 +1,6 @@
 import { redirect } from '@remix-run/node';
 import { authenticate } from '~/shopify.server';
-import { upgradePlan, PLAN_CONFIGS } from '~/lib/billing/billing.service';
+import { upgradePlan, PLAN_CONFIGS } from '~/lib/billing/billing.service.server';
 
 /**
  * Billing Callback Route

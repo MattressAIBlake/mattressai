@@ -1,6 +1,6 @@
 import { json } from '@remix-run/node';
 import { authenticateAdmin } from '~/lib/shopify/auth.server';
-import { checkIndexingQuota } from '~/lib/quota/quota.service';
+import { checkIndexingQuota } from '~/lib/quota/quota.service.server';
 import { INDEXING_CONFIG } from '~/lib/config/indexing.config';
 
 /**

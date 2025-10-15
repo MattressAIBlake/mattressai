@@ -1,6 +1,6 @@
 import { json } from '@remix-run/node';
 import { authenticateAdmin } from '~/lib/shopify/auth.server';
-import { getFunnelData, getSessionAnalytics, getLeadAnalytics } from '~/lib/analytics/analytics.service';
+import { getFunnelData, getSessionAnalytics, getLeadAnalytics } from '~/lib/analytics/analytics.service.server';
 
 /**
  * GET /admin/analytics/funnel

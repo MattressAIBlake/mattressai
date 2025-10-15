@@ -1,7 +1,7 @@
 import { json } from '@remix-run/node';
 import { verifyWebhookHmac } from '~/lib/shopify/verifyWebhookHmac';
 import { getVectorStoreProvider } from '~/lib/ports/provider-registry';
-import { enrichProductProfile } from '~/lib/enrichment/product-enrichment.service';
+import { enrichProductProfile } from '~/lib/enrichment/product-enrichment.service.server';
 import { getEmbeddingProvider } from '~/lib/ports/provider-registry';
 
 /**

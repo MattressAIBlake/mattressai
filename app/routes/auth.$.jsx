@@ -37,7 +37,7 @@ export const loader = async ({ request }) => {
         console.log(`Reinstall detected for ${session.shop} with previous plan: ${tenant.planName}`);
         
         // Import billing service
-        const { requestBillingApproval } = await import('~/lib/billing/billing.service');
+        const { requestBillingApproval } = await import('~/lib/billing/billing.service.server');
         
         try {
           let appUrl = process.env.SHOPIFY_APP_URL || process.env.HOST || 'mattressaishopify.vercel.app';

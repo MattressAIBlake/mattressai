@@ -5,7 +5,7 @@
  */
 
 import prisma from '~/db.server';
-import { generateWeeklyDigest } from '~/lib/analytics/analytics.service';
+import { generateWeeklyDigest } from '~/lib/analytics/analytics.service.server';
 
 interface DigestEmail {
   to: string;

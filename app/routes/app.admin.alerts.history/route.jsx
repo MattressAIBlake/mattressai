@@ -1,6 +1,6 @@
 import { json } from '@remix-run/node';
 import { authenticateAdmin } from '~/lib/shopify/auth.server';
-import { sendAlert } from '~/lib/alerts/alert.service';
+import { sendAlert } from '~/lib/alerts/alert.service.server';
 
 /**
  * GET /admin/alerts/history

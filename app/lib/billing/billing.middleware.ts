@@ -1,5 +1,5 @@
 import { json } from '@remix-run/node';
-import { getTenantPlan, requiresPlanUpgrade, type PlanConfig } from './billing.service';
+import { getTenantPlan, requiresPlanUpgrade, type PlanConfig } from './billing.service.server';
 
 /**
  * Billing Middleware

@@ -1,6 +1,6 @@
 import { json } from '@remix-run/node';
 import { verifyProxyHmac } from '~/lib/shopify/verifyProxyHmac';
-import { createOrGetSession } from '~/lib/session/session-orchestrator.service';
+import { createOrGetSession } from '~/lib/session/session-orchestrator.service.server';
 
 export const action = async ({ request }) => {
   // Verify App Proxy HMAC (optional in development/preview mode)

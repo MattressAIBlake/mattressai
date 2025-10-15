@@ -351,7 +351,7 @@ class MCPClient {
       console.log(`Calling custom tool: ${toolName}`, toolArgs);
       
       // Import services dynamically
-      const { getProductRecommendations } = await import('./lib/recommendations/recommendation.service');
+      const { getProductRecommendations } = await import('./lib/recommendations/recommendation.service.server');
       const { prisma } = await import('./db.server');
       
       if (toolName === 'search_mattresses') {

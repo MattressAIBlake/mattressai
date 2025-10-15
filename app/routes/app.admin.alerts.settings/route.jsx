@@ -4,7 +4,7 @@ import {
   getOrCreateAlertSettings, 
   updateAlertSettings,
   sendTestAlert 
-} from '~/lib/alerts/alert.service';
+} from '~/lib/alerts/alert.service.server';
 
 /**
  * GET /admin/alerts/settings

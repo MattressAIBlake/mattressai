@@ -1,6 +1,6 @@
 import { createHash } from 'crypto';
 import { getEmbeddingProvider, getVectorStoreProvider } from '../lib/ports/provider-registry';
-import { enrichProductProfile } from '../lib/enrichment/product-enrichment.service';
+import { enrichProductProfile } from '../lib/enrichment/product-enrichment.service.server';
 import { prisma } from '../db.server';
 import { INDEXING_CONFIG } from '../lib/config/indexing.config';
 import { 

@@ -5,8 +5,8 @@
  */
 
 import prisma from '~/db.server';
-import { sendAlert } from '~/lib/alerts/alert.service';
-import { checkIdleSessions } from '~/lib/session/session-orchestrator.service';
+import { sendAlert } from '~/lib/alerts/alert.service.server';
+import { checkIdleSessions } from '~/lib/session/session-orchestrator.service.server';
 
 /**
  * Process queued alerts

@@ -1,6 +1,6 @@
 import { json } from '@remix-run/node';
 import { verifyWebhookHmac } from '~/lib/shopify/verifyWebhookHmac';
-import { exportCustomerData } from '~/lib/gdpr/gdpr.service';
+import { exportCustomerData } from '~/lib/gdpr/gdpr.service.server';
 
 export const action = async ({ request }) => {
   // Verify webhook HMAC

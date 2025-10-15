@@ -18,7 +18,7 @@ import {
 } from '@shopify/polaris';
 import { TitleBar } from '@shopify/app-bridge-react';
 import { authenticate } from '~/shopify.server';
-import { getTenantPlan, getUsageStats, getPlanComparison, getOrCreateTenant, getActiveSubscription } from '~/lib/billing/billing.service';
+import { getTenantPlan, getUsageStats, getPlanComparison, getOrCreateTenant, getActiveSubscription } from '~/lib/billing/billing.service.server';
 
 export const loader = async ({ request }) => {
   const { admin, session } = await authenticate.admin(request);
@@ -59,7 +59,7 @@ export const loader = async ({ request }) => {
 
     if (activeSubscription.status === 'ACTIVE' && currentPlan.name !== shopifyPlanName) {
       console.log(`🔄 Auto-syncing plan: DB says ${currentPlan.name}, Shopify says ${shopifyPlanName}`);
-      const { upgradePlan } = await import('~/lib/billing/billing.service');
+      const { upgradePlan } = await import('~/lib/billing/billing.service.server');
       await upgradePlan(shop, shopifyPlanName, activeSubscription.id);
       
       // Reload the plan after sync
@@ -98,7 +98,7 @@ export const action = async ({ request }) => {
 
   // Handle cancellation
   if (action === 'cancel') {
-    const { cancelSubscription, downgradePlan, getActiveSubscription } = await import('~/lib/billing/billing.service');
+    const { cancelSubscription, downgradePlan, getActiveSubscription } = await import('~/lib/billing/billing.service.server');
     
     try {
       // Get active subscription
@@ -130,7 +130,7 @@ export const action = async ({ request }) => {
 
   // Handle upgrade
   if (action === 'upgrade') {
-    const { getActiveSubscription, cancelSubscription } = await import('~/lib/billing/billing.service');
+    const { getActiveSubscription, cancelSubscription } = await import('~/lib/billing/billing.service.server');
     
     // Get plan config
     const planConfigs = {

@@ -13,7 +13,7 @@ import {
 } from '@shopify/polaris';
 import { TitleBar } from '@shopify/app-bridge-react';
 import { authenticate } from '~/shopify.server';
-import { listExperiments } from '~/lib/experiments/ab-testing.service';
+import { listExperiments } from '~/lib/experiments/ab-testing.service.server';
 
 export const loader = async ({ request }) => {
   const { session } = await authenticate.admin(request);

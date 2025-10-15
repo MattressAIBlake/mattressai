@@ -15,7 +15,7 @@ import {
 } from '@shopify/polaris';
 import { TitleBar } from '@shopify/app-bridge-react';
 import { authenticate } from '~/shopify.server';
-import { getExperimentMetrics, updateExperimentStatus, calculateSignificance } from '~/lib/experiments/ab-testing.service';
+import { getExperimentMetrics, updateExperimentStatus, calculateSignificance } from '~/lib/experiments/ab-testing.service.server';
 
 export const loader = async ({ request, params }) => {
   const { session } = await authenticate.admin(request);

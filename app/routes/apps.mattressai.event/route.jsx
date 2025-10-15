@@ -1,6 +1,6 @@
 import { json } from '@remix-run/node';
 import { verifyProxyHmac } from '~/lib/shopify/verifyProxyHmac';
-import { trackEvent } from '~/lib/analytics/analytics.service';
+import { trackEvent } from '~/lib/analytics/analytics.service.server';
 
 export const action = async ({ request }) => {
   // Verify App Proxy HMAC (optional in development/preview mode)

@@ -4,7 +4,7 @@
  * Run this during app initialization
  */
 
-import { initializePlans } from './billing.service';
+import { initializePlans } from './billing.service.server';
 
 export async function seedPlans() {
   try {
