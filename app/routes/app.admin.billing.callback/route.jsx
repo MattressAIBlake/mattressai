@@ -1,6 +1,5 @@
 import { redirect } from '@remix-run/node';
 import { authenticate } from '~/shopify.server';
-import { upgradePlan, PLAN_CONFIGS } from '~/lib/billing/billing.service.server';
 
 /**
  * Billing Callback Route
@@ -8,6 +7,8 @@ import { upgradePlan, PLAN_CONFIGS } from '~/lib/billing/billing.service.server'
  * Processes charge acceptance/decline and updates tenant plan
  */
 export const loader = async ({ request }) => {
+  const { upgradePlan, PLAN_CONFIGS } = await import('~/lib/billing/billing.service.server');
+  
   const { admin, session } = await authenticate.admin(request);
   const shop = session.shop;
   const url = new URL(request.url);

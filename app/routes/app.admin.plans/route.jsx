@@ -18,9 +18,10 @@ import {
 } from '@shopify/polaris';
 import { TitleBar } from '@shopify/app-bridge-react';
 import { authenticate } from '~/shopify.server';
-import { getTenantPlan, getUsageStats, getPlanComparison, getOrCreateTenant, getActiveSubscription } from '~/lib/billing/billing.service.server';
 
 export const loader = async ({ request }) => {
+  const { getTenantPlan, getUsageStats, getPlanComparison, getOrCreateTenant, getActiveSubscription } = await import('~/lib/billing/billing.service.server');
+  
   const { admin, session } = await authenticate.admin(request);
   const shop = session.shop;
 

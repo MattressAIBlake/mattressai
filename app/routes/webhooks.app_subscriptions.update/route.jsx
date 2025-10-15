@@ -1,12 +1,13 @@
 import { json } from '@remix-run/node';
 import { verifyWebhookHmac } from '~/lib/shopify/verifyWebhookHmac';
-import { upgradePlan, downgradePlan } from '~/lib/billing/billing.service.server';
 
 /**
  * POST /webhooks/app_subscriptions/update
  * Handles Shopify app subscription update webhooks
  */
 export const action = async ({ request }) => {
+  const { upgradePlan, downgradePlan } = await import('~/lib/billing/billing.service.server');
+  
   try {
     // Verify webhook HMAC
     const isValid = verifyWebhookHmac(request);
