@@ -1,9 +1,5 @@
 {
   "buildCommand": "npm run build",
-  "includeFiles": [
-    "node_modules/.prisma/**",
-    "node_modules/@prisma/client/**"
-  ],
   "headers": [
     {
       "source": "/(.*)",
