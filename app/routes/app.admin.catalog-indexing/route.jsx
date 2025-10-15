@@ -58,103 +58,121 @@ function createEmbeddingContent(profile) {
  * Loader function - get indexed products and indexing status
  */
 export async function loader({ request }) {
-  const { prisma } = await import('~/db.server');
-  const { session } = await authenticate.admin(request);
-  const url = new URL(request.url);
+  try {
+    const { prisma } = await import('~/db.server');
+    const { session } = await authenticate.admin(request);
+    const url = new URL(request.url);
 
-  // Pagination and filters
-  const page = parseInt(url.searchParams.get('page') || '1');
-  const pageSize = 20;
-  const search = url.searchParams.get('search') || '';
-  const filterFirmness = url.searchParams.get('firmness') || '';
-  const filterVendor = url.searchParams.get('vendor') || '';
+    // Pagination and filters
+    const page = parseInt(url.searchParams.get('page') || '1');
+    const pageSize = 20;
+    const search = url.searchParams.get('search') || '';
+    const filterFirmness = url.searchParams.get('firmness') || '';
+    const filterVendor = url.searchParams.get('vendor') || '';
 
-  // Build where clause
-  const where = {
-    tenant: session.shop,
-    ...(search && {
-      OR: [
-        { title: { contains: search, mode: 'insensitive' } },
-        { vendor: { contains: search, mode: 'insensitive' } },
-        { shopifyProductId: { contains: search } }
-      ]
-    }),
-    ...(filterFirmness && { firmness: filterFirmness }),
-    ...(filterVendor && { vendor: filterVendor })
-  };
-
-  // Fetch products and count in parallel
-  const [products, totalCount] = await Promise.all([
-    prisma.productProfile.findMany({
-      where,
-      skip: (page - 1) * pageSize,
-      take: pageSize,
-      orderBy: { updatedAt: 'desc' }
-    }),
-    prisma.productProfile.count({ where })
-  ]);
-
-  // Get unique filter values
-  const [vendors, firmnessValues] = await Promise.all([
-    prisma.productProfile.findMany({
-      where: { tenant: session.shop },
-      select: { vendor: true },
-      distinct: ['vendor'],
-      orderBy: { vendor: 'asc' }
-    }),
-    prisma.productProfile.findMany({
-      where: { tenant: session.shop, firmness: { not: null } },
-      select: { firmness: true },
-      distinct: ['firmness'],
-      orderBy: { firmness: 'asc' }
-    })
-  ]);
-
-  // Check for active indexing job
-  const currentJob = await prisma.indexJob.findFirst({
-    where: {
+    // Build where clause
+    const where = {
       tenant: session.shop,
-      status: { in: ['pending', 'running'] }
-    },
-    orderBy: { startedAt: 'desc' }
-  });
+      ...(search && {
+        OR: [
+          { title: { contains: search, mode: 'insensitive' } },
+          { vendor: { contains: search, mode: 'insensitive' } },
+          { shopifyProductId: { contains: search } }
+        ]
+      }),
+      ...(filterFirmness && { firmness: filterFirmness }),
+      ...(filterVendor && { vendor: filterVendor })
+    };
 
-  // Get recent completed jobs
-  const recentJobs = await prisma.indexJob.findMany({
-    where: {
-      tenant: session.shop,
-      status: { in: ['completed', 'failed'] }
-    },
-    orderBy: { startedAt: 'desc' },
-    take: 3
-  });
+    // Fetch products and count in parallel
+    const [products, totalCount] = await Promise.all([
+      prisma.productProfile.findMany({
+        where,
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+        orderBy: { updatedAt: 'desc' }
+      }),
+      prisma.productProfile.count({ where })
+    ]);
 
-  // Check indexed product count from database
-  const productCount = await prisma.productProfile.count({
-    where: { tenant: session.shop }
-  });
-  
-  const isIndexed = productCount > 0;
+    // Get unique filter values
+    const [vendors, firmnessValues] = await Promise.all([
+      prisma.productProfile.findMany({
+        where: { tenant: session.shop },
+        select: { vendor: true },
+        distinct: ['vendor'],
+        orderBy: { vendor: 'asc' }
+      }),
+      prisma.productProfile.findMany({
+        where: { tenant: session.shop, firmness: { not: null } },
+        select: { firmness: true },
+        distinct: ['firmness'],
+        orderBy: { firmness: 'asc' }
+      })
+    ]);
 
-  return json({
-    shop: session.shop,
-    products,
-    totalCount,
-    page,
-    pageSize,
-    currentFilters: {
-      search,
-      firmness: filterFirmness,
-      vendor: filterVendor
-    },
-    vendors: vendors.map(v => v.vendor).filter(Boolean),
-    firmnessOptions: firmnessValues.map(f => f.firmness).filter(Boolean),
-    currentJob,
-    recentJobs,
-    isIndexing: !!currentJob,
-    isIndexed,
-    productCount
-  });
+    // Check for active indexing job
+    const currentJob = await prisma.indexJob.findFirst({
+      where: {
+        tenant: session.shop,
+        status: { in: ['pending', 'running'] }
+      },
+      orderBy: { startedAt: 'desc' }
+    });
+
+    // Get recent completed jobs
+    const recentJobs = await prisma.indexJob.findMany({
+      where: {
+        tenant: session.shop,
+        status: { in: ['completed', 'failed'] }
+      },
+      orderBy: { startedAt: 'desc' },
+      take: 3
+    });
+
+    // Check indexed product count from database
+    const productCount = await prisma.productProfile.count({
+      where: { tenant: session.shop }
+    });
+    
+    const isIndexed = productCount > 0;
+
+    return json({
+      shop: session.shop,
+      products,
+      totalCount,
+      page,
+      pageSize,
+      currentFilters: {
+        search,
+        firmness: filterFirmness,
+        vendor: filterVendor
+      },
+      vendors: vendors.map(v => v.vendor).filter(Boolean),
+      firmnessOptions: firmnessValues.map(f => f.firmness).filter(Boolean),
+      currentJob,
+      recentJobs,
+      isIndexing: !!currentJob,
+      isIndexed,
+      productCount
+    });
+  } catch (error) {
+    console.error('❌ Error loading catalog indexing page:', error);
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      code: error.code
+    });
+    
+    // Return error response
+    return json(
+      {
+        error: 'Failed to load catalog data',
+        message: error.message
+      },
+      { status: 500 }
+    );
+  }
 }
 
 /**
