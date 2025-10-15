@@ -207,8 +207,8 @@ export class QuotaService {
    */
   private async getTenantLimits(): Promise<QuotaLimits> {
     // In a real implementation, this would fetch from a tenant configuration table
-    // For now, return default professional tier limits
-    return DEFAULT_QUOTAS.professional;
+    // For now, return enterprise tier limits (unlimited for testing)
+    return DEFAULT_QUOTAS.enterprise;
   }
 
   /**
