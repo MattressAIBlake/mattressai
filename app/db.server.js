@@ -1,12 +1,16 @@
 import { PrismaClient } from "@prisma/client";
 
-if (process.env.NODE_ENV !== "production") {
-  if (!global.prismaGlobal) {
-    global.prismaGlobal = new PrismaClient();
-  }
-}
+let prisma;
 
-const prisma = global.prismaGlobal ?? new PrismaClient();
+// Singleton pattern for Prisma Client
+if (process.env.NODE_ENV === 'production') {
+  prisma = new PrismaClient();
+} else {
+  if (!global.__db__) {
+    global.__db__ = new PrismaClient();
+  }
+  prisma = global.__db__;
+}
 
 export default prisma;
 export { prisma }; // Named export for compatibility
