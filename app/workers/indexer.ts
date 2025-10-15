@@ -675,22 +675,33 @@ export class ProductIndexer {
 
     // Store the enriched profile
     console.log(`      💾 Storing ProductProfile in database...`);
-    const created = await prisma.productProfile.create({
-      data: {
-        tenant: this.tenant,
-        shopifyProductId: product.id,
-        title: product.title,
-        body: product.description,
-        vendor: product.vendor,
-        productType: product.productType,
-        tags: JSON.stringify(product.tags || []),
-        contentHash,
-        ...enrichedProfile
-      }
-    });
-    console.log(`      ✅ ProductProfile created with ID: ${created.id}`);
-
-    return enrichedProfile;
+    console.log(`      📌 Tenant: "${this.tenant}"`);
+    console.log(`      📌 Shopify Product ID: "${product.id}"`);
+    console.log(`      📌 ContentHash: "${contentHash}"`);
+    
+    try {
+      const created = await prisma.productProfile.create({
+        data: {
+          tenant: this.tenant,
+          shopifyProductId: product.id,
+          title: product.title,
+          body: product.description,
+          vendor: product.vendor,
+          productType: product.productType,
+          tags: JSON.stringify(product.tags || []),
+          contentHash,
+          ...enrichedProfile
+        }
+      });
+      console.log(`      ✅ ProductProfile created with ID: ${created.id}`);
+      return enrichedProfile;
+    } catch (dbError) {
+      console.error(`      ❌ DATABASE ERROR during ProductProfile.create:`);
+      console.error(`         Error code: ${dbError.code}`);
+      console.error(`         Error message: ${dbError.message}`);
+      console.error(`         Full error:`, dbError);
+      throw dbError; // Re-throw so it's caught by the outer try-catch
+    }
   }
 
   /**
