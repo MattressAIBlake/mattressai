@@ -3,13 +3,14 @@ import { verifyWebhookHmac } from '~/lib/shopify/verifyWebhookHmac';
 import { getVectorStoreProvider } from '~/lib/ports/provider-registry';
 import { enrichProductProfile } from '~/lib/enrichment/product-enrichment.service';
 import { getEmbeddingProvider } from '~/lib/ports/provider-registry';
-import { prisma } from '~/db.server';
 
 /**
  * POST /webhooks/products/update
  * Handles Shopify product update webhooks to keep vector database in sync
  */
 export async function action({ request }) {
+  const { prisma } = await import('~/db.server');
+  
   try {
     // Verify webhook HMAC
     const isValid = verifyWebhookHmac(request);

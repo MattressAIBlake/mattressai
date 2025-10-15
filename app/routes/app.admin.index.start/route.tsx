@@ -1,7 +1,6 @@
 import { json } from '@remix-run/node';
 import { authenticateAdmin } from '~/lib/shopify/auth.server';
 import { checkIndexingQuota } from '~/lib/quota/quota.service';
-import { prisma } from '~/db.server';
 import { INDEXING_CONFIG } from '~/lib/config/indexing.config';
 
 /**
@@ -9,6 +8,8 @@ import { INDEXING_CONFIG } from '~/lib/config/indexing.config';
  * Starts a new product indexing job for the authenticated shop
  */
 export async function action({ request }) {
+  const { prisma } = await import('~/db.server');
+  
   try {
     // Authenticate the request
     const auth = await authenticateAdmin(request);

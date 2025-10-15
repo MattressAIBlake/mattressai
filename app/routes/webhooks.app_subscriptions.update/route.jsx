@@ -1,7 +1,6 @@
 import { json } from '@remix-run/node';
 import { verifyWebhookHmac } from '~/lib/shopify/verifyWebhookHmac';
 import { upgradePlan, downgradePlan } from '~/lib/billing/billing.service';
-import { prisma } from '~/db.server';
 
 /**
  * POST /webhooks/app_subscriptions/update

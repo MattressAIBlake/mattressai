@@ -1,6 +1,5 @@
 import { json } from '@remix-run/node';
 import { authenticateAdmin } from '~/lib/shopify/auth.server';
-import prisma from '~/db.server';
 import { sendAlert } from '~/lib/alerts/alert.service';
 
 /**
@@ -8,6 +7,7 @@ import { sendAlert } from '~/lib/alerts/alert.service';
  * Returns alert history with pagination
  */
 export const loader = async ({ request }) => {
+  const { prisma } = await import('~/db.server');
   try {
     const auth = await authenticateAdmin(request);
     const { shop } = auth;

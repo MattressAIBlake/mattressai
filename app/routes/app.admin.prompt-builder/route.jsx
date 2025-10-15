@@ -23,7 +23,6 @@ import { TitleBar } from '@shopify/app-bridge-react';
 import { authenticate } from '~/shopify.server';
 import { createCompiledPrompt, validateRuntimeRules } from '~/lib/domain/runtimeRules';
 import { createPromptVersion } from '~/lib/domain/promptVersion.server';
-import prisma from '~/db.server';
 
 // Step definitions
 const STEPS = [
@@ -72,6 +71,7 @@ const FIELD_OPTIONS = [
 
 // Loader function
 export async function loader({ request }) {
+  const { prisma } = await import('~/db.server');
   try {
     const { session } = await authenticate.admin(request);
     
@@ -110,6 +110,7 @@ export async function loader({ request }) {
 
 // Action function
 export async function action({ request }) {
+  const { prisma } = await import('~/db.server');
   try {
     const { session } = await authenticate.admin(request);
 

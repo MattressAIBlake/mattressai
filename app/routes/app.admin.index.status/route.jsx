@@ -1,12 +1,13 @@
 import { json } from '@remix-run/node';
 import { authenticateAdmin } from '~/lib/shopify/auth.server';
-import { prisma } from '~/db.server';
 
 /**
  * GET /admin/index/status
  * Returns the status of the current or most recent indexing job for the authenticated shop
  */
 export async function loader({ request }) {
+  const { prisma } = await import('~/db.server');
+  
   try {
     // Authenticate the request
     const auth = await authenticateAdmin(request);

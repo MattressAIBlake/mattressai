@@ -1,8 +1,8 @@
 import { redirect } from "@remix-run/node";
 import { login, authenticate } from "../shopify.server";
-import { prisma } from "~/db.server";
 
 export const loader = async ({ request }) => {
+  const { prisma } = await import("~/db.server");
   const { pathname } = new URL(request.url);
   
   // If this is the login path, use login() 

@@ -2,9 +2,9 @@ import { json } from '@remix-run/node';
 import { verifyProxyHmac } from '~/lib/shopify/verifyProxyHmac';
 import { createLead } from '~/lib/leads/lead.service';
 import { endSession } from '~/lib/session/session-orchestrator.service';
-import prisma from '~/db.server';
 
 export const action = async ({ request }) => {
+  const { prisma } = await import('~/db.server');
   // Verify App Proxy HMAC
   const shopifySecret = process.env.SHOPIFY_APP_SECRET;
   if (!shopifySecret || !verifyProxyHmac(request.url, shopifySecret)) {

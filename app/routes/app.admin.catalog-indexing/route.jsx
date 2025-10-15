@@ -33,7 +33,6 @@ import {
   AlertCircleIcon
 } from '@shopify/polaris-icons';
 import { authenticate } from '~/shopify.server';
-import { prisma } from '~/db.server';
 
 /**
  * Helper function to create embedding content from product profile
@@ -59,6 +58,7 @@ function createEmbeddingContent(profile) {
  * Loader function - get indexed products and indexing status
  */
 export async function loader({ request }) {
+  const { prisma } = await import('~/db.server');
   const { session } = await authenticate.admin(request);
   const url = new URL(request.url);
 
@@ -161,6 +161,7 @@ export async function loader({ request }) {
  * Action function - handle edit/delete products and indexing operations
  */
 export async function action({ request }) {
+  const { prisma } = await import('~/db.server');
   const { session } = await authenticate.admin(request);
   const formData = await request.formData();
   const actionType = formData.get('actionType');

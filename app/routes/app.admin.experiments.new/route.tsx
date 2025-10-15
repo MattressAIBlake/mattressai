@@ -17,9 +17,9 @@ import { TitleBar } from '@shopify/app-bridge-react';
 import { useState } from 'react';
 import { authenticate } from '~/shopify.server';
 import { createExperiment } from '~/lib/experiments/ab-testing.service';
-import prisma from '~/db.server';
 
 export const loader = async ({ request }) => {
+  const { prisma } = await import('~/db.server');
   const { session } = await authenticate.admin(request);
   const shop = session.shop;
 
