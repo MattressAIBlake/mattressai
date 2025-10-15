@@ -215,6 +215,7 @@ export class QuotaService {
    * Get count of concurrent running jobs
    */
   private async getConcurrentJobsCount(): Promise<number> {
+    const prisma = await getPrisma();
     const runningJobs = await prisma.indexJob.count({
       where: {
         tenant: this.tenant,
@@ -229,6 +230,7 @@ export class QuotaService {
    * Get count of indexing jobs in time window
    */
   private async getIndexingJobsCount(timeWindow: 'hour' | 'day'): Promise<number> {
+    const prisma = await getPrisma();
     const now = new Date();
     const windowStart = timeWindow === 'hour'
       ? new Date(now.getTime() - 60 * 60 * 1000)
@@ -251,6 +253,7 @@ export class QuotaService {
    * Get tokens used in time window
    */
   private async getTokensUsed(timeWindow: 'hour' | 'day'): Promise<number> {
+    const prisma = await getPrisma();
     const now = new Date();
     const windowStart = timeWindow === 'hour'
       ? new Date(now.getTime() - 60 * 60 * 1000)
@@ -276,6 +279,7 @@ export class QuotaService {
    * Get cost incurred in time window
    */
   private async getCostIncurred(timeWindow: 'day' | 'month'): Promise<number> {
+    const prisma = await getPrisma();
     const now = new Date();
     const windowStart = timeWindow === 'day'
       ? new Date(now.getTime() - 24 * 60 * 60 * 1000)
