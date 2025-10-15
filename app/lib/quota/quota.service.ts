@@ -1,8 +1,12 @@
-import { prisma } from '~/db.server';
-
 /**
  * Quota limits for different tenant tiers
  */
+
+// Lazy-load prisma
+const getPrisma = async () => {
+  const { prisma } = await import('~/db.server');
+  return prisma;
+};
 export interface QuotaLimits {
   // Indexing quotas
   maxIndexingJobsPerDay: number;

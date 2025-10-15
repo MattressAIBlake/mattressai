@@ -15,5 +15,13 @@ if (process.env.NODE_ENV === 'production') {
   prisma = global.__db__;
 }
 
+/**
+ * Get Prisma client instance
+ * Can be called from anywhere without causing bundling issues
+ */
+export function getPrisma(): PrismaClient {
+  return prisma;
+}
+
 export { prisma };
 

@@ -1,9 +1,13 @@
-import { prisma } from '~/db.server';
-
 /**
  * Shopify Billing Service
  * Handles subscription plans, usage tracking, and billing guards
  */
+
+// Lazy-load prisma to avoid bundling issues
+const getPrisma = async () => {
+  const { prisma } = await import('~/db.server');
+  return prisma;
+};
 
 export interface PlanConfig {
   name: 'starter' | 'pro' | 'enterprise';
@@ -65,6 +69,7 @@ export const PLAN_CONFIGS: Record<string, PlanConfig> = {
  * Initialize default plans in database
  */
 export async function initializePlans() {
+  const prisma = await getPrisma();
   for (const config of Object.values(PLAN_CONFIGS)) {
     await prisma.plan.upsert({
       where: { name: config.name },
@@ -85,6 +90,7 @@ export async function initializePlans() {
  * Get or create tenant record
  */
 export async function getOrCreateTenant(shop: string) {
+  const prisma = await getPrisma();
   let tenant = await prisma.tenant.findUnique({
     where: { shop }
   });
@@ -112,6 +118,7 @@ export async function getOrCreateTenant(shop: string) {
  * Get tenant's current plan
  */
 export async function getTenantPlan(shop: string): Promise<PlanConfig> {
+  const prisma = await getPrisma();
   const tenant = await getOrCreateTenant(shop);
   return PLAN_CONFIGS[tenant.planName] || PLAN_CONFIGS.starter;
 }
@@ -158,6 +165,7 @@ export async function checkQuota(
  * Upgrade tenant plan
  */
 export async function upgradePlan(shop: string, planName: 'pro' | 'enterprise', billingId?: string) {
+  const prisma = await getPrisma();
   const config = PLAN_CONFIGS[planName];
   
   if (!config) {
@@ -179,6 +187,7 @@ export async function upgradePlan(shop: string, planName: 'pro' | 'enterprise', 
  * Downgrade tenant plan
  */
 export async function downgradePlan(shop: string) {
+  const prisma = await getPrisma();
   await prisma.tenant.update({
     where: { shop },
     data: {
@@ -194,6 +203,7 @@ export async function downgradePlan(shop: string) {
  * Get usage statistics for tenant
  */
 export async function getUsageStats(tenantId: string, period: 'current_month' | 'last_30_days' = 'current_month') {
+  const prisma = await getPrisma();
   const now = new Date();
   let startDate: Date;
 
@@ -311,6 +321,7 @@ export function requiresPlanUpgrade(currentPlan: string, requiredPlan: 'pro' | '
  * Returns the current active subscription if it exists
  */
 export async function getActiveSubscription(shop: string, admin: any) {
+  const prisma = await getPrisma();
   try {
     const response = await admin.graphql(
       `#graphql
