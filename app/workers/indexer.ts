@@ -363,8 +363,7 @@ export class ProductIndexer {
    */
   private async getShopifySession() {
     return await prisma.session.findFirst({
-      where: { shop: this.tenant },
-      orderBy: { createdAt: 'desc' }
+      where: { shop: this.tenant }
     });
   }
 

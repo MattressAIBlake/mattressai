@@ -74,8 +74,7 @@ async function processProductUpdate(shopifyProductId: string, tenant: string) {
   try {
     // Get Shopify session for this tenant
     const session = await prisma.session.findFirst({
-      where: { shop: tenant },
-      orderBy: { createdAt: 'desc' }
+      where: { shop: tenant }
     });
 
     if (!session?.accessToken) {
