@@ -191,6 +191,10 @@ export class ProductIndexer {
     const uncertainProducts: any[] = [];
     
     console.log(`Starting hybrid filter for ${products.length} total products...`);
+    console.log(`🔍 All products being evaluated:`);
+    products.forEach((p, idx) => {
+      console.log(`  ${idx + 1}. "${p.title}" (Type: ${p.productType || 'N/A'}, Vendor: ${p.vendor || 'N/A'})`);
+    });
     
     // Stage 1: Quick keyword filtering with multilingual support
     for (const product of products) {
@@ -215,6 +219,7 @@ export class ProductIndexer {
       
       if (hasStrongPositive && !hasStrongNegative) {
         // Clear mattress - add immediately
+        console.log(`  ✅ DEFINITE MATTRESS: "${product.title}"`);
         definitelyMattresses.push(product);
       } else if (!hasStrongNegative && text.length > 10) {
         // Uncertain - could be a mattress with unusual naming
@@ -228,8 +233,15 @@ export class ProductIndexer {
           text.includes('spring');
         
         if (mightBeMattress) {
+          console.log(`  ⚠️  UNCERTAIN (will AI classify): "${product.title}"`);
           uncertainProducts.push(product);
+        } else {
+          console.log(`  ❌ REJECTED (no mattress keywords): "${product.title}"`);
         }
+      } else if (hasStrongNegative) {
+        console.log(`  ❌ REJECTED (negative keywords): "${product.title}"`);
+      } else {
+        console.log(`  ❌ REJECTED (too short or no keywords): "${product.title}"`);
       }
     }
     
@@ -494,6 +506,16 @@ export class ProductIndexer {
               }
             })
             .filter(Boolean);
+
+          console.log(`✅ Fetched ${products.length} products from Shopify bulk operation`);
+          if (products.length > 0) {
+            console.log(`📋 Sample products (first 3):`);
+            products.slice(0, 3).forEach((p, idx) => {
+              console.log(`  ${idx + 1}. "${p.title}" (Type: ${p.productType || 'N/A'}, Tags: ${p.tags?.join(', ') || 'N/A'})`);
+            });
+          } else {
+            console.log(`⚠️ No products found in bulk operation results`);
+          }
 
           return {
             operationId,
