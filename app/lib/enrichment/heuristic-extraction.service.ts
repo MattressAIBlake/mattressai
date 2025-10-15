@@ -72,82 +72,82 @@ export class HeuristicExtractionService {
     return [
       // Firmness rules
       new RegexRule('firmness', 'Firmness', [
-        { pattern: /\b(plush|soft|gentle|cloud)\b/, value: 'soft', confidence: 0.9 },
-        { pattern: /\b(medium.soft|medium soft|medium plush)\b/, value: 'medium-soft', confidence: 0.9 },
-        { pattern: /\b(medium|balanced|universal)\b/, value: 'medium', confidence: 0.8 },
-        { pattern: /\b(medium.firm|medium firm|firm.medium)\b/, value: 'medium-firm', confidence: 0.9 },
-        { pattern: /\b(firm|extra.firm|extra firm|supportive)\b/, value: 'firm', confidence: 0.9 }
+        { pattern: /\b(plush|soft|gentle|cloud)\b/gi, value: 'soft', confidence: 0.9 },
+        { pattern: /\b(medium.soft|medium soft|medium plush)\b/gi, value: 'medium-soft', confidence: 0.9 },
+        { pattern: /\b(medium|balanced|universal)\b/gi, value: 'medium', confidence: 0.8 },
+        { pattern: /\b(medium.firm|medium firm|firm.medium)\b/gi, value: 'medium-firm', confidence: 0.9 },
+        { pattern: /\b(firm|extra.firm|extra firm|supportive)\b/gi, value: 'firm', confidence: 0.9 }
       ]),
 
       // Height rules
       new RegexRule('height', 'Height', [
-        { pattern: /(\d+(?:\.\d+)?)\s*(?:inch|inches|in|")\b/, value: '${1} inches', confidence: 0.95 },
-        { pattern: /(\d+(?:\.\d+)?)\s*(?:cm|centimeter|centimeters)\b/, value: (match) => `${Math.round(parseFloat(match[1]) / 2.54)} inches`, confidence: 0.9 }
+        { pattern: /(\d+(?:\.\d+)?)\s*(?:inch|inches|in|")\b/gi, value: '${1} inches', confidence: 0.95 },
+        { pattern: /(\d+(?:\.\d+)?)\s*(?:cm|centimeter|centimeters)\b/gi, value: (match) => `${Math.round(parseFloat(match[1]) / 2.54)} inches`, confidence: 0.9 }
       ]),
 
       // Material rules
       new RegexRule('material', 'Material', [
-        { pattern: /\b(memory.foam|memory foam|visco.?elastic)\b/, value: 'memory-foam', confidence: 0.95 },
-        { pattern: /\b(natural.latex|100%.latex|organic.latex)\b/, value: 'latex', confidence: 0.9 },
-        { pattern: /\b(inner.spring|coil.spring|traditional.spring)\b/, value: 'innerspring', confidence: 0.9 },
-        { pattern: /\b(hybrid|foam.*coil|coil.*foam)\b/, value: 'hybrid', confidence: 0.85 },
-        { pattern: /\b(gel.foam|gel.memory|gel infused)\b/, value: 'gel-foam', confidence: 0.9 }
+        { pattern: /\b(memory.foam|memory foam|visco.?elastic)\b/gi, value: 'memory-foam', confidence: 0.95 },
+        { pattern: /\b(natural.latex|100%.latex|organic.latex)\b/gi, value: 'latex', confidence: 0.9 },
+        { pattern: /\b(inner.spring|coil.spring|traditional.spring)\b/gi, value: 'innerspring', confidence: 0.9 },
+        { pattern: /\b(hybrid|foam.*coil|coil.*foam)\b/gi, value: 'hybrid', confidence: 0.85 },
+        { pattern: /\b(gel.foam|gel.memory|gel infused)\b/gi, value: 'gel-foam', confidence: 0.9 }
       ]),
 
       // Certification rules
       new RegexRule('certifications', 'Certifications', [
-        { pattern: /\b(certipur.?us|certi.?pur)\b/, value: 'CertiPUR-US', confidence: 0.95 },
-        { pattern: /\b(oeko.?tex|oeko tex)\b/, value: 'OEKO-TEX', confidence: 0.95 },
-        { pattern: /\b(greenguard|green guard)\b/, value: 'GREENGUARD', confidence: 0.95 },
-        { pattern: /\b(gots|global organic textile)\b/, value: 'GOTS', confidence: 0.9 },
-        { pattern: /\b(gols|global organic latex)\b/, value: 'GOLS', confidence: 0.9 }
+        { pattern: /\b(certipur.?us|certi.?pur)\b/gi, value: 'CertiPUR-US', confidence: 0.95 },
+        { pattern: /\b(oeko.?tex|oeko tex)\b/gi, value: 'OEKO-TEX', confidence: 0.95 },
+        { pattern: /\b(greenguard|green guard)\b/gi, value: 'GREENGUARD', confidence: 0.95 },
+        { pattern: /\b(gots|global organic textile)\b/gi, value: 'GOTS', confidence: 0.9 },
+        { pattern: /\b(gols|global organic latex)\b/gi, value: 'GOLS', confidence: 0.9 }
       ]),
 
       // Feature rules - cooling
       new RegexRule('features', 'Cooling Features', [
-        { pattern: /\b(gel|gel.memory|cooling.gel|temperature.regulating)\b/, value: 'cooling-gel', confidence: 0.8 },
-        { pattern: /\b(pcm|phase.change|thermal)\b/, value: 'cooling-gel', confidence: 0.9 },
-        { pattern: /\b(graphite|carbon|conductive)\b/, value: 'graphite-infused', confidence: 0.8 },
-        { pattern: /\b(copper|metallic|conducting)\b/, value: 'copper-infused', confidence: 0.8 }
+        { pattern: /\b(gel|gel.memory|cooling.gel|temperature.regulating)\b/gi, value: 'cooling-gel', confidence: 0.8 },
+        { pattern: /\b(pcm|phase.change|thermal)\b/gi, value: 'cooling-gel', confidence: 0.9 },
+        { pattern: /\b(graphite|carbon|conductive)\b/gi, value: 'graphite-infused', confidence: 0.8 },
+        { pattern: /\b(copper|metallic|conducting)\b/gi, value: 'copper-infused', confidence: 0.8 }
       ]),
 
       // Feature rules - pressure relief
       new RegexRule('features', 'Pressure Relief', [
-        { pattern: /\b(pressure.relief|body.contouring|contour|conforming)\b/, value: 'pressure-relief', confidence: 0.85 },
-        { pattern: /\b(memory.foam|visco)\b/, value: 'pressure-relief', confidence: 0.7 }
+        { pattern: /\b(pressure.relief|body.contouring|contour|conforming)\b/gi, value: 'pressure-relief', confidence: 0.85 },
+        { pattern: /\b(memory.foam|visco)\b/gi, value: 'pressure-relief', confidence: 0.7 }
       ]),
 
       // Feature rules - motion isolation
       new RegexRule('features', 'Motion Isolation', [
-        { pattern: /\b(motion.isolation|motion.transfer|partner.disturbance|undisturbed.sleep)\b/, value: 'motion-isolation', confidence: 0.9 }
+        { pattern: /\b(motion.isolation|motion.transfer|partner.disturbance|undisturbed.sleep)\b/gi, value: 'motion-isolation', confidence: 0.9 }
       ]),
 
       // Feature rules - edge support
       new RegexRule('features', 'Edge Support', [
-        { pattern: /\b(edge.support|edge.to.edge|perimeter.support|sitting.edge)\b/, value: 'edge-support', confidence: 0.9 }
+        { pattern: /\b(edge.support|edge.to.edge|perimeter.support|sitting.edge)\b/gi, value: 'edge-support', confidence: 0.9 }
       ]),
 
       // Feature rules - zoned support
       new RegexRule('features', 'Zoned Support', [
-        { pattern: /\b(zoned|zone|targeted.support|variable.firmness|body.mapping)\b/, value: 'zoned-support', confidence: 0.9 }
+        { pattern: /\b(zoned|zone|targeted.support|variable.firmness|body.mapping)\b/gi, value: 'zoned-support', confidence: 0.9 }
       ]),
 
       // Feature rules - organic materials
       new RegexRule('features', 'Organic Materials', [
-        { pattern: /\b(organic|natural|100%.natural|chemical.free)\b/, value: 'organic-materials', confidence: 0.8 }
+        { pattern: /\b(organic|natural|100%.natural|chemical.free)\b/gi, value: 'organic-materials', confidence: 0.8 }
       ]),
 
       // Support feature rules
       new RegexRule('supportFeatures', 'Coil Systems', [
-        { pattern: /\b(pocketed.coil|pocket.coil|individual.coil)\b/, value: 'pocketed-coils', confidence: 0.9 },
-        { pattern: /\b(bonnell.coil|hourglass.coil)\b/, value: 'bonnell-coils', confidence: 0.9 },
-        { pattern: /\b(continuous.coil|helical.coil)\b/, value: 'continuous-coils', confidence: 0.9 },
-        { pattern: /\b(offset.coil|figure.8.coil)\b/, value: 'offset-coils', confidence: 0.9 }
+        { pattern: /\b(pocketed.coil|pocket.coil|individual.coil)\b/gi, value: 'pocketed-coils', confidence: 0.9 },
+        { pattern: /\b(bonnell.coil|hourglass.coil)\b/gi, value: 'bonnell-coils', confidence: 0.9 },
+        { pattern: /\b(continuous.coil|helical.coil)\b/gi, value: 'continuous-coils', confidence: 0.9 },
+        { pattern: /\b(offset.coil|figure.8.coil)\b/gi, value: 'offset-coils', confidence: 0.9 }
       ]),
 
       new RegexRule('supportFeatures', 'Support Features', [
-        { pattern: /\b(perimeter|edge.reinforcement|edge.guard)\b/, value: 'perimeter-edge-support', confidence: 0.85 },
-        { pattern: /\b(center.support|center.beam|middle.support)\b/, value: 'center-support-beam', confidence: 0.9 }
+        { pattern: /\b(perimeter|edge.reinforcement|edge.guard)\b/gi, value: 'perimeter-edge-support', confidence: 0.85 },
+        { pattern: /\b(center.support|center.beam|middle.support)\b/gi, value: 'center-support-beam', confidence: 0.9 }
       ])
     ];
   }
