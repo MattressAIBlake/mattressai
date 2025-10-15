@@ -57,6 +57,7 @@ export default defineConfig({
   resolve: {
     alias: {
       "~": path.resolve(__dirname, "./app"),
+      ".prisma/client": path.resolve(__dirname, "./node_modules/.prisma/client"),
     },
   },
   plugins: [
@@ -75,7 +76,7 @@ export default defineConfig({
     tsconfigPaths(),
   ],
   ssr: {
-    noExternal: ["@prisma/client"],
+    noExternal: ["@prisma/client", ".prisma/client"],
   },
   build: {
     assetsInlineLimit: 0,
