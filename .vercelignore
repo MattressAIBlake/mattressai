@@ -1,0 +1,4 @@
+# Don't ignore build directory on Vercel
+# (it's in .gitignore but needs to be deployed)
+!build
+

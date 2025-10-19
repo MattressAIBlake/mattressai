@@ -63,6 +63,10 @@ export default defineConfig({
     remix({
       ignoredRouteFiles: ["**/.*"],
       serverModuleFormat: "esm",
+      buildDirectory: "build",
+      assetsBuildDirectory: "build/client/assets",
+      publicPath: "/assets/",
+      serverBuildPath: "build/server/index.js",
       future: {
         v3_fetcherPersist: true,
         v3_relativeSplatPath: true,
