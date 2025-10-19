@@ -533,50 +533,8 @@ export default function ProductInventory() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   
-  // Handle database migration error
-  if (data.error) {
-    const needsMigration = data.message?.includes('imageUrl') || data.code === 'P2022';
-    
-    return (
-      <Page title="Catalog Indexing">
-        <BlockStack gap="400">
-          <Banner tone="critical">
-            <Text fontWeight="bold">Database Migration Needed</Text>
-            <Text>
-              The imageUrl column is missing from your database. This is a one-time setup required for product images.
-            </Text>
-          </Banner>
-          
-          {needsMigration && (
-            <Card>
-              <BlockStack gap="400">
-                <Text variant="headingMd">⚠️ Migration Required</Text>
-                <Text>
-                  Click the button below to run the database migration. This will add the imageUrl column needed for product images.
-                </Text>
-                <Button 
-                  variant="primary" 
-                  url="/app/admin/migrate-imageurl"
-                  external={false}
-                >
-                  Run Migration Now
-                </Button>
-              </BlockStack>
-            </Card>
-          )}
-          
-          <Card>
-            <BlockStack gap="200">
-              <Text variant="headingMd">Error Details</Text>
-              <Text tone="subdued">
-                {data.message || 'An unknown error occurred'}
-              </Text>
-            </BlockStack>
-          </Card>
-        </BlockStack>
-      </Page>
-    );
-  }
+  // Temporarily disabled error handling - run SQL directly instead
+  // See FIX_DATABASE.md for instructions
   
   // State management - initialize with empty strings to prevent hydration errors
   const [searchQuery, setSearchQuery] = useState('');
