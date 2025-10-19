@@ -74,7 +74,7 @@ git push origin main
 #### Step 1: Check Health Endpoint
 
 ```bash
-curl https://mattressaishopify.vercel.app/api/health | jq
+curl https://mattressaishopify.vercel.app/health | jq
 ```
 
 Look for:

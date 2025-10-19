@@ -12,7 +12,7 @@ echo ""
 
 # Test 1: Health endpoint
 echo "✓ Test 1: Checking health endpoint..."
-HEALTH_RESPONSE=$(curl -s "${DEPLOYMENT_URL}/api/health")
+HEALTH_RESPONSE=$(curl -s "${DEPLOYMENT_URL}/health")
 echo "$HEALTH_RESPONSE" | jq '.' || echo "$HEALTH_RESPONSE"
 echo ""
 
