@@ -211,56 +211,16 @@ export class ProductEnrichmentService {
 
   /**
    * Cache enriched profile
+   * DISABLED: This was creating "Untitled" products with empty shopifyProductId and title.
+   * The indexer has its own proper caching based on contentHash that includes full product data.
    */
   private async cacheProfile(profile: ProductProfile, contentHash: string, tenant?: string) {
-    try {
-      await prisma.productProfile.upsert({
-        where: { contentHash },
-        update: {
-          tenant: tenant || 'unknown',
-          shopifyProductId: '', // Will be set when processing specific products
-          title: profile.title || '',
-          body: profile.body || '',
-          vendor: profile.vendor || '',
-          productType: profile.productType || '',
-          tags: profile.tags ? JSON.stringify(profile.tags) : null,
-          firmness: profile.firmness || null,
-          height: profile.height || null,
-          material: profile.material || null,
-          certifications: profile.certifications ? JSON.stringify(profile.certifications) : null,
-          features: profile.features ? JSON.stringify(profile.features) : null,
-          supportFeatures: profile.supportFeatures ? JSON.stringify(profile.supportFeatures) : null,
-          enrichedAt: new Date(),
-          enrichmentMethod: profile.enrichmentMethod,
-          confidence: profile.confidence,
-          sourceEvidence: profile.sourceEvidence ? JSON.stringify(profile.sourceEvidence) : null,
-          modelVersion: profile.modelVersion || null,
-          lockedFirmness: profile.lockedFirmness,
-          lockedHeight: profile.lockedHeight,
-          lockedMaterial: profile.lockedMaterial,
-          lockedCertifications: profile.lockedCertifications,
-          lockedFeatures: profile.lockedFeatures,
-          lockedSupportFeatures: profile.lockedSupportFeatures
-        },
-        create: {
-          tenant: tenant || 'unknown',
-          shopifyProductId: '',
-          title: '',
-          contentHash,
-          enrichedAt: new Date(),
-          enrichmentMethod: profile.enrichmentMethod,
-          confidence: profile.confidence,
-          lockedFirmness: false,
-          lockedHeight: false,
-          lockedMaterial: false,
-          lockedCertifications: false,
-          lockedFeatures: false,
-          lockedSupportFeatures: false
-        }
-      });
-    } catch (error) {
-      console.error('Error caching profile:', error);
-    }
+    // Cache disabled - indexer handles caching properly with full product data
+    // This method was creating invalid ProductProfile records with:
+    // - shopifyProductId: '' (empty)
+    // - title: '' (empty)
+    // which appeared as "Untitled" products in the UI
+    return;
   }
 
   /**
