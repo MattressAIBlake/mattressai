@@ -746,7 +746,23 @@ export class ProductIndexer {
           productType: product.productType,
           tags: JSON.stringify(product.tags || []),
           contentHash,
-          ...enrichedProfile
+          // Spread enriched profile but stringify array fields for database
+          firmness: enrichedProfile.firmness,
+          height: enrichedProfile.height,
+          material: enrichedProfile.material,
+          certifications: enrichedProfile.certifications && enrichedProfile.certifications.length > 0 ? JSON.stringify(enrichedProfile.certifications) : null,
+          features: enrichedProfile.features && enrichedProfile.features.length > 0 ? JSON.stringify(enrichedProfile.features) : null,
+          supportFeatures: enrichedProfile.supportFeatures && enrichedProfile.supportFeatures.length > 0 ? JSON.stringify(enrichedProfile.supportFeatures) : null,
+          enrichmentMethod: enrichedProfile.enrichmentMethod,
+          confidence: enrichedProfile.confidence,
+          sourceEvidence: enrichedProfile.sourceEvidence ? JSON.stringify(enrichedProfile.sourceEvidence) : null,
+          modelVersion: enrichedProfile.modelVersion,
+          lockedFirmness: enrichedProfile.lockedFirmness || false,
+          lockedHeight: enrichedProfile.lockedHeight || false,
+          lockedMaterial: enrichedProfile.lockedMaterial || false,
+          lockedCertifications: enrichedProfile.lockedCertifications || false,
+          lockedFeatures: enrichedProfile.lockedFeatures || false,
+          lockedSupportFeatures: enrichedProfile.lockedSupportFeatures || false
         }
       });
       console.log(`      ✅ ProductProfile created with ID: ${created.id}`);
