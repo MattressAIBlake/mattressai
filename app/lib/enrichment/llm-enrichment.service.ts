@@ -42,7 +42,18 @@ export class LLMEnrichmentService {
         messages: [
           {
             role: 'system',
-            content: `You are a mattress product expert. Extract ONLY factual mattress attributes from the product description. If uncertain about any attribute, respond with null for that field. Include source_evidence for each extracted attribute.
+            content: `You are a mattress product expert. Extract mattress attributes from the product information.
+
+EXTRACTION RULES:
+1. Use explicit information when clearly stated in the description
+2. If explicit info is missing, make REASONABLE INFERENCES from:
+   - Product title and brand name
+   - Common industry standards for mattresses
+   - Typical mattress specifications
+3. For firmness: If not stated, infer "medium" (most common standard)
+4. For material: Look for clues in title (Memory Foam, Latex, Hybrid, etc.)
+5. For height: If not stated, use typical range "10-12 inches"
+6. Always provide source_evidence explaining your reasoning (can be "inferred from title" or "industry standard")
 
 IMPORTANT: Respond ONLY with valid JSON matching this exact schema. Do not include any explanatory text.`
           },
@@ -142,10 +153,13 @@ IMPORTANT: Respond ONLY with valid JSON matching this exact schema. Do not inclu
       // Validate the response against our schema
       const validated = ProductProfileSchema.partial().parse(parsed);
 
+      // Apply fallback defaults for null/missing values
+      const enriched = this.applyFallbackDefaults(validated, product);
+
       return {
-        ...validated,
+        ...enriched,
         enrichmentMethod: 'llm',
-        confidence: this.calculateConfidence(validated),
+        confidence: this.calculateConfidence(enriched),
         modelVersion: this.model
       };
 
@@ -174,9 +188,14 @@ IMPORTANT: Respond ONLY with valid JSON matching this exact schema. Do not inclu
 
 ${sections.join('\n\n')}
 
-Focus on extracting factual mattress attributes only. For each attribute you extract, provide evidence from the product description showing where you found this information. If you're not confident about an attribute or if the information isn't clearly stated, set it to null.
+Extract mattress attributes using available information and reasonable inferences. For each attribute, provide evidence showing where you found this information or how you inferred it.
 
-Remember: Only extract attributes that are explicitly mentioned or can be clearly inferred from the product information. Do not make assumptions or add attributes that aren't supported by the text.`;
+If information is missing:
+- Firmness: Default to "medium" (industry standard)
+- Height: Default to "10-12 inches" (typical mattress range)
+- Material: Infer from title keywords if possible
+
+Provide source_evidence for all attributes, including inferred ones.`;
   }
 
   /**
@@ -199,6 +218,41 @@ Remember: Only extract attributes that are explicitly mentioned or can be clearl
     const evidenceConfidence = profile.sourceEvidence?.length ? 0.2 : 0;
 
     return Math.min(fieldConfidence + evidenceConfidence, 1.0);
+  }
+
+  /**
+   * Apply fallback defaults for null/missing attributes
+   */
+  private applyFallbackDefaults(profile: Partial<ProductProfile>, product: ProductForEnrichment): Partial<ProductProfile> {
+    const result = { ...profile };
+
+    // Default firmness to medium if missing
+    if (!result.firmness) {
+      result.firmness = 'medium';
+    }
+
+    // Default height if missing
+    if (!result.height) {
+      result.height = '10-12 inches';
+    }
+
+    // Infer material from title if missing
+    if (!result.material && product.title) {
+      const titleLower = product.title.toLowerCase();
+      if (titleLower.includes('memory foam') || titleLower.includes('memory-foam')) {
+        result.material = 'memory-foam';
+      } else if (titleLower.includes('latex')) {
+        result.material = 'latex';
+      } else if (titleLower.includes('spring') || titleLower.includes('coil')) {
+        result.material = 'innerspring';
+      } else if (titleLower.includes('hybrid')) {
+        result.material = 'hybrid';
+      } else if (titleLower.includes('gel')) {
+        result.material = 'gel-foam';
+      }
+    }
+
+    return result;
   }
 }
 

@@ -724,6 +724,12 @@ export class ProductIndexer {
     });
 
     // Store the enriched profile
+    // Validate product has minimum required data
+    if (!product.title || product.title.trim() === '') {
+      console.warn(`      ⚠️  Skipping product with empty title: ${product.id}`);
+      throw new Error('Product missing required title - cannot index');
+    }
+
     console.log(`      💾 Storing ProductProfile in database...`);
     console.log(`      📌 Tenant: "${this.tenant}"`);
     console.log(`      📌 Shopify Product ID: "${product.id}"`);
