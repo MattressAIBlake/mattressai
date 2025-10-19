@@ -34,6 +34,7 @@ export const loader = async ({ request }) => {
     initialized: false,
     config: {},
     sessionId: null,
+    conversationId: null,
     variantId: null,
     compareList: [],
     unreadCount: 0,
@@ -49,6 +50,11 @@ export const loader = async ({ request }) => {
         console.warn('MattressAI: Root element not found');
         return;
       }
+      
+      // Clear chat-specific storage items for a fresh conversation on each page load
+      sessionStorage.removeItem('mattressai_lead_form_shown');
+      sessionStorage.removeItem('mattressai_widget_open');
+      sessionStorage.removeItem('mattressai_unread');
       
       // Extract configuration from data attributes
       this.config = {
@@ -201,12 +207,12 @@ export const loader = async ({ request }) => {
     },
     
     getConversationId: function() {
-      let conversationId = sessionStorage.getItem('mattressai_conversation_id');
-      if (!conversationId) {
-        conversationId = 'conv_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-        sessionStorage.setItem('mattressai_conversation_id', conversationId);
+      // Generate a fresh conversation ID on each page load
+      // Store in a property instead of sessionStorage so it resets on page reload
+      if (!this.conversationId) {
+        this.conversationId = 'conv_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
       }
-      return conversationId;
+      return this.conversationId;
     },
     
     createChatBubble: function() {
