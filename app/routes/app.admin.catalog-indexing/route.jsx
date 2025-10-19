@@ -546,12 +546,6 @@ export default function ProductInventory() {
   const [productToDelete, setProductToDelete] = useState(null);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
-  const [isMounted, setIsMounted] = useState(false);
-
-  // Track when component is mounted on client to prevent hydration errors with interactive elements
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
 
   // Sync state with loader data to prevent hydration mismatches
   useEffect(() => {
@@ -662,36 +656,26 @@ export default function ProductInventory() {
     }
   }, [fetcher.data]);
 
-  // Build product rows for table - only add interactive elements after client mount
+  // Build product rows for table
   const productRows = data.products.map(product => [
     // Image column
-    isMounted && product.imageUrl ? (
+    product.imageUrl ? (
       <Thumbnail source={product.imageUrl} alt={product.title || 'Product'} size="small" />
-    ) : isMounted ? (
-      <Text tone="subdued">-</Text>
     ) : (
-      '-'
+      <Text tone="subdued">-</Text>
     ),
     product.title || 'Untitled',
     product.vendor || '-',
     product.productType || '-',
     product.firmness || '-',
     product.material || '-',
-    isMounted ? (
-      <Badge tone={product.confidence > 0.8 ? 'success' : product.confidence > 0.5 ? 'info' : 'warning'}>
-        {Math.round(product.confidence * 100)}%
-      </Badge>
-    ) : (
-      `${Math.round(product.confidence * 100)}%`
-    ),
-    isMounted ? (
-      <InlineStack gap="200">
-        <Button size="slim" onClick={() => handleEdit(product)}>Edit</Button>
-        <Button size="slim" tone="critical" onClick={() => handleDelete(product)}>Delete</Button>
-      </InlineStack>
-    ) : (
-      'Loading...'
-    )
+    <Badge tone={product.confidence > 0.8 ? 'success' : product.confidence > 0.5 ? 'info' : 'warning'}>
+      {Math.round(product.confidence * 100)}%
+    </Badge>,
+    <InlineStack gap="200">
+      <Button size="slim" onClick={() => handleEdit(product)}>Edit</Button>
+      <Button size="slim" tone="critical" onClick={() => handleDelete(product)}>Delete</Button>
+    </InlineStack>
   ]);
 
   const currentJob = data.currentJob;
@@ -883,7 +867,7 @@ export default function ProductInventory() {
                           </Text>
                         </InlineStack>
                         <Text variant="bodySm" tone="subdued">
-                          {isMounted ? new Date(job.startedAt).toLocaleString() : 'Loading...'}
+                          {new Date(job.startedAt).toLocaleString()}
                         </Text>
                       </InlineStack>
                     </List.Item>
