@@ -592,7 +592,6 @@ export default function ProductInventory() {
 
   // Handle edit product
   const handleEdit = (product) => {
-    console.log('Edit clicked for product:', product);
     setEditingProduct(product);
     setShowEditModal(true);
   };
@@ -616,7 +615,6 @@ export default function ProductInventory() {
 
   // Handle delete product
   const handleDelete = (product) => {
-    console.log('Delete clicked for product:', product);
     setProductToDelete(product);
     setShowDeleteConfirm(true);
   };
