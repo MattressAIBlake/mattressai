@@ -24,7 +24,8 @@ import {
   TextField,
   RadioButton,
   Toast,
-  Frame
+  Frame,
+  Thumbnail
 } from '@shopify/polaris';
 import { TitleBar } from '@shopify/app-bridge-react';
 import {
@@ -659,6 +660,14 @@ export default function ProductInventory() {
 
   // Build product rows for table - only add interactive elements after client mount
   const productRows = data.products.map(product => [
+    // Image column
+    isMounted && product.imageUrl ? (
+      <Thumbnail source={product.imageUrl} alt={product.title || 'Product'} size="small" />
+    ) : isMounted ? (
+      <Text tone="subdued">-</Text>
+    ) : (
+      '-'
+    ),
     product.title || 'Untitled',
     product.vendor || '-',
     product.productType || '-',
@@ -804,8 +813,9 @@ export default function ProductInventory() {
               {data.products.length > 0 ? (
                 <>
                   <DataTable
-                    columnContentTypes={['text', 'text', 'text', 'text', 'text', 'text', 'text']}
+                    columnContentTypes={['text', 'text', 'text', 'text', 'text', 'text', 'text', 'text']}
                     headings={[
+                      'Image',
                       'Title',
                       'Vendor',
                       'Type',

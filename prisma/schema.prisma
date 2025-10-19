@@ -117,6 +117,7 @@ model ProductProfile {
   tenant                String
   shopifyProductId      String
   title                 String
+  imageUrl              String?
   body                  String?
   vendor                String?
   productType           String?

@@ -403,6 +403,7 @@ class MCPClient {
             productId: product.productId,
             title: product.title,
             vendor: product.vendor,
+            imageUrl: product.imageUrl,
             score: product.score,
             fitScore: product.fitScore,
             firmness: product.firmness,

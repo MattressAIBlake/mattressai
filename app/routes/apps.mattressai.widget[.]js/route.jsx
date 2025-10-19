@@ -650,29 +650,170 @@ export const loader = async ({ request }) => {
       const messagesContainer = document.querySelector('#mattressai-messages');
       const productsDiv = document.createElement('div');
       productsDiv.className = 'mattressai-products';
+      productsDiv.style.cssText = 'display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; padding: 16px 0;';
       
-      products.forEach(product => {
-        const productCard = document.createElement('div');
-        productCard.className = 'mattressai-product-card';
-        productCard.innerHTML = \`
-          <img src="\${product.image || ''}" alt="\${product.title}" class="mattressai-product-card__image"/>
-          <div class="mattressai-product-card__content">
-            <h4 class="mattressai-product-card__title">\${product.title}</h4>
-            <p class="mattressai-product-card__price">\${product.price ? '$' + product.price : 'Price varies'}</p>
-            <a 
-              href="\${product.url || '#'}" 
-              class="mattressai-product-card__button"
-              target="_blank"
-            >
-              View Product
-            </a>
-          </div>
-        \`;
+      products.forEach((product, index) => {
+        const productCard = this.createProductCard(product, index);
         productsDiv.appendChild(productCard);
       });
       
       messagesContainer.appendChild(productsDiv);
       this.scrollToBottom();
+    },
+    
+    createProductCard: function(product, index) {
+      const card = document.createElement('div');
+      card.className = 'rec-card';
+      card.setAttribute('role', 'article');
+      card.setAttribute('aria-label', \`Product recommendation: \${product.title}\`);
+      
+      // Image with fit score badge
+      const imageDiv = document.createElement('div');
+      imageDiv.className = 'rec-card__image';
+      
+      if (product.imageUrl) {
+        const img = document.createElement('img');
+        img.src = product.imageUrl;
+        img.alt = product.title;
+        img.loading = 'lazy';
+        imageDiv.appendChild(img);
+      } else {
+        const placeholder = document.createElement('div');
+        placeholder.className = 'rec-card__placeholder';
+        placeholder.textContent = 'No image';
+        imageDiv.appendChild(placeholder);
+      }
+      
+      // Fit score badge
+      if (product.fitScore) {
+        const badge = document.createElement('div');
+        badge.className = 'rec-card__badge';
+        badge.innerHTML = \`
+          <span class="rec-card__badge-score">\${Math.round(product.fitScore)}%</span>
+          <span class="rec-card__badge-label">match</span>
+        \`;
+        imageDiv.appendChild(badge);
+      }
+      
+      card.appendChild(imageDiv);
+      
+      // Content section
+      const content = document.createElement('div');
+      content.className = 'rec-card__content';
+      
+      // Vendor
+      if (product.vendor) {
+        const vendor = document.createElement('div');
+        vendor.className = 'rec-card__vendor';
+        vendor.textContent = product.vendor;
+        content.appendChild(vendor);
+      }
+      
+      // Title
+      const title = document.createElement('h3');
+      title.className = 'rec-card__title';
+      title.textContent = product.title;
+      content.appendChild(title);
+      
+      // Price
+      if (product.price) {
+        const price = document.createElement('div');
+        price.className = 'rec-card__price';
+        price.textContent = \`$\${product.price.toFixed(2)}\`;
+        content.appendChild(price);
+      }
+      
+      // Firmness indicator
+      if (product.firmness) {
+        const firmnessDiv = document.createElement('div');
+        firmnessDiv.className = 'rec-card__firmness';
+        
+        const firmnessLabel = document.createElement('span');
+        firmnessLabel.className = 'rec-card__firmness-label';
+        firmnessLabel.textContent = 'Firmness:';
+        firmnessDiv.appendChild(firmnessLabel);
+        
+        const firmnessScale = document.createElement('div');
+        firmnessScale.className = 'rec-card__firmness-scale';
+        
+        const firmnessValue = this.getFirmnessValue(product.firmness);
+        for (let i = 0; i < 10; i++) {
+          const dot = document.createElement('div');
+          dot.className = \`rec-card__firmness-dot\${i < firmnessValue ? ' active' : ''}\`;
+          firmnessScale.appendChild(dot);
+        }
+        
+        const firmnessText = document.createElement('span');
+        firmnessText.className = 'rec-card__firmness-value';
+        firmnessText.textContent = product.firmness;
+        firmnessScale.appendChild(firmnessText);
+        
+        firmnessDiv.appendChild(firmnessScale);
+        content.appendChild(firmnessDiv);
+      }
+      
+      // Why it fits section
+      if (product.whyItFits && product.whyItFits.length > 0) {
+        const whyDiv = document.createElement('div');
+        whyDiv.className = 'rec-card__why-it-fits';
+        
+        const whyTitle = document.createElement('h4');
+        whyTitle.className = 'rec-card__why-title';
+        whyTitle.textContent = 'Why it fits:';
+        whyDiv.appendChild(whyTitle);
+        
+        const whyList = document.createElement('ul');
+        whyList.className = 'rec-card__why-list';
+        
+        product.whyItFits.forEach(reason => {
+          const li = document.createElement('li');
+          li.className = 'rec-card__why-item';
+          li.innerHTML = \`
+            <svg class="rec-card__check-icon" viewBox="0 0 16 16" aria-hidden="true">
+              <path d="M6 11L3 8l1-1 2 2 5-5 1 1z" fill="currentColor" />
+            </svg>
+            \${reason}
+          \`;
+          whyList.appendChild(li);
+        });
+        
+        whyDiv.appendChild(whyList);
+        content.appendChild(whyDiv);
+      }
+      
+      // Actions
+      const actions = document.createElement('div');
+      actions.className = 'rec-card__actions';
+      
+      // View Product button
+      const viewBtn = document.createElement('a');
+      viewBtn.className = 'rec-card__btn rec-card__btn--primary';
+      viewBtn.href = product.url || '#';
+      viewBtn.target = '_blank';
+      viewBtn.rel = 'noopener noreferrer';
+      viewBtn.setAttribute('aria-label', \`View \${product.title}\`);
+      viewBtn.textContent = product.availableForSale ? 'View Product' : 'Out of Stock';
+      if (!product.availableForSale) {
+        viewBtn.style.opacity = '0.6';
+        viewBtn.style.cursor = 'not-allowed';
+      }
+      actions.appendChild(viewBtn);
+      
+      content.appendChild(actions);
+      card.appendChild(content);
+      
+      return card;
+    },
+    
+    getFirmnessValue: function(firmness) {
+      const mapping = {
+        'soft': 2,
+        'medium-soft': 4,
+        'medium': 5,
+        'medium-firm': 7,
+        'firm': 9
+      };
+      return mapping[firmness?.toLowerCase()] || 5;
     },
     
     displayLeadForm: function(prefill = {}, fields = ['email', 'name', 'phone', 'zip']) {

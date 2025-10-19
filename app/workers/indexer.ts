@@ -429,6 +429,10 @@ export class ProductIndexer {
                     vendor
                     productType
                     tags
+                    featuredImage {
+                      url
+                      altText
+                    }
                     metafields(namespace: "custom", first: 10) {
                       edges {
                         node {
@@ -640,6 +644,7 @@ export class ProductIndexer {
             tenant_id: this.tenant,
             shopify_product_id: product.id,
             title: product.title,
+            image_url: product.featuredImage?.url || '',
             product_type: product.productType,
             vendor: product.vendor,
             enriched_profile: JSON.stringify(enrichedProfile),
@@ -741,6 +746,7 @@ export class ProductIndexer {
           tenant: this.tenant,
           shopifyProductId: product.id,
           title: product.title,
+          imageUrl: product.featuredImage?.url || null,
           body: product.description,
           vendor: product.vendor,
           productType: product.productType,

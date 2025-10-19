@@ -94,19 +94,34 @@ export function createToolService() {
    * @returns {Object} Formatted product data
    */
   const formatProductData = (product) => {
-    const price = product.price_range
-      ? `${product.price_range.currency} ${product.price_range.min}`
-      : (product.variants && product.variants.length > 0
-        ? `${product.variants[0].currency} ${product.variants[0].price}`
-        : 'Price not available');
+    // Parse price to numeric value for display
+    let numericPrice = null;
+    if (product.price) {
+      numericPrice = parseFloat(product.price);
+    } else if (product.price_range) {
+      numericPrice = parseFloat(product.price_range.min);
+    } else if (product.variants && product.variants.length > 0) {
+      numericPrice = parseFloat(product.variants[0].price);
+    }
 
     return {
-      id: product.product_id || `product-${Math.random().toString(36).substring(7)}`,
+      id: product.productId || product.product_id || `product-${Math.random().toString(36).substring(7)}`,
       title: product.title || 'Product',
-      price: price,
-      image_url: product.image_url || '',
+      vendor: product.vendor,
+      price: numericPrice,
+      imageUrl: product.image_url || product.imageUrl || '',
       description: product.description || '',
-      url: product.url || ''
+      url: product.url || '',
+      // Enriched mattress data from AI vector search
+      firmness: product.firmness,
+      material: product.material,
+      height: product.height,
+      features: product.features || [],
+      certifications: product.certifications || [],
+      supportFeatures: product.supportFeatures || [],
+      fitScore: product.fitScore || (product.score ? Math.round(product.score * 100) : null),
+      whyItFits: product.whyItFits || [],
+      availableForSale: product.availableForSale !== false
     };
   };
 
