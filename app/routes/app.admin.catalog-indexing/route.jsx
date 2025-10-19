@@ -536,23 +536,16 @@ export default function ProductInventory() {
   // Temporarily disabled error handling - run SQL directly instead
   // See FIX_DATABASE.md for instructions
   
-  // State management - initialize with empty strings to prevent hydration errors
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedFirmness, setSelectedFirmness] = useState('');
-  const [selectedVendor, setSelectedVendor] = useState('');
+  // State management - initialize with loader data to prevent hydration errors
+  const [searchQuery, setSearchQuery] = useState(data.currentFilters.search || '');
+  const [selectedFirmness, setSelectedFirmness] = useState(data.currentFilters.firmness || '');
+  const [selectedVendor, setSelectedVendor] = useState(data.currentFilters.vendor || '');
   const [editingProduct, setEditingProduct] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [productToDelete, setProductToDelete] = useState(null);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
-
-  // Sync state with loader data to prevent hydration mismatches
-  useEffect(() => {
-    setSearchQuery(data.currentFilters.search || '');
-    setSelectedFirmness(data.currentFilters.firmness || '');
-    setSelectedVendor(data.currentFilters.vendor || '');
-  }, [data.currentFilters]);
 
   // Handle search with debounce
   const handleSearch = useCallback((value) => {
