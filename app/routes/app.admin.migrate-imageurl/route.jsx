@@ -11,6 +11,7 @@ import { authenticate } from '~/shopify.server';
 export async function loader({ request }) {
   await authenticate.admin(request);
   
+  // Don't query database here - might cause error if column doesn't exist
   return json({ 
     needsMigration: true,
     message: 'Click the button below to add the imageUrl column to your database.'

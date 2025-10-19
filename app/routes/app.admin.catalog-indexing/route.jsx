@@ -556,7 +556,8 @@ export default function ProductInventory() {
                 </Text>
                 <Button 
                   variant="primary" 
-                  onClick={() => navigate('/app/admin/migrate-imageurl')}
+                  url="/app/admin/migrate-imageurl"
+                  external={false}
                 >
                   Run Migration Now
                 </Button>
