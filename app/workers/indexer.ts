@@ -623,7 +623,8 @@ export class ProductIndexer {
 
         // Generate embedding for the enriched content with retry
         console.log(`    🔮 Generating embeddings...`);
-        const contentForEmbedding = this.createEmbeddingContent(enrichedProfile);
+        const contentForEmbedding = this.createEmbeddingContent(product, enrichedProfile);
+        console.log(`    📝 Embedding content preview: ${contentForEmbedding.substring(0, 200)}...`);
         const embeddings = await retryIfRetryable(
           () => embeddingProvider.generateEmbeddings([contentForEmbedding]),
           { maxRetries: 3, initialDelay: 1000 }
@@ -754,23 +755,30 @@ export class ProductIndexer {
   }
 
   /**
-   * Create content for embedding
+   * Create content for embedding from product and enriched profile
    */
-  private createEmbeddingContent(profile: any): string {
+  private createEmbeddingContent(product: any, enrichedProfile: any): string {
     const parts = [
-      profile.title,
-      profile.body,
-      profile.vendor,
-      profile.productType,
-      profile.firmness && `Firmness: ${profile.firmness}`,
-      profile.height && `Height: ${profile.height}`,
-      profile.material && `Material: ${profile.material}`,
-      profile.certifications && `Certifications: ${profile.certifications.join(', ')}`,
-      profile.features && `Features: ${profile.features.join(', ')}`,
-      profile.supportFeatures && `Support: ${profile.supportFeatures.join(', ')}`
+      product.title,
+      product.description,
+      product.vendor && `Vendor: ${product.vendor}`,
+      product.productType && `Type: ${product.productType}`,
+      enrichedProfile.firmness && `Firmness: ${enrichedProfile.firmness}`,
+      enrichedProfile.height && `Height: ${enrichedProfile.height}`,
+      enrichedProfile.material && `Material: ${enrichedProfile.material}`,
+      enrichedProfile.certifications && enrichedProfile.certifications.length > 0 && `Certifications: ${enrichedProfile.certifications.join(', ')}`,
+      enrichedProfile.features && enrichedProfile.features.length > 0 && `Features: ${enrichedProfile.features.join(', ')}`,
+      enrichedProfile.supportFeatures && enrichedProfile.supportFeatures.length > 0 && `Support: ${enrichedProfile.supportFeatures.join(', ')}`
     ].filter(Boolean);
 
-    return parts.join(' | ');
+    const content = parts.join(' | ');
+    
+    // Ensure we have at least some content (fallback to title if everything else is empty)
+    if (!content || content.trim().length === 0) {
+      return product.title || 'Mattress Product';
+    }
+    
+    return content;
   }
 
   /**

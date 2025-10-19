@@ -1,5 +1,5 @@
 import { createHash } from 'crypto';
-import { ProductProfile, createEmptyProductProfile, mergeProductProfiles } from './product-profile.schema';
+import { ProductProfile, ProductProfileSchema, createEmptyProductProfile, mergeProductProfiles } from './product-profile.schema';
 import { createDeterministicMappingService, ShopifyProduct } from './deterministic-mapping.service';
 import { createHeuristicExtractionService } from './heuristic-extraction.service';
 import { createLLMEnrichmentService } from './llm-enrichment.service';
