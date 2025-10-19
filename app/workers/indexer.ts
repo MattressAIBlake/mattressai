@@ -250,6 +250,11 @@ export class ProductIndexer {
         // Mattress keyword in description/tags and no negative signals
         console.log(`  ✅ DEFINITE MATTRESS (from content): "${product.title}"`);
         definitelyMattresses.push(product);
+      } else if (hasStrongPositive && hasStrongNegative) {
+        // Has "mattress" but also has negative keywords - let AI decide
+        // Could be "Mattress with Free Pillow" (YES) or "Mattress Protector" (NO)
+        console.log(`  ⚠️  UNCERTAIN (has mattress + negative keywords, needs AI): "${product.title}"`);
+        uncertainProducts.push(product);
       } else if (!hasStrongNegative && text.length > 10) {
         // Uncertain - could be a mattress with unusual naming
         // Only include products that might be beds/sleep products
@@ -262,17 +267,13 @@ export class ProductIndexer {
           text.includes('spring');
         
         if (mightBeMattress) {
-          console.log(`  ⚠️  UNCERTAIN (will AI classify): "${product.title}"`);
+          console.log(`  ⚠️  UNCERTAIN (might be mattress, will AI classify): "${product.title}"`);
           uncertainProducts.push(product);
         } else {
           console.log(`  ❌ REJECTED (no mattress keywords): "${product.title}"`);
         }
-      } else if (titleHasMattress && titleHasNegative) {
-        console.log(`  ❌ REJECTED (title has mattress but also negative keywords): "${product.title}"`);
-      } else if (hasStrongNegative) {
-        console.log(`  ❌ REJECTED (negative keywords in description): "${product.title}"`);
       } else {
-        console.log(`  ❌ REJECTED (no keywords): "${product.title}"`);
+        console.log(`  ❌ REJECTED (negative keywords, no mattress): "${product.title}"`);
       }
     }
     
