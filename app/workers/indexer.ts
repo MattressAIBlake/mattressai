@@ -64,13 +64,19 @@ export class ProductIndexer {
       }
 
       // Start Shopify bulk operation
+      console.log(`🚀 Starting Shopify bulk operation for tenant ${this.tenant}...`);
       const operationId = await this.startBulkOperation(session.accessToken);
+      console.log(`✅ Bulk operation started: ${operationId}`);
 
       // Poll for bulk operation completion
+      console.log(`⏳ Polling for bulk operation completion...`);
       const bulkData = await this.pollBulkOperation(operationId, session.accessToken);
+      console.log(`✅ Bulk operation completed. Retrieved ${bulkData.products?.length || 0} products`);
 
       // Filter for mattress products only using hybrid AI approach
+      console.log(`🔍 Starting hybrid mattress filtering...`);
       const mattresses = await this.filterMattressesHybrid(bulkData.products);
+      console.log(`✅ Hybrid filtering complete. Found ${mattresses.length} mattresses`);
 
       // Check if we found any mattresses
       if (mattresses.length === 0) {
@@ -194,6 +200,12 @@ export class ProductIndexer {
   private async filterMattressesHybrid(products: any[]): Promise<any[]> {
     const definitelyMattresses: any[] = [];
     const uncertainProducts: any[] = [];
+    
+    // Safety check
+    if (!products || !Array.isArray(products) || products.length === 0) {
+      console.log(`⚠️ No products to filter (received ${products ? products.length : 'null/undefined'})`);
+      return [];
+    }
     
     console.log(`Starting hybrid filter for ${products.length} total products...`);
     console.log(`🔍 All products being evaluated:`);
@@ -490,41 +502,63 @@ export class ProductIndexer {
 
       if (result.data?.node?.status === 'COMPLETED') {
         const operation = result.data.node;
+        console.log(`✅ Bulk operation completed. Status: ${operation.status}, Object count: ${operation.objectCount}`);
 
         // Download bulk operation results (JSONL format)
         if (operation.url) {
+          console.log(`📥 Downloading bulk operation results from: ${operation.url}`);
           const downloadResponse = await fetch(operation.url);
           const text = await downloadResponse.text();
+          console.log(`📄 Downloaded ${text.length} characters of JSONL data`);
           
-          // Parse JSONL (newline-delimited JSON)
-          const products = text
-            .split('\n')
-            .filter(line => line.trim())
-            .map(line => {
-              try {
-                const parsed = JSON.parse(line);
-                // Filter out metadata rows (have __parentId) and keep only product nodes
-                if (parsed.__parentId || !parsed.id) return null;
-                return parsed;
-              } catch {
-                return null;
-              }
-            })
-            .filter(Boolean);
-
+          const lines = text.split('\n').filter(line => line.trim());
+          console.log(`📊 Parsing ${lines.length} JSONL lines...`);
+          
+          // Parse JSONL (newline-delimited JSON) and group by product
+          const allRows: any[] = [];
+          let parseErrors = 0;
+          
+          for (const line of lines) {
+            try {
+              const parsed = JSON.parse(line);
+              allRows.push(parsed);
+            } catch (err) {
+              parseErrors++;
+            }
+          }
+          
+          console.log(`📊 Parsed ${allRows.length} rows (${parseErrors} parse errors)`);
+          
+          // Filter for product rows only (no __parentId = top level products)
+          const products = allRows.filter(row => !row.__parentId && row.id && row.id.includes('Product'));
+          
           console.log(`✅ Fetched ${products.length} products from Shopify bulk operation`);
+          console.log(`📊 Breakdown: ${allRows.length} total rows, ${products.length} products, ${allRows.length - products.length} child objects`);
+          
           if (products.length > 0) {
             console.log(`📋 Sample products (first 3):`);
             products.slice(0, 3).forEach((p, idx) => {
-              console.log(`  ${idx + 1}. "${p.title}" (Type: ${p.productType || 'N/A'}, Tags: ${p.tags?.join(', ') || 'N/A'})`);
+              console.log(`  ${idx + 1}. "${p.title}" (ID: ${p.id}, Type: ${p.productType || 'N/A'}, Tags: ${Array.isArray(p.tags) ? p.tags.join(', ') : 'N/A'})`);
             });
           } else {
             console.log(`⚠️ No products found in bulk operation results`);
+            if (allRows.length > 0) {
+              console.log(`⚠️ Sample of first 3 rows to debug:`);
+              allRows.slice(0, 3).forEach((row, idx) => {
+                console.log(`  ${idx + 1}. ${JSON.stringify(row).substring(0, 200)}...`);
+              });
+            }
           }
 
           return {
             operationId,
             products
+          };
+        } else {
+          console.log(`⚠️ Bulk operation completed but no download URL provided`);
+          return {
+            operationId,
+            products: []
           };
         }
       }
