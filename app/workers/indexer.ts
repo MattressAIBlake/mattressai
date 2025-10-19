@@ -215,6 +215,7 @@ export class ProductIndexer {
     
     // Stage 1: Quick keyword filtering with multilingual support
     for (const product of products) {
+      const titleLower = (product.title || '').toLowerCase();
       const text = `${product.title} ${product.description} ${product.productType} ${product.tags?.join(' ')}`.toLowerCase();
       
       // Strong positive signals (mattress keywords in multiple languages)
@@ -231,12 +232,23 @@ export class ProductIndexer {
         'air mattress', 'inflatable', 'pad only', 'cover only'
       ];
       
+      // Check if title explicitly contains mattress keyword
+      const titleHasMattress = strongMattressKeywords.some(kw => titleLower.includes(kw));
+      
+      // Check if title has negative keywords (more restrictive for title)
+      const titleHasNegative = notMattressKeywords.some(kw => titleLower.includes(kw));
+      
+      // Check full text
       const hasStrongPositive = strongMattressKeywords.some(kw => text.includes(kw));
       const hasStrongNegative = notMattressKeywords.some(kw => text.includes(kw));
       
-      if (hasStrongPositive && !hasStrongNegative) {
-        // Clear mattress - add immediately
-        console.log(`  ✅ DEFINITE MATTRESS: "${product.title}"`);
+      // If title explicitly says "mattress" and doesn't have negative keywords in title, accept it
+      if (titleHasMattress && !titleHasNegative) {
+        console.log(`  ✅ DEFINITE MATTRESS (from title): "${product.title}"`);
+        definitelyMattresses.push(product);
+      } else if (hasStrongPositive && !hasStrongNegative) {
+        // Mattress keyword in description/tags and no negative signals
+        console.log(`  ✅ DEFINITE MATTRESS (from content): "${product.title}"`);
         definitelyMattresses.push(product);
       } else if (!hasStrongNegative && text.length > 10) {
         // Uncertain - could be a mattress with unusual naming
@@ -255,10 +267,12 @@ export class ProductIndexer {
         } else {
           console.log(`  ❌ REJECTED (no mattress keywords): "${product.title}"`);
         }
+      } else if (titleHasMattress && titleHasNegative) {
+        console.log(`  ❌ REJECTED (title has mattress but also negative keywords): "${product.title}"`);
       } else if (hasStrongNegative) {
-        console.log(`  ❌ REJECTED (negative keywords): "${product.title}"`);
+        console.log(`  ❌ REJECTED (negative keywords in description): "${product.title}"`);
       } else {
-        console.log(`  ❌ REJECTED (too short or no keywords): "${product.title}"`);
+        console.log(`  ❌ REJECTED (no keywords): "${product.title}"`);
       }
     }
     
