@@ -52,14 +52,20 @@ export class PineconeVectorStoreDriver implements VectorStorePort {
     try {
       const index = this.client.index(this.indexName);
 
-      const queryRequest = {
+      const queryRequest: any = {
         vector: queryVector,
         topK: options.topK || 10,
         includeMetadata: options.includeMetadata !== false,
-        includeValues: options.includeValues || false,
-        filter: options.filter,
-        namespace: options.namespace || this.namespace
+        includeValues: options.includeValues || false
       };
+
+      // Only add filter if it exists
+      if (options.filter) {
+        queryRequest.filter = options.filter;
+      }
+
+      // Note: namespace is not supported in Pinecone serverless indexes
+      // If using namespaced indexes, access via index.namespace(name).query()
 
       const response = await index.query(queryRequest);
 

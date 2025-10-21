@@ -62,14 +62,14 @@ export const loader = async ({ request }) => {
         autoOpen: root.dataset.autoOpen === 'true',
         showCompare: root.dataset.showCompare === 'true',
         guidedMode: root.dataset.guidedMode === 'true',
-        primaryColor: root.dataset.primaryColor || '#0F172A',
+        primaryColor: root.dataset.primaryColor || '#3B82F6',
         widgetTitle: root.dataset.widgetTitle || 'Chat with us',
         widgetSubtitle: root.dataset.widgetSubtitle || 'We\\'re here to help',
         welcomeMessage: root.dataset.welcomeMessage || 'Hi! How can we help you today?',
         avatarStyle: root.dataset.avatarStyle || 'text',
         avatarText: root.dataset.avatarText || 'AI',
         avatarImage: root.dataset.avatarImage || '',
-        avatarBackground: root.dataset.avatarBackground || '#0F172A',
+        avatarBackground: root.dataset.avatarBackground || '#3B82F6',
         bubbleStyle: root.dataset.bubbleStyle || 'text',
         bubbleText: root.dataset.bubbleText || 'Mattress Match',
         bubbleSize: parseInt(root.dataset.bubbleSize || '64', 10),
@@ -111,10 +111,6 @@ export const loader = async ({ request }) => {
     saveState: function() {
       sessionStorage.setItem('mattressai_widget_open', String(this.isOpen));
       sessionStorage.setItem('mattressai_unread', String(this.unreadCount));
-    },
-    
-    formatTime: function(date = new Date()) {
-      return date.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
     },
     
     formatDay: function(date = new Date()) {
@@ -587,14 +583,11 @@ export const loader = async ({ request }) => {
       messageDiv.className = \`mattressai-message mattressai-message--\${role}\`;
       messageDiv.setAttribute('data-delivery', deliveryState);
       
-      const timestamp = this.formatTime();
-      
       if (role === 'assistant') {
         messageDiv.innerHTML = \`
           <div class="mattressai-message__avatar">\${this.getAvatarHTML()}</div>
           <div class="mattressai-message__wrapper">
             <div class="mattressai-message__content">\${content}</div>
-            <div class="mattressai-message__meta">\${timestamp}</div>
           </div>
         \`;
       } else {
@@ -602,7 +595,6 @@ export const loader = async ({ request }) => {
           <div class="mattressai-message__wrapper">
             <div class="mattressai-message__content">\${content}</div>
             <div class="mattressai-message__meta">
-              \${timestamp}
               <span class="mattressai-message__status">
                 \${deliveryState === 'sending' ? '⏱' : deliveryState === 'sent' ? '✓' : deliveryState === 'failed' ? '✗' : ''}
               </span>
@@ -645,8 +637,11 @@ export const loader = async ({ request }) => {
     
     scrollToBottom: function() {
       const messagesContainer = document.querySelector('#mattressai-messages');
-      if (messagesContainer && this.stickToBottom) {
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      if (messagesContainer) {
+        // Use requestAnimationFrame to ensure DOM is updated before scrolling
+        requestAnimationFrame(() => {
+          messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        });
       }
     },
     
@@ -1095,11 +1090,12 @@ export const loader = async ({ request }) => {
   style.textContent = \`
     /* CSS Variables / Theming */
     :root {
-      --mattress-primary: #0F172A;
+      --mattress-primary: #3B82F6;
+      --mattress-primary-hover: #2563EB;
       --mattress-bg: #ffffff;
       --mattress-surface: #f9fafb;
       --mattress-text: #111827;
-      --mattress-text-light: #6b7280;
+      --mattress-text-light: #64748b;
       --mattress-border: #e5e7eb;
       --mattress-radius: 12px;
       --mattress-shadow: 0 5px 40px rgba(0, 0, 0, 0.16);
@@ -1121,7 +1117,7 @@ export const loader = async ({ request }) => {
       position: fixed;
       bottom: var(--mattress-position-bottom, 20px);
       height: var(--mattress-bubble-size, 64px);
-      background: var(--mattress-primary, #0F172A);
+      background: var(--mattress-primary, #3B82F6);
       color: white;
       border: none;
       box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
@@ -1258,7 +1254,7 @@ export const loader = async ({ request }) => {
     /* Widget Header */
     .mattressai-widget__header {
       padding: 16px 20px;
-      background: var(--mattress-primary, #2c5f2d);
+      background: var(--mattress-primary, #3B82F6);
       color: white;
       border-radius: var(--mattress-radius, 12px) var(--mattress-radius, 12px) 0 0;
       display: flex;
@@ -1420,7 +1416,7 @@ export const loader = async ({ request }) => {
       width: 36px;
       height: 36px;
       border-radius: 50%;
-      background: var(--mattress-avatar-bg, var(--mattress-primary, #0F172A));
+      background: var(--mattress-avatar-bg, var(--mattress-primary, #3B82F6));
       color: white;
       display: flex;
       align-items: center;
@@ -1466,7 +1462,7 @@ export const loader = async ({ request }) => {
     }
     
     .mattressai-message--user .mattressai-message__content {
-      background: var(--mattress-primary, #2c5f2d);
+      background: var(--mattress-primary, #3B82F6);
       color: white;
       word-break: normal;
     }
@@ -1510,9 +1506,9 @@ export const loader = async ({ request }) => {
     }
     
     .mattressai-quick-reply:hover {
-      background: var(--mattress-primary, #0F172A);
+      background: var(--mattress-primary, #3B82F6);
       color: white;
-      border-color: var(--mattress-primary, #0F172A);
+      border-color: var(--mattress-primary, #3B82F6);
       transform: translateY(-1px);
     }
     
@@ -1600,14 +1596,14 @@ export const loader = async ({ request }) => {
     .mattressai-product-card__price {
       margin: 0 0 8px;
       font-size: 13px;
-      color: var(--mattress-primary, #2c5f2d);
+      color: var(--mattress-primary, #3B82F6);
       font-weight: 600;
     }
     
     .mattressai-product-card__button {
       display: inline-block;
       padding: 6px 12px;
-      background: var(--mattress-primary, #2c5f2d);
+      background: var(--mattress-primary, #3B82F6);
       color: white;
       text-decoration: none;
       border-radius: 6px;
@@ -1617,7 +1613,7 @@ export const loader = async ({ request }) => {
     }
     
     .mattressai-product-card__button:hover {
-      background: #1e293b;
+      background: var(--mattress-primary-hover, #2563EB);
     }
     
     /* Recommendation Cards */
@@ -1667,7 +1663,7 @@ export const loader = async ({ request }) => {
       position: absolute;
       top: 12px;
       right: 12px;
-      background: var(--mattress-primary, #2c5f2d);
+      background: var(--mattress-primary, #3B82F6);
       color: white;
       padding: 6px 12px;
       border-radius: 20px;
@@ -1713,7 +1709,7 @@ export const loader = async ({ request }) => {
     .rec-card__price {
       font-size: 24px;
       font-weight: 700;
-      color: var(--mattress-primary, #2c5f2d);
+      color: var(--mattress-primary, #3B82F6);
     }
     
     .rec-card__firmness {
@@ -1746,7 +1742,7 @@ export const loader = async ({ request }) => {
     }
     
     .rec-card__firmness-dot.active {
-      background: var(--mattress-primary, #2c5f2d);
+      background: var(--mattress-primary, #3B82F6);
     }
     
     .rec-card__firmness-value {
@@ -1814,12 +1810,12 @@ export const loader = async ({ request }) => {
     }
     
     .rec-card__btn--primary {
-      background: var(--mattress-primary, #2c5f2d);
+      background: var(--mattress-primary, #3B82F6);
       color: white;
     }
     
     .rec-card__btn--primary:hover:not(:disabled) {
-      background: #234d24;
+      background: var(--mattress-primary-hover, #2563EB);
       transform: translateY(-1px);
     }
     
@@ -1831,12 +1827,12 @@ export const loader = async ({ request }) => {
     
     .rec-card__btn--secondary {
       background: transparent;
-      color: var(--mattress-primary, #2c5f2d);
-      border: 1px solid var(--mattress-primary, #2c5f2d);
+      color: var(--mattress-primary, #3B82F6);
+      border: 1px solid var(--mattress-primary, #3B82F6);
     }
     
     .rec-card__btn--secondary:hover {
-      background: var(--mattress-primary, #2c5f2d);
+      background: var(--mattress-primary, #3B82F6);
       color: white;
     }
     
@@ -1848,7 +1844,7 @@ export const loader = async ({ request }) => {
     
     .mattressai-lead-form__card {
       background: var(--mattress-bg, white);
-      border: 2px solid var(--mattress-primary, #0F172A);
+      border: 2px solid var(--mattress-primary, #3B82F6);
       border-radius: 12px;
       padding: 20px;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
@@ -1899,9 +1895,9 @@ export const loader = async ({ request }) => {
     }
     
     .mattressai-lead-form__input:focus {
-      border-color: var(--mattress-primary, #0F172A);
+      border-color: var(--mattress-primary, #3B82F6);
       background: var(--mattress-bg, white);
-      box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.1);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
     }
     
     .mattressai-lead-form__input::placeholder {
@@ -1928,7 +1924,7 @@ export const loader = async ({ request }) => {
       height: 18px;
       cursor: pointer;
       flex-shrink: 0;
-      accent-color: var(--mattress-primary, #0F172A);
+      accent-color: var(--mattress-primary, #3B82F6);
     }
     
     .mattressai-lead-form__actions {
@@ -1940,7 +1936,7 @@ export const loader = async ({ request }) => {
     .mattressai-lead-form__submit {
       flex: 1;
       padding: 12px 20px;
-      background: var(--mattress-primary, #0F172A);
+      background: var(--mattress-primary, #3B82F6);
       color: white;
       border: none;
       border-radius: 8px;
@@ -1951,7 +1947,7 @@ export const loader = async ({ request }) => {
     }
     
     .mattressai-lead-form__submit:hover:not(:disabled) {
-      background: #1e293b;
+      background: var(--mattress-primary-hover, #2563EB);
       transform: translateY(-1px);
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
     }
@@ -2010,12 +2006,12 @@ export const loader = async ({ request }) => {
     }
     
     .mattressai-widget__input:focus {
-      border-color: var(--mattress-primary, #2c5f2d);
+      border-color: var(--mattress-primary, #3B82F6);
       background: var(--mattress-bg, white);
     }
     
     .mattressai-widget__send-btn {
-      background: var(--mattress-primary, #2c5f2d);
+      background: var(--mattress-primary, #3B82F6);
       border: none;
       border-radius: 12px;
       color: white;
@@ -2030,7 +2026,7 @@ export const loader = async ({ request }) => {
     }
     
     .mattressai-widget__send-btn:hover:not(:disabled) {
-      background: #1e293b;
+      background: var(--mattress-primary-hover, #2563EB);
       transform: scale(1.05);
     }
     
