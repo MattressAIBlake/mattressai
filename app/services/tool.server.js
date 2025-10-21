@@ -40,9 +40,13 @@ export function createToolService() {
    * @param {string} conversationId - The conversation ID
    */
   const handleToolSuccess = async (toolUseResponse, toolName, toolUseId, conversationHistory, productsToDisplay, conversationId) => {
-    // Check if this is a product search result
-    if (toolName === AppConfig.tools.productSearchName) {
-      productsToDisplay.push(...processProductSearchResult(toolUseResponse));
+    // Check if this is a product search result (supports both MCP and custom tools)
+    const isProductSearch = toolName === AppConfig.tools.productSearchName || toolName === 'search_mattresses';
+    
+    if (isProductSearch) {
+      const products = processProductSearchResult(toolUseResponse);
+      console.log(`🛍️ Extracted ${products.length} products for widget display`);
+      productsToDisplay.push(...products);
     }
 
     addToolResultToHistory(conversationHistory, toolUseId, toolUseResponse.content, conversationId);
