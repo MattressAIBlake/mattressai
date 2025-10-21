@@ -639,10 +639,10 @@ export class ProductIndexer {
 
         // Extract price and availability from first variant
         const firstVariant = product.variants?.edges?.[0]?.node;
-        const price = firstVariant?.price ? parseFloat(firstVariant.price) : null;
+        const price = firstVariant?.price ? parseFloat(firstVariant.price) : 0;
         const availableForSale = firstVariant?.availableForSale ?? false;
 
-        // Prepare vector record
+        // Prepare vector record (Pinecone requires non-null values)
         const vectorRecord = {
           id: `product-${product.id}`,
           vector: embedding,
@@ -654,8 +654,8 @@ export class ProductIndexer {
             product_url: product.onlineStoreUrl || '',
             price: price,
             available_for_sale: availableForSale,
-            product_type: product.productType,
-            vendor: product.vendor,
+            product_type: product.productType || '',
+            vendor: product.vendor || '',
             enriched_profile: JSON.stringify(enrichedProfile),
             updated_at: new Date().toISOString()
           }
