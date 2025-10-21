@@ -12,8 +12,39 @@ if (process.env.NODE_ENV === 'production') {
   prisma = global.__db__;
 }
 
+// Ensure Prisma is connected (important for serverless)
+let connectionPromise = null;
+
+async function ensurePrismaConnection() {
+  if (!connectionPromise) {
+    connectionPromise = prisma.$connect()
+      .catch((error) => {
+        console.error('Failed to connect to Prisma:', error);
+        connectionPromise = null; // Reset so it can retry
+        throw error;
+      });
+  }
+  return connectionPromise;
+}
+
+// Helper function to execute queries with connection retry
+async function withConnection(fn) {
+  try {
+    await ensurePrismaConnection();
+    return await fn();
+  } catch (error) {
+    // If connection failed, reset and retry once
+    if (error.message?.includes('not yet connected')) {
+      connectionPromise = null;
+      await ensurePrismaConnection();
+      return await fn();
+    }
+    throw error;
+  }
+}
+
 export default prisma;
-export { prisma }; // Named export for compatibility
+export { prisma, withConnection }; // Named export for compatibility
 
 /**
  * Store a code verifier for PKCE authentication
@@ -122,21 +153,23 @@ export async function storeCustomerToken(conversationId, accessToken, expiresAt)
  * @returns {Promise<Object|null>} - The customer token or null if not found/expired
  */
 export async function getCustomerToken(conversationId) {
-  try {
-    const token = await prisma.customerToken.findFirst({
-      where: {
-        conversationId,
-        expiresAt: {
-          gt: new Date() // Only return non-expired tokens
+  return withConnection(async () => {
+    try {
+      const token = await prisma.customerToken.findFirst({
+        where: {
+          conversationId,
+          expiresAt: {
+            gt: new Date() // Only return non-expired tokens
+          }
         }
-      }
-    });
+      });
 
-    return token;
-  } catch (error) {
-    console.error('Error retrieving customer token:', error);
-    return null;
-  }
+      return token;
+    } catch (error) {
+      console.error('Error retrieving customer token:', error);
+      return null;
+    }
+  });
 }
 
 /**
@@ -145,29 +178,31 @@ export async function getCustomerToken(conversationId) {
  * @returns {Promise<Object>} - The created or updated conversation
  */
 export async function createOrUpdateConversation(conversationId) {
-  try {
-    const existingConversation = await prisma.conversation.findUnique({
-      where: { id: conversationId }
-    });
+  return withConnection(async () => {
+    try {
+      const existingConversation = await prisma.conversation.findUnique({
+        where: { id: conversationId }
+      });
 
-    if (existingConversation) {
-      return await prisma.conversation.update({
-        where: { id: conversationId },
+      if (existingConversation) {
+        return await prisma.conversation.update({
+          where: { id: conversationId },
+          data: {
+            updatedAt: new Date()
+          }
+        });
+      }
+
+      return await prisma.conversation.create({
         data: {
-          updatedAt: new Date()
+          id: conversationId
         }
       });
+    } catch (error) {
+      console.error('Error creating/updating conversation:', error);
+      throw error;
     }
-
-    return await prisma.conversation.create({
-      data: {
-        id: conversationId
-      }
-    });
-  } catch (error) {
-    console.error('Error creating/updating conversation:', error);
-    throw error;
-  }
+  });
 }
 
 /**
@@ -178,22 +213,24 @@ export async function createOrUpdateConversation(conversationId) {
  * @returns {Promise<Object>} - The saved message
  */
 export async function saveMessage(conversationId, role, content) {
-  try {
-    // Ensure the conversation exists
-    await createOrUpdateConversation(conversationId);
+  return withConnection(async () => {
+    try {
+      // Ensure the conversation exists
+      await createOrUpdateConversation(conversationId);
 
-    // Create the message
-    return await prisma.message.create({
-      data: {
-        conversationId,
-        role,
-        content
-      }
-    });
-  } catch (error) {
-    console.error('Error saving message:', error);
-    throw error;
-  }
+      // Create the message
+      return await prisma.message.create({
+        data: {
+          conversationId,
+          role,
+          content
+        }
+      });
+    } catch (error) {
+      console.error('Error saving message:', error);
+      throw error;
+    }
+  });
 }
 
 /**
@@ -202,17 +239,19 @@ export async function saveMessage(conversationId, role, content) {
  * @returns {Promise<Array>} - Array of messages in the conversation
  */
 export async function getConversationHistory(conversationId) {
-  try {
-    const messages = await prisma.message.findMany({
-      where: { conversationId },
-      orderBy: { createdAt: 'asc' }
-    });
+  return withConnection(async () => {
+    try {
+      const messages = await prisma.message.findMany({
+        where: { conversationId },
+        orderBy: { createdAt: 'asc' }
+      });
 
-    return messages;
-  } catch (error) {
-    console.error('Error retrieving conversation history:', error);
-    return [];
-  }
+      return messages;
+    } catch (error) {
+      console.error('Error retrieving conversation history:', error);
+      return [];
+    }
+  });
 }
 
 /**
@@ -222,23 +261,25 @@ export async function getConversationHistory(conversationId) {
  * @returns {Promise<Object>} - The saved URL object
  */
 export async function storeCustomerAccountUrl(conversationId, url) {
-  try {
-    return await prisma.customerAccountUrl.upsert({
-      where: { conversationId },
-      update: {
-        url,
-        updatedAt: new Date()
-      },
-      create: {
-        conversationId,
-        url,
-        updatedAt: new Date()
-      }
-    });
-  } catch (error) {
-    console.error('Error storing customer account URL:', error);
-    throw error;
-  }
+  return withConnection(async () => {
+    try {
+      return await prisma.customerAccountUrl.upsert({
+        where: { conversationId },
+        update: {
+          url,
+          updatedAt: new Date()
+        },
+        create: {
+          conversationId,
+          url,
+          updatedAt: new Date()
+        }
+      });
+    } catch (error) {
+      console.error('Error storing customer account URL:', error);
+      throw error;
+    }
+  });
 }
 
 /**
@@ -247,14 +288,16 @@ export async function storeCustomerAccountUrl(conversationId, url) {
  * @returns {Promise<string|null>} - The customer account URL or null if not found
  */
 export async function getCustomerAccountUrl(conversationId) {
-  try {
-    const record = await prisma.customerAccountUrl.findUnique({
-      where: { conversationId }
-    });
+  return withConnection(async () => {
+    try {
+      const record = await prisma.customerAccountUrl.findUnique({
+        where: { conversationId }
+      });
 
-    return record?.url || null;
-  } catch (error) {
-    console.error('Error retrieving customer account URL:', error);
-    return null;
-  }
+      return record?.url || null;
+    } catch (error) {
+      console.error('Error retrieving customer account URL:', error);
+      return null;
+    }
+  });
 }
