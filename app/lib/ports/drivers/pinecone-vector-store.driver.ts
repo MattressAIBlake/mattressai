@@ -67,7 +67,11 @@ export class PineconeVectorStoreDriver implements VectorStorePort {
       // Note: namespace is not supported in Pinecone serverless indexes
       // If using namespaced indexes, access via index.namespace(name).query()
 
+      console.log(`🔍 Pinecone query - Index: ${this.indexName}, Filter:`, JSON.stringify(queryRequest.filter), `TopK: ${queryRequest.topK}`);
+      
       const response = await index.query(queryRequest);
+      
+      console.log(`📊 Pinecone returned ${response.matches?.length || 0} matches`);
 
       return response.matches?.map(match => ({
         id: match.id,

@@ -359,12 +359,16 @@ class MCPClient {
       
       if (toolName === 'search_mattresses') {
         try {
+          console.log(`🔍 Searching for mattresses - Tenant: ${this.shopDomain}, Args:`, toolArgs);
+          
           // CRITICAL: Pass shop domain for tenant-specific search
           const recommendations = await getProductRecommendations(
             this.shopDomain,  // Tenant identifier
             toolArgs,
-            { topK: 5 }
+            { topK: 5, includeOutOfStock: true } // Include out-of-stock for debugging
           );
+          
+          console.log(`📊 Search returned ${recommendations.length} products`);
           
           if (recommendations.length === 0) {
             // Check if indexing is in progress

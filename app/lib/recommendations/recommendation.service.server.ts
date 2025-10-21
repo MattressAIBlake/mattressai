@@ -85,6 +85,7 @@ export class RecommendationService {
       
       // Step 3: Build metadata filters
       const filters = this.buildFilters(intent, includeOutOfStock);
+      console.log(`🔍 Recommendation search - Tenant: ${this.tenant}, Filters:`, JSON.stringify(filters));
       
       // Step 4: Search vector store
       const vectorStoreProvider = getVectorStoreProvider(this.tenant);
@@ -93,6 +94,8 @@ export class RecommendationService {
         includeMetadata: true,
         filter: filters
       });
+      
+      console.log(`📊 Vector search returned ${searchResults.length} results`);
       
       // Step 5: Apply business logic boosts and filters
       const boostedResults = this.applyBoosts(searchResults, intent);
