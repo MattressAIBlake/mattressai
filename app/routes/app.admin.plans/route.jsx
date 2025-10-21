@@ -177,7 +177,10 @@ export const action = async ({ request }) => {
       let appUrl = process.env.SHOPIFY_APP_URL || process.env.HOST || 'mattressaishopify.vercel.app';
       // Remove https:// or http:// if present to avoid double protocol
       appUrl = appUrl.replace(/^https?:\/\//, '');
-      const returnUrl = `https://${appUrl}/app/admin/billing/callback?plan=${planName}`;
+      
+      // Use a polling approach instead of returnUrl callback for embedded apps
+      // This avoids authentication issues when Shopify redirects back
+      const returnUrl = `https://${appUrl}/auth/login?shop=${shop}`;
       
       // Create app subscription using GraphQL Admin API
       const response = await admin.graphql(

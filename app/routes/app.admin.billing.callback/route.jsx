@@ -5,39 +5,43 @@ import { authenticate } from '~/shopify.server';
  * Billing Callback Route
  * Handles the return from Shopify's billing approval page
  * Processes charge acceptance/decline and updates tenant plan
+ * 
+ * Note: This uses authenticate.admin which will handle the OAuth flow
+ * if the session is expired, ensuring smooth redirect from Shopify
  */
 export const loader = async ({ request }) => {
   const { upgradePlan, PLAN_CONFIGS } = await import('~/lib/billing/billing.service.server');
   
-  const { admin, session } = await authenticate.admin(request);
-  const shop = session.shop;
-  const url = new URL(request.url);
-
-  // Get parameters from URL
-  const chargeId = url.searchParams.get('charge_id');
-  const planName = url.searchParams.get('plan');
-  const isReinstall = url.searchParams.get('reinstall') === 'true';
-
-  console.log('Billing callback received:', {
-    shop,
-    chargeId,
-    planName,
-    isReinstall
-  });
-
-  // Validate plan name
-  if (!planName || !PLAN_CONFIGS[planName]) {
-    console.error('Invalid plan name:', planName);
-    return redirect('/app/admin/plans?error=invalid_plan');
-  }
-
-  // If no charge_id, user declined the charge
-  if (!chargeId) {
-    console.log('No charge_id - user declined billing');
-    return redirect('/app/admin/plans?status=declined');
-  }
-
   try {
+    // Use authenticate.admin which handles OAuth flow for returning users
+    const { admin, session } = await authenticate.admin(request);
+    const shop = session.shop;
+    const url = new URL(request.url);
+
+    // Get parameters from URL
+    const chargeId = url.searchParams.get('charge_id');
+    const planName = url.searchParams.get('plan');
+    const isReinstall = url.searchParams.get('reinstall') === 'true';
+
+    console.log('Billing callback received:', {
+      shop,
+      chargeId,
+      planName,
+      isReinstall
+    });
+
+    // Validate plan name
+    if (!planName || !PLAN_CONFIGS[planName]) {
+      console.error('Invalid plan name:', planName);
+      return redirect('/app/admin/plans?error=invalid_plan');
+    }
+
+    // If no charge_id, user declined the charge
+    if (!chargeId) {
+      console.log('No charge_id - user declined billing');
+      return redirect('/app/admin/plans?status=declined');
+    }
+
     // Query Shopify to confirm subscription status
     const response = await admin.graphql(
       `#graphql
@@ -125,9 +129,18 @@ export const loader = async ({ request }) => {
       console.error('Unexpected subscription status:', subscription?.status);
       return redirect('/app/admin/plans?status=error&message=Unexpected+subscription+status');
     }
-  } catch (error) {
-    console.error('Error processing billing callback:', error);
-    return redirect(`/app/admin/plans?status=error&message=${encodeURIComponent(error.message)}`);
+  } catch (authError) {
+    // If authentication fails, this might be a redirect from Shopify
+    // The authenticate.admin() will throw a Response to start OAuth
+    console.error('Authentication or processing error:', authError);
+    
+    // If it's a Response object (redirect), let it through
+    if (authError instanceof Response) {
+      throw authError;
+    }
+    
+    // Otherwise, redirect to plans with error
+    return redirect(`/app/admin/plans?status=error&message=${encodeURIComponent(authError.message || 'Authentication failed')}`);
   }
 };
 

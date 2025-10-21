@@ -17,6 +17,11 @@ export const loader = async ({ request }) => {
   // This handles OAuth callbacks and other auth flows
   const { session, admin } = await authenticate.admin(request);
   
+  // Check if this is a billing return by looking for charge_id in URL
+  const url = new URL(request.url);
+  const chargeId = url.searchParams.get('charge_id');
+  const isBillingReturn = chargeId !== null;
+  
   // Check if this is a first-time install and trigger automatic indexing
   if (session?.shop) {
     try {
@@ -98,6 +103,12 @@ export const loader = async ({ request }) => {
     }
   }
   
-  // If authentication succeeds without redirecting, go to app
+  // If this is a billing return (from Shopify billing approval),
+  // redirect to plans page where the subscription will be auto-synced
+  if (isBillingReturn) {
+    return redirect('/app/admin/plans');
+  }
+  
+  // Otherwise, go to app home
   return redirect('/app');
 };
