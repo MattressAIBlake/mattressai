@@ -52,6 +52,7 @@ export interface RecommendedProduct {
   price?: number;
   availableForSale?: boolean;
   imageUrl?: string;
+  url?: string;
 }
 
 /**
@@ -331,7 +332,8 @@ export class RecommendationService {
       // Metadata
       price: metadata.price,
       availableForSale: metadata.available_for_sale,
-      imageUrl: metadata.image_url
+      imageUrl: metadata.image_url,
+      url: metadata.product_url
     };
   }
   

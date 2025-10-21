@@ -429,6 +429,7 @@ export class ProductIndexer {
                     vendor
                     productType
                     tags
+                    onlineStoreUrl
                     featuredImage {
                       url
                       altText
@@ -636,6 +637,11 @@ export class ProductIndexer {
         const embedding = embeddings[0];
         console.log(`    ✅ Embedding generated (${embedding.length} dimensions)`);
 
+        // Extract price and availability from first variant
+        const firstVariant = product.variants?.edges?.[0]?.node;
+        const price = firstVariant?.price ? parseFloat(firstVariant.price) : null;
+        const availableForSale = firstVariant?.availableForSale ?? false;
+
         // Prepare vector record
         const vectorRecord = {
           id: `product-${product.id}`,
@@ -645,6 +651,9 @@ export class ProductIndexer {
             shopify_product_id: product.id,
             title: product.title,
             image_url: product.featuredImage?.url || '',
+            product_url: product.onlineStoreUrl || '',
+            price: price,
+            available_for_sale: availableForSale,
             product_type: product.productType,
             vendor: product.vendor,
             enriched_profile: JSON.stringify(enrichedProfile),

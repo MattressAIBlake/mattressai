@@ -1620,6 +1620,226 @@ export const loader = async ({ request }) => {
       background: #1e293b;
     }
     
+    /* Recommendation Cards */
+    .rec-card {
+      background: var(--mattress-bg, white);
+      border: 1px solid var(--mattress-border, #e0e0e0);
+      border-radius: 8px;
+      overflow: hidden;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+    
+    .rec-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+    }
+    
+    .rec-card__image {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      background: #f5f5f5;
+    }
+    
+    .rec-card__image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.2s ease;
+    }
+    
+    .rec-card:hover .rec-card__image img {
+      transform: scale(1.05);
+    }
+    
+    .rec-card__placeholder {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: #666;
+    }
+    
+    .rec-card__badge {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      background: var(--mattress-primary, #2c5f2d);
+      color: white;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    
+    .rec-card__badge-score {
+      font-size: 16px;
+    }
+    
+    .rec-card__badge-label {
+      font-size: 11px;
+      opacity: 0.9;
+    }
+    
+    .rec-card__content {
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      flex: 1;
+    }
+    
+    .rec-card__vendor {
+      font-size: 12px;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .rec-card__title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #1a1a1a;
+      margin: 0;
+      line-height: 1.3;
+    }
+    
+    .rec-card__price {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--mattress-primary, #2c5f2d);
+    }
+    
+    .rec-card__firmness {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 12px;
+      background: #f9f9f9;
+      border-radius: 6px;
+    }
+    
+    .rec-card__firmness-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #666;
+    }
+    
+    .rec-card__firmness-scale {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+    }
+    
+    .rec-card__firmness-dot {
+      width: 8px;
+      height: 24px;
+      background: #e0e0e0;
+      border-radius: 2px;
+      transition: background 0.2s ease;
+    }
+    
+    .rec-card__firmness-dot.active {
+      background: var(--mattress-primary, #2c5f2d);
+    }
+    
+    .rec-card__firmness-value {
+      font-size: 13px;
+      color: #1a1a1a;
+      margin-left: 8px;
+      text-transform: capitalize;
+    }
+    
+    .rec-card__why-it-fits {
+      margin-top: 4px;
+    }
+    
+    .rec-card__why-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #1a1a1a;
+      margin: 0 0 8px 0;
+    }
+    
+    .rec-card__why-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    
+    .rec-card__why-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      font-size: 13px;
+      color: #1a1a1a;
+      line-height: 1.4;
+    }
+    
+    .rec-card__check-icon {
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+      fill: #97c47e;
+      margin-top: 2px;
+    }
+    
+    .rec-card__actions {
+      margin-top: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    
+    .rec-card__btn {
+      padding: 12px 16px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: none;
+      text-align: center;
+      text-decoration: none;
+      display: block;
+    }
+    
+    .rec-card__btn--primary {
+      background: var(--mattress-primary, #2c5f2d);
+      color: white;
+    }
+    
+    .rec-card__btn--primary:hover:not(:disabled) {
+      background: #234d24;
+      transform: translateY(-1px);
+    }
+    
+    .rec-card__btn--primary:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+    
+    .rec-card__btn--secondary {
+      background: transparent;
+      color: var(--mattress-primary, #2c5f2d);
+      border: 1px solid var(--mattress-primary, #2c5f2d);
+    }
+    
+    .rec-card__btn--secondary:hover {
+      background: var(--mattress-primary, #2c5f2d);
+      color: white;
+    }
+    
     /* Lead Form */
     .mattressai-lead-form {
       margin: 16px 0;
