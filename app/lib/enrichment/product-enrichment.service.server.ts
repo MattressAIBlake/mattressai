@@ -123,15 +123,27 @@ export class ProductEnrichmentService {
 
     if (useAIEnrichment && this.llmService) {
       try {
+        // Check if critical fields are missing
+        const missingCriticalFields = this.isMissingCriticalFields(
+          deterministicProfile,
+          heuristicProfile,
+          webSearchProfile
+        );
+        
         // Recalculate confidence including web search results
         const confidenceWithWebSearch = Math.max(
           currentConfidence,
           webSearchProfile.confidence || 0
         );
 
-        // Lowered threshold from 0.7 to 0.5 to trigger AI more often
-        if (confidenceWithWebSearch < 0.5) {
+        // Run LLM if confidence is below threshold OR if any critical field is missing
+        const shouldRunLLM = confidenceWithWebSearch < confidenceThreshold || missingCriticalFields;
+        
+        if (shouldRunLLM) {
+          console.log(`[Enrichment] Running LLM - Low confidence: ${confidenceWithWebSearch < confidenceThreshold}, Missing critical fields: ${missingCriticalFields}`);
           llmProfile = await this.llmService.enrichProduct(shopifyProduct);
+        } else {
+          console.log(`[Enrichment] Skipping LLM - Sufficient confidence (${confidenceWithWebSearch.toFixed(2)}) and all critical fields present`);
         }
       } catch (error) {
         console.error('LLM enrichment failed:', error);
@@ -310,6 +322,26 @@ export class ProductEnrichmentService {
     }
     
     return shouldTriggerWebSearch;
+  }
+
+  /**
+   * Check if critical fields are missing from profiles
+   */
+  private isMissingCriticalFields(
+    deterministic: Partial<ProductProfile>,
+    heuristic: Partial<ProductProfile>,
+    webSearch: Partial<ProductProfile>
+  ): boolean {
+    // Combine all three profiles to check what we have so far
+    const hasMaterial = deterministic.material || heuristic.material || webSearch.material;
+    const hasFirmness = deterministic.firmness || heuristic.firmness || webSearch.firmness;
+    const hasFeatures = 
+      (deterministic.features && deterministic.features.length > 0) ||
+      (heuristic.features && heuristic.features.length > 0) ||
+      (webSearch.features && webSearch.features.length > 0);
+
+    // Return true if ANY critical field is missing
+    return !hasMaterial || !hasFirmness || !hasFeatures;
   }
 }
 
