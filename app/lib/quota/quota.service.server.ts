@@ -10,6 +10,7 @@ const getPrisma = async () => {
 export interface QuotaLimits {
   // Indexing quotas
   maxIndexingJobsPerDay: number;
+  maxIndexingJobsPerWeek: number;
   maxProductsPerIndexingJob: number;
   maxIndexingJobsPerHour: number;
 
@@ -32,6 +33,7 @@ export interface QuotaLimits {
 const DEFAULT_QUOTAS: Record<string, QuotaLimits> = {
   'starter': {
     maxIndexingJobsPerDay: 1,
+    maxIndexingJobsPerWeek: 1,
     maxProductsPerIndexingJob: 100,
     maxIndexingJobsPerHour: 1,
     maxTokensPerDay: 100000,
@@ -43,6 +45,7 @@ const DEFAULT_QUOTAS: Record<string, QuotaLimits> = {
   },
   'professional': {
     maxIndexingJobsPerDay: 5,
+    maxIndexingJobsPerWeek: 1,
     maxProductsPerIndexingJob: 1000,
     maxIndexingJobsPerHour: 2,
     maxTokensPerDay: 500000,
@@ -54,6 +57,7 @@ const DEFAULT_QUOTAS: Record<string, QuotaLimits> = {
   },
   'enterprise': {
     maxIndexingJobsPerDay: -1,
+    maxIndexingJobsPerWeek: 1,
     maxProductsPerIndexingJob: 10000,
     maxIndexingJobsPerHour: -1,
     maxTokensPerDay: 2000000,
@@ -100,6 +104,18 @@ export class QuotaService {
         return {
           allowed: false,
           reason: `Maximum indexing jobs per hour (${limits.maxIndexingJobsPerHour}) reached`,
+          limits
+        };
+      }
+    }
+
+    // Check weekly indexing jobs limit (-1 means unlimited)
+    if (limits.maxIndexingJobsPerWeek !== -1) {
+      const weeklyJobs = await this.getIndexingJobsCount('week');
+      if (weeklyJobs >= limits.maxIndexingJobsPerWeek) {
+        return {
+          allowed: false,
+          reason: `Maximum indexing jobs per week (${limits.maxIndexingJobsPerWeek}) reached. Please wait before running another catalog indexing job.`,
           limits
         };
       }
@@ -206,9 +222,26 @@ export class QuotaService {
    * Get tenant quota limits
    */
   private async getTenantLimits(): Promise<QuotaLimits> {
-    // In a real implementation, this would fetch from a tenant configuration table
-    // For now, return enterprise tier limits (unlimited for testing)
-    return DEFAULT_QUOTAS.enterprise;
+    try {
+      const prisma = await getPrisma();
+      const tenant = await prisma.tenant.findUnique({
+        where: { shop: this.tenant },
+        select: { planName: true }
+      });
+
+      // If tenant found and plan exists in quotas, return it
+      if (tenant && tenant.planName && DEFAULT_QUOTAS[tenant.planName]) {
+        return DEFAULT_QUOTAS[tenant.planName];
+      }
+
+      // Fallback to starter tier for safety (most restrictive)
+      console.warn(`Tenant ${this.tenant} not found or invalid plan, defaulting to starter tier`);
+      return DEFAULT_QUOTAS.starter;
+    } catch (error) {
+      console.error(`Error fetching tenant limits for ${this.tenant}:`, error);
+      // On error, default to starter tier for safety
+      return DEFAULT_QUOTAS.starter;
+    }
   }
 
   /**
@@ -229,12 +262,19 @@ export class QuotaService {
   /**
    * Get count of indexing jobs in time window
    */
-  private async getIndexingJobsCount(timeWindow: 'hour' | 'day'): Promise<number> {
+  private async getIndexingJobsCount(timeWindow: 'hour' | 'day' | 'week'): Promise<number> {
     const prisma = await getPrisma();
     const now = new Date();
-    const windowStart = timeWindow === 'hour'
-      ? new Date(now.getTime() - 60 * 60 * 1000)
-      : new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    let windowStart: Date;
+    
+    if (timeWindow === 'hour') {
+      windowStart = new Date(now.getTime() - 60 * 60 * 1000);
+    } else if (timeWindow === 'day') {
+      windowStart = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    } else {
+      // week = 7 days
+      windowStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    }
 
     const jobCount = await prisma.indexJob.count({
       where: {
