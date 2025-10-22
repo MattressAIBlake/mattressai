@@ -82,7 +82,13 @@ export class QuotaService {
   /**
    * Check if tenant can start a new indexing job
    */
-  async canStartIndexingJob(): Promise<{ allowed: boolean; reason?: string; limits?: QuotaLimits }> {
+  async canStartIndexingJob(): Promise<{ 
+    allowed: boolean; 
+    reason?: string; 
+    limits?: QuotaLimits;
+    nextAvailableAt?: Date;
+    nextAvailableIn?: string;
+  }> {
     const limits = await this.getTenantLimits();
 
     // Check concurrent jobs limit (-1 means unlimited)
@@ -101,10 +107,18 @@ export class QuotaService {
     if (limits.maxIndexingJobsPerHour !== -1) {
       const hourlyJobs = await this.getIndexingJobsCount('hour');
       if (hourlyJobs >= limits.maxIndexingJobsPerHour) {
+        const oldestJob = await this.getOldestJobInWindow('hour');
+        const nextAvailable = oldestJob 
+          ? new Date(oldestJob.startedAt.getTime() + 60 * 60 * 1000)
+          : new Date();
+        const timeUntilAvailable = this.formatTimeUntilAvailable(nextAvailable);
+        
         return {
           allowed: false,
-          reason: `Maximum indexing jobs per hour (${limits.maxIndexingJobsPerHour}) reached`,
-          limits
+          reason: `Maximum indexing jobs per hour (${limits.maxIndexingJobsPerHour}) reached. ${timeUntilAvailable}`,
+          limits,
+          nextAvailableAt: nextAvailable,
+          nextAvailableIn: timeUntilAvailable
         };
       }
     }
@@ -113,10 +127,18 @@ export class QuotaService {
     if (limits.maxIndexingJobsPerWeek !== -1) {
       const weeklyJobs = await this.getIndexingJobsCount('week');
       if (weeklyJobs >= limits.maxIndexingJobsPerWeek) {
+        const oldestJob = await this.getOldestJobInWindow('week');
+        const nextAvailable = oldestJob 
+          ? new Date(oldestJob.startedAt.getTime() + 7 * 24 * 60 * 60 * 1000)
+          : new Date();
+        const timeUntilAvailable = this.formatTimeUntilAvailable(nextAvailable);
+        
         return {
           allowed: false,
-          reason: `Maximum indexing jobs per week (${limits.maxIndexingJobsPerWeek}) reached. Please wait before running another catalog indexing job.`,
-          limits
+          reason: `Maximum indexing jobs per week (${limits.maxIndexingJobsPerWeek}) reached. ${timeUntilAvailable}`,
+          limits,
+          nextAvailableAt: nextAvailable,
+          nextAvailableIn: timeUntilAvailable
         };
       }
     }
@@ -125,10 +147,18 @@ export class QuotaService {
     if (limits.maxIndexingJobsPerDay !== -1) {
       const dailyJobs = await this.getIndexingJobsCount('day');
       if (dailyJobs >= limits.maxIndexingJobsPerDay) {
+        const oldestJob = await this.getOldestJobInWindow('day');
+        const nextAvailable = oldestJob 
+          ? new Date(oldestJob.startedAt.getTime() + 24 * 60 * 60 * 1000)
+          : new Date();
+        const timeUntilAvailable = this.formatTimeUntilAvailable(nextAvailable);
+        
         return {
           allowed: false,
-          reason: `Maximum indexing jobs per day (${limits.maxIndexingJobsPerDay}) reached`,
-          limits
+          reason: `Maximum indexing jobs per day (${limits.maxIndexingJobsPerDay}) reached. ${timeUntilAvailable}`,
+          limits,
+          nextAvailableAt: nextAvailable,
+          nextAvailableIn: timeUntilAvailable
         };
       }
     }
@@ -348,6 +378,78 @@ export class QuotaService {
     // In a real implementation, this would track API requests
     // For now, return 0 as we don't have request tracking implemented
     return 0;
+  }
+
+  /**
+   * Get the oldest job in a time window
+   * Used to calculate when the next job slot will be available
+   */
+  private async getOldestJobInWindow(timeWindow: 'hour' | 'day' | 'week'): Promise<{ startedAt: Date } | null> {
+    const prisma = await getPrisma();
+    const now = new Date();
+    let windowStart: Date;
+    
+    if (timeWindow === 'hour') {
+      windowStart = new Date(now.getTime() - 60 * 60 * 1000);
+    } else if (timeWindow === 'day') {
+      windowStart = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    } else {
+      // week = 7 days
+      windowStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    }
+
+    const oldestJob = await prisma.indexJob.findFirst({
+      where: {
+        tenant: this.tenant,
+        startedAt: {
+          gte: windowStart,
+          lte: now
+        }
+      },
+      orderBy: {
+        startedAt: 'asc' // Get the oldest job first
+      },
+      select: {
+        startedAt: true
+      }
+    });
+
+    return oldestJob;
+  }
+
+  /**
+   * Format time until job becomes available in a human-readable format
+   */
+  private formatTimeUntilAvailable(availableAt: Date): string {
+    const now = new Date();
+    const msUntilAvailable = availableAt.getTime() - now.getTime();
+    
+    if (msUntilAvailable <= 0) {
+      return 'You can run another job now.';
+    }
+
+    const seconds = Math.floor(msUntilAvailable / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+
+    if (days > 0) {
+      const remainingHours = hours % 24;
+      if (remainingHours > 0) {
+        return `You can run another job in ${days} day${days > 1 ? 's' : ''} and ${remainingHours} hour${remainingHours > 1 ? 's' : ''}.`;
+      }
+      return `You can run another job in ${days} day${days > 1 ? 's' : ''}.`;
+    } else if (hours > 0) {
+      const remainingMinutes = minutes % 60;
+      if (remainingMinutes > 0) {
+        return `You can run another job in ${hours} hour${hours > 1 ? 's' : ''} and ${remainingMinutes} minute${remainingMinutes > 1 ? 's' : ''}.`;
+      }
+      return `You can run another job in ${hours} hour${hours > 1 ? 's' : ''}.`;
+    } else if (minutes > 0) {
+      return `You can run another job in ${minutes} minute${minutes > 1 ? 's' : ''}.`;
+    } else {
+      return `You can run another job in ${seconds} second${seconds > 1 ? 's' : ''}.`;
+    }
   }
 }
 

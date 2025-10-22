@@ -808,8 +808,9 @@ export default function ProductInventory() {
       // Clear selections after successful bulk delete
       setSelectedProducts([]);
     } else if (fetcher.data?.error) {
-      setToastMessage(fetcher.data.error);
-      setToastDuration(4000);
+      // Show detailed reason if available (e.g., quota limits with time info), otherwise show generic error
+      setToastMessage(fetcher.data.reason || fetcher.data.error);
+      setToastDuration(6000); // Longer duration for detailed messages
       setShowToast(true);
     }
   }, [fetcher.data]);
