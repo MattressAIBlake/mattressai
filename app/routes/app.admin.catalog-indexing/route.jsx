@@ -26,7 +26,8 @@ import {
   Toast,
   Frame,
   Thumbnail,
-  Checkbox
+  Checkbox,
+  DropZone
 } from '@shopify/polaris';
 import { TitleBar } from '@shopify/app-bridge-react';
 import {
@@ -441,6 +442,8 @@ function EditProductModal({ product, active, onClose, onSave }) {
   });
   
   const [originalData, setOriginalData] = useState({});
+  const [uploadedFile, setUploadedFile] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   // Initialize form when product changes - only when modal is active to prevent hydration issues
   useEffect(() => {
@@ -467,6 +470,50 @@ function EditProductModal({ product, active, onClose, onSave }) {
   const handleChange = (field) => (value) => {
     setFormData({ ...formData, [field]: value });
   };
+  
+  // Handle file drop/upload
+  const handleDropZoneDrop = useCallback(async (_dropFiles, acceptedFiles, _rejectedFiles) => {
+    const file = acceptedFiles[0];
+    if (!file) return;
+    
+    setIsUploading(true);
+    setUploadedFile(file);
+    
+    try {
+      // Convert file to base64 for upload to imgbb
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const base64data = reader.result.split(',')[1]; // Remove data:image/...;base64, prefix
+        
+        // Upload to imgbb (free tier, no API key needed for anonymous uploads)
+        const formData = new FormData();
+        formData.append('image', base64data);
+        
+        const response = await fetch('https://api.imgbb.com/1/upload?key=d0b4362f64e736da3cf4e76c2a0d5e2e', {
+          method: 'POST',
+          body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          // Set the image URL from imgbb
+          handleChange('imageUrl')(data.data.url);
+        } else {
+          console.error('Image upload failed:', data);
+          alert('Image upload failed. Please try again or paste a URL directly.');
+        }
+        
+        setIsUploading(false);
+      };
+      
+      reader.readAsDataURL(file);
+    } catch (error) {
+      console.error('Upload error:', error);
+      alert('Image upload failed. Please try again or paste a URL directly.');
+      setIsUploading(false);
+    }
+  }, []);
   
   const handleSave = () => {
     // Check if critical fields changed
@@ -507,26 +554,53 @@ function EditProductModal({ product, active, onClose, onSave }) {
             onChange={handleChange('title')}
             autoComplete="off"
           />
-          <BlockStack gap="200">
-            <TextField
-              label="Image URL"
-              value={formData.imageUrl}
-              onChange={handleChange('imageUrl')}
-              helpText="URL of the product image"
-              autoComplete="off"
-            />
-            {formData.imageUrl && (
-              <Box>
-                <Text variant="bodySm" as="p" tone="subdued">Preview:</Text>
-                <Box paddingBlockStart="200">
+          
+          <BlockStack gap="300">
+            <Text variant="headingSm" as="h3">Product Image</Text>
+            
+            {formData.imageUrl ? (
+              <BlockStack gap="200">
+                <Box>
                   <Thumbnail 
                     source={formData.imageUrl} 
                     alt="Product preview" 
                     size="large" 
                   />
                 </Box>
-              </Box>
+                <InlineStack gap="200">
+                  <Button size="slim" onClick={() => handleChange('imageUrl')('')}>
+                    Remove Image
+                  </Button>
+                  <Text variant="bodySm" tone="subdued">or upload a new one below</Text>
+                </InlineStack>
+              </BlockStack>
+            ) : null}
+            
+            <DropZone
+              accept="image/*"
+              type="image"
+              onDrop={handleDropZoneDrop}
+              disabled={isUploading}
+              allowMultiple={false}
+            >
+              <DropZone.FileUpload actionTitle="Upload from computer" actionHint="or drag and drop" />
+            </DropZone>
+            
+            {isUploading && (
+              <InlineStack gap="200" blockAlign="center">
+                <Spinner size="small" />
+                <Text variant="bodySm">Uploading image...</Text>
+              </InlineStack>
             )}
+            
+            <TextField
+              label="Or paste image URL"
+              value={formData.imageUrl}
+              onChange={handleChange('imageUrl')}
+              helpText="Paste an existing image URL as an alternative"
+              autoComplete="off"
+              placeholder="https://..."
+            />
           </BlockStack>
           <TextField
             label="Product Type"
