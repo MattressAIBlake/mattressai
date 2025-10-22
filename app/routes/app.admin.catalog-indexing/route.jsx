@@ -1,6 +1,6 @@
 import { json } from '@remix-run/node';
-import { useState, useEffect, useCallback } from 'react';
-import { useLoaderData, useFetcher, useNavigate, useSearchParams } from '@remix-run/react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { useLoaderData, useFetcher, useNavigate, useSearchParams, useRevalidator } from '@remix-run/react';
 import {
   Page,
   Layout,
@@ -25,7 +25,8 @@ import {
   RadioButton,
   Toast,
   Frame,
-  Thumbnail
+  Thumbnail,
+  Checkbox
 } from '@shopify/polaris';
 import { TitleBar } from '@shopify/app-bridge-react';
 import {
@@ -56,6 +57,46 @@ function createEmbeddingContent(profile) {
 }
 
 /**
+ * Helper function to determine indexing stage and message based on progress
+ */
+function getIndexingStage(processedProducts, totalProducts) {
+  if (!totalProducts || totalProducts === 0) {
+    return { stage: 'starting', message: 'Starting indexing job...', icon: 'pending' };
+  }
+  
+  const percentage = (processedProducts / totalProducts) * 100;
+  
+  if (percentage < 10) {
+    return { stage: 'connecting', message: 'Connecting to Shopify...', icon: 'pending' };
+  } else if (percentage < 30) {
+    return { stage: 'fetching', message: 'Fetching products from Shopify...', icon: 'active' };
+  } else if (percentage < 50) {
+    return { stage: 'filtering', message: 'Filtering mattress products...', icon: 'active' };
+  } else if (percentage < 90) {
+    return { stage: 'enriching', message: 'Running AI enrichment...', icon: 'active' };
+  } else {
+    return { stage: 'saving', message: 'Saving to database...', icon: 'active' };
+  }
+}
+
+/**
+ * Helper function to estimate time remaining
+ */
+function estimateTimeRemaining(processedProducts, totalProducts, startedAt) {
+  if (!processedProducts || !totalProducts || processedProducts === 0) {
+    return null;
+  }
+  
+  const elapsed = Date.now() - new Date(startedAt).getTime();
+  const rate = processedProducts / elapsed; // products per millisecond
+  const remaining = totalProducts - processedProducts;
+  const estimatedMs = remaining / rate;
+  const estimatedMinutes = Math.ceil(estimatedMs / 60000);
+  
+  return estimatedMinutes;
+}
+
+/**
  * Loader function - get indexed products and indexing status
  */
 export async function loader({ request }) {
@@ -69,7 +110,6 @@ export async function loader({ request }) {
     const pageSize = 20;
     const search = url.searchParams.get('search') || '';
     const filterFirmness = url.searchParams.get('firmness') || '';
-    const filterVendor = url.searchParams.get('vendor') || '';
 
     // Build where clause
     const where = {
@@ -77,12 +117,10 @@ export async function loader({ request }) {
       ...(search && {
         OR: [
           { title: { contains: search, mode: 'insensitive' } },
-          { vendor: { contains: search, mode: 'insensitive' } },
           { shopifyProductId: { contains: search } }
         ]
       }),
-      ...(filterFirmness && { firmness: filterFirmness }),
-      ...(filterVendor && { vendor: filterVendor })
+      ...(filterFirmness && { firmness: filterFirmness })
     };
 
     // Fetch products and count in parallel
@@ -97,20 +135,12 @@ export async function loader({ request }) {
     ]);
 
     // Get unique filter values
-    const [vendors, firmnessValues] = await Promise.all([
-      prisma.productProfile.findMany({
-        where: { tenant: session.shop },
-        select: { vendor: true },
-        distinct: ['vendor'],
-        orderBy: { vendor: 'asc' }
-      }),
-      prisma.productProfile.findMany({
-        where: { tenant: session.shop, firmness: { not: null } },
-        select: { firmness: true },
-        distinct: ['firmness'],
-        orderBy: { firmness: 'asc' }
-      })
-    ]);
+    const firmnessValues = await prisma.productProfile.findMany({
+      where: { tenant: session.shop, firmness: { not: null } },
+      select: { firmness: true },
+      distinct: ['firmness'],
+      orderBy: { firmness: 'asc' }
+    });
 
     // Check for active indexing job
     const currentJob = await prisma.indexJob.findFirst({
@@ -146,10 +176,8 @@ export async function loader({ request }) {
       pageSize,
       currentFilters: {
         search,
-        firmness: filterFirmness,
-        vendor: filterVendor
+        firmness: filterFirmness
       },
-      vendors: vendors.map(v => v.vendor).filter(Boolean),
       firmnessOptions: firmnessValues.map(f => f.firmness).filter(Boolean),
       currentJob,
       recentJobs,
@@ -300,6 +328,43 @@ export async function action({ request }) {
     }
   }
 
+  // Bulk Delete Products Action
+  if (actionType === 'bulkDeleteProducts') {
+    const productsData = formData.get('productsData');
+    
+    try {
+      const products = JSON.parse(productsData);
+      const { getVectorStoreProvider } = await import('~/lib/ports/provider-registry');
+      const vectorStoreProvider = getVectorStoreProvider(session.shop);
+      
+      // Delete from PostgreSQL in a transaction
+      await prisma.$transaction(
+        products.map(product => 
+          prisma.productProfile.delete({
+            where: { id: product.id }
+          })
+        )
+      );
+      
+      // Delete from Pinecone
+      const pineconeIds = products.map(p => `product-${p.shopifyProductId}`);
+      await vectorStoreProvider.delete(pineconeIds);
+      
+      console.log(`Bulk deleted ${products.length} products from both databases`);
+      
+      return json({ 
+        success: true, 
+        message: `Successfully deleted ${products.length} product${products.length > 1 ? 's' : ''}` 
+      });
+    } catch (error) {
+      console.error('Failed to bulk delete products:', error);
+      return json(
+        { error: 'Failed to delete products', details: error.message },
+        { status: 500 }
+      );
+    }
+  }
+
   // Start Indexing Action
   if (actionType === 'start') {
     const useAIEnrichment = true;
@@ -445,12 +510,6 @@ function EditProductModal({ product, active, onClose, onSave }) {
             autoComplete="off"
           />
           <TextField
-            label="Vendor"
-            value={formData.vendor}
-            onChange={handleChange('vendor')}
-            autoComplete="off"
-          />
-          <TextField
             label="Product Type"
             value={formData.productType}
             onChange={handleChange('productType')}
@@ -532,6 +591,7 @@ export default function ProductInventory() {
   const fetcher = useFetcher();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const revalidator = useRevalidator();
   
   // Temporarily disabled error handling - run SQL directly instead
   // See FIX_DATABASE.md for instructions
@@ -539,13 +599,19 @@ export default function ProductInventory() {
   // State management - initialize with loader data to prevent hydration errors
   const [searchQuery, setSearchQuery] = useState(data.currentFilters.search || '');
   const [selectedFirmness, setSelectedFirmness] = useState(data.currentFilters.firmness || '');
-  const [selectedVendor, setSelectedVendor] = useState(data.currentFilters.vendor || '');
   const [editingProduct, setEditingProduct] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [productToDelete, setProductToDelete] = useState(null);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+  const [selectedProducts, setSelectedProducts] = useState([]);
+  const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
+  const [showSuccessBanner, setShowSuccessBanner] = useState(false);
+  const [indexingCompleteCount, setIndexingCompleteCount] = useState(0);
+  
+  // Track previous job status to detect completion
+  const previousJobRef = useRef(null);
 
   // Handle search with debounce
   const handleSearch = useCallback((value) => {
@@ -558,6 +624,7 @@ export default function ProductInventory() {
     }
     params.set('page', '1'); // Reset to page 1 on search
     setSearchParams(params);
+    setSelectedProducts([]); // Clear selections on search
   }, [searchParams, setSearchParams]);
 
   // Handle filter changes
@@ -571,9 +638,9 @@ export default function ProductInventory() {
     params.set('page', '1'); // Reset to page 1 on filter change
     
     if (type === 'firmness') setSelectedFirmness(value);
-    if (type === 'vendor') setSelectedVendor(value);
     
     setSearchParams(params);
+    setSelectedProducts([]); // Clear selections on filter change
   }, [searchParams, setSearchParams]);
 
   // Handle pagination
@@ -581,6 +648,7 @@ export default function ProductInventory() {
     const params = new URLSearchParams(searchParams);
     params.set('page', newPage.toString());
     setSearchParams(params);
+    setSelectedProducts([]); // Clear selections on page change
   }, [searchParams, setSearchParams]);
 
   // Handle edit product
@@ -643,14 +711,111 @@ export default function ProductInventory() {
     if (fetcher.data?.success) {
       setToastMessage(fetcher.data.message);
       setShowToast(true);
+      // Clear selections after successful bulk delete
+      setSelectedProducts([]);
     } else if (fetcher.data?.error) {
       setToastMessage(fetcher.data.error);
       setShowToast(true);
     }
   }, [fetcher.data]);
 
+  // Polling mechanism - refresh data every 3 seconds when indexing is active
+  useEffect(() => {
+    const currentJob = data.currentJob;
+    
+    // Only poll if there's an active job
+    if (!currentJob || (currentJob.status !== 'pending' && currentJob.status !== 'running')) {
+      return;
+    }
+    
+    const interval = setInterval(() => {
+      revalidator.revalidate();
+    }, 3000);
+    
+    return () => clearInterval(interval);
+  }, [data.currentJob, revalidator]);
+
+  // Detect indexing completion and show success notification
+  useEffect(() => {
+    const currentJob = data.currentJob;
+    const previousJob = previousJobRef.current;
+    
+    // Check if job just completed
+    if (previousJob && 
+        (previousJob.status === 'pending' || previousJob.status === 'running') &&
+        (!currentJob || currentJob.status === 'completed')) {
+      
+      // Job completed successfully
+      setIndexingCompleteCount(data.productCount);
+      setShowSuccessBanner(true);
+      setToastMessage(`Indexing complete! ${data.productCount} products in catalog.`);
+      setShowToast(true);
+      
+      // Revalidate one final time to get latest data
+      setTimeout(() => {
+        revalidator.revalidate();
+      }, 500);
+    } else if (previousJob &&
+               (previousJob.status === 'pending' || previousJob.status === 'running') &&
+               currentJob && currentJob.status === 'failed') {
+      
+      // Job failed
+      setToastMessage(`Indexing failed: ${currentJob.errorMessage || 'Unknown error'}`);
+      setShowToast(true);
+    }
+    
+    // Update previous job ref
+    previousJobRef.current = currentJob;
+  }, [data.currentJob, data.productCount, revalidator]);
+
+  // Handle product selection
+  const handleSelectProduct = useCallback((productId) => {
+    setSelectedProducts((prev) => {
+      if (prev.includes(productId)) {
+        return prev.filter(id => id !== productId);
+      } else {
+        return [...prev, productId];
+      }
+    });
+  }, []);
+
+  // Handle select all products on current page
+  const handleSelectAll = useCallback((checked) => {
+    if (checked) {
+      setSelectedProducts(data.products.map(p => p.id));
+    } else {
+      setSelectedProducts([]);
+    }
+  }, [data.products]);
+
+  // Handle bulk delete
+  const handleBulkDelete = useCallback(() => {
+    setShowBulkDeleteConfirm(true);
+  }, []);
+
+  // Handle confirm bulk delete
+  const handleConfirmBulkDelete = useCallback(() => {
+    const productsToDelete = data.products.filter(p => selectedProducts.includes(p.id));
+    
+    const formData = new FormData();
+    formData.append('actionType', 'bulkDeleteProducts');
+    formData.append('productsData', JSON.stringify(productsToDelete.map(p => ({
+      id: p.id,
+      shopifyProductId: p.shopifyProductId
+    }))));
+    
+    fetcher.submit(formData, { method: 'POST' });
+    setShowBulkDeleteConfirm(false);
+  }, [selectedProducts, data.products, fetcher]);
+
   // Build product rows for table
   const productRows = data.products.map(product => [
+    // Checkbox column
+    <Checkbox
+      checked={selectedProducts.includes(product.id)}
+      onChange={() => handleSelectProduct(product.id)}
+      ariaLabel={`Select ${product.title || 'product'}`}
+    />,
     // Image column
     product.imageUrl ? (
       <Thumbnail source={product.imageUrl} alt={product.title || 'Product'} size="small" />
@@ -658,7 +823,6 @@ export default function ProductInventory() {
       <Text tone="subdued">-</Text>
     ),
     product.title || 'Untitled',
-    product.vendor || '-',
     product.productType || '-',
     product.firmness || '-',
     product.material || '-',
@@ -673,59 +837,114 @@ export default function ProductInventory() {
 
   const currentJob = data.currentJob;
   const totalPages = Math.ceil(data.totalCount / data.pageSize);
+  
+  // Calculate stage and progress information
+  const isIndexing = currentJob && (currentJob.status === 'pending' || currentJob.status === 'running');
+  const stageInfo = isIndexing 
+    ? getIndexingStage(currentJob.processedProducts || 0, currentJob.totalProducts || 0)
+    : null;
+  const progressPercentage = isIndexing && currentJob.totalProducts > 0
+    ? Math.round(((currentJob.processedProducts || 0) / currentJob.totalProducts) * 100)
+    : 0;
+  const estimatedTime = isIndexing && currentJob.startedAt
+    ? estimateTimeRemaining(currentJob.processedProducts || 0, currentJob.totalProducts || 0, currentJob.startedAt)
+    : null;
 
   return (
     <Page>
       <TitleBar title="Product Inventory" />
       <Layout>
-        {/* Condensed Indexing Status Section */}
+        {/* Success Banner - shown after indexing completes */}
+        {showSuccessBanner && !isIndexing && (
+          <Layout.Section>
+            <Banner
+              tone="success"
+              onDismiss={() => setShowSuccessBanner(false)}
+            >
+              <p>
+                <strong>Indexing complete!</strong> {indexingCompleteCount} products added to your catalog.
+              </p>
+            </Banner>
+          </Layout.Section>
+        )}
+
+        {/* Enhanced Indexing Status Section */}
         <Layout.Section>
           <Card>
-            <InlineStack align="space-between" blockAlign="center">
-              <BlockStack gap="200">
-                <Text variant="headingMd" as="h2">Catalog Status</Text>
-                <InlineStack gap="400">
+            {!isIndexing ? (
+              // Condensed view when not indexing
+              <InlineStack align="space-between" blockAlign="center">
+                <BlockStack gap="200">
+                  <Text variant="headingMd" as="h2">Catalog Status</Text>
                   <Text variant="bodyMd" tone="subdued">
                     {data.isIndexed 
                       ? `${data.productCount} products indexed`
                       : 'No products indexed yet'}
                   </Text>
-                  {currentJob && (
-                    <Badge tone={currentJob.status === 'running' ? 'info' : 'attention'}>
-                      {currentJob.status}
-                    </Badge>
-                  )}
-                </InlineStack>
-              </BlockStack>
-              {!currentJob && (
-                <Button primary onClick={handleStartIndexing}>
-                  Re-Index Catalog
-                </Button>
-              )}
-              {currentJob && currentJob.status === 'running' && (
-                <Button tone="critical" onClick={() => {
-                  const formData = new FormData();
-                  formData.append('actionType', 'stop');
-                  fetcher.submit(formData, { method: 'POST' });
-                }}>
-                  Stop Indexing
-                </Button>
-              )}
-            </InlineStack>
-            
-            {/* Show progress if indexing */}
-            {currentJob && currentJob.totalProducts > 0 && (
-              <Box paddingBlockStart="400">
-                <BlockStack gap="200">
-                  <Text variant="bodySm" tone="subdued">
-                    Progress: {currentJob.processedProducts || 0} / {currentJob.totalProducts} products
-                  </Text>
-                  <ProgressBar
-                    progress={(currentJob.processedProducts || 0) / currentJob.totalProducts * 100}
-                    size="small"
-                  />
                 </BlockStack>
-              </Box>
+                <Button 
+                  primary 
+                  onClick={handleStartIndexing}
+                  loading={fetcher.state === 'submitting'}
+                  disabled={fetcher.state === 'submitting'}
+                >
+                  {fetcher.state === 'submitting' ? 'Starting...' : 'Re-Index Catalog'}
+                </Button>
+              </InlineStack>
+            ) : (
+              // Enhanced view when indexing is active
+              <BlockStack gap="400">
+                <InlineStack align="space-between" blockAlign="start">
+                  <BlockStack gap="200">
+                    <InlineStack gap="200" blockAlign="center">
+                      <Text variant="headingMd" as="h2">Indexing in Progress</Text>
+                      <Badge tone="info">
+                        {currentJob.status === 'running' ? 'Running' : 'Starting'}
+                      </Badge>
+                    </InlineStack>
+                    {stageInfo && (
+                      <InlineStack gap="200" blockAlign="center">
+                        <Spinner size="small" />
+                        <Text variant="bodyMd">{stageInfo.message}</Text>
+                      </InlineStack>
+                    )}
+                  </BlockStack>
+                  <Button 
+                    tone="critical" 
+                    onClick={() => {
+                      const formData = new FormData();
+                      formData.append('actionType', 'stop');
+                      fetcher.submit(formData, { method: 'POST' });
+                    }}
+                  >
+                    Stop Indexing
+                  </Button>
+                </InlineStack>
+                
+                {/* Progress Details */}
+                {currentJob.totalProducts > 0 && (
+                  <BlockStack gap="200">
+                    <InlineStack align="space-between">
+                      <Text variant="bodyMd">
+                        Processing: {currentJob.processedProducts || 0} / {currentJob.totalProducts} products
+                      </Text>
+                      <Text variant="bodyMd" tone="subdued">
+                        {progressPercentage}%
+                      </Text>
+                    </InlineStack>
+                    <ProgressBar
+                      progress={progressPercentage}
+                      size="medium"
+                      tone="primary"
+                    />
+                    {estimatedTime && estimatedTime > 0 && (
+                      <Text variant="bodySm" tone="subdued">
+                        Estimated time remaining: ~{estimatedTime} {estimatedTime === 1 ? 'minute' : 'minutes'}
+                      </Text>
+                    )}
+                  </BlockStack>
+                )}
+              </BlockStack>
             )}
           </Card>
         </Layout.Section>
@@ -756,7 +975,7 @@ export default function ProductInventory() {
               <InlineStack gap="400" wrap={false}>
                 <div style={{ flex: 2 }}>
                   <TextField
-                    placeholder="Search by title, vendor, or ID..."
+                    placeholder="Search by title or ID..."
                     value={searchQuery}
                     onChange={handleSearch}
                     autoComplete="off"
@@ -776,29 +995,41 @@ export default function ProductInventory() {
                     onChange={(value) => handleFilterChange('firmness', value)}
                   />
                 </div>
-                <div style={{ flex: 1 }}>
-                  <Select
-                    label="Vendor"
-                    labelInline
-                    options={[
-                      { label: 'All', value: '' },
-                      ...data.vendors.map(v => ({ label: v, value: v }))
-                    ]}
-                    value={selectedVendor}
-                    onChange={(value) => handleFilterChange('vendor', value)}
-                  />
-                </div>
               </InlineStack>
               
+              {/* Bulk Action Banner */}
+              {selectedProducts.length > 0 && (
+                <Banner
+                  tone="info"
+                  onDismiss={() => setSelectedProducts([])}
+                >
+                  <InlineStack align="space-between" blockAlign="center">
+                    <Text variant="bodyMd" as="p">
+                      {selectedProducts.length} product{selectedProducts.length > 1 ? 's' : ''} selected
+                    </Text>
+                    <Button
+                      tone="critical"
+                      onClick={handleBulkDelete}
+                    >
+                      Delete Selected
+                    </Button>
+                  </InlineStack>
+                </Banner>
+              )}
+
               {/* Data Table */}
               {data.products.length > 0 ? (
                 <>
                   <DataTable
                     columnContentTypes={['text', 'text', 'text', 'text', 'text', 'text', 'text', 'text']}
                     headings={[
+                      <Checkbox
+                        checked={selectedProducts.length === data.products.length && data.products.length > 0}
+                        onChange={(checked) => handleSelectAll(checked)}
+                        ariaLabel="Select all products on this page"
+                      />,
                       'Image',
                       'Title',
-                      'Vendor',
                       'Type',
                       'Firmness',
                       'Material',
@@ -825,7 +1056,7 @@ export default function ProductInventory() {
                 <Box padding="600">
                   <InlineStack align="center">
                     <Text variant="bodyMd" tone="subdued">
-                      {searchQuery || selectedFirmness || selectedVendor
+                      {searchQuery || selectedFirmness
                         ? 'No products match your filters'
                         : 'No products indexed yet. Start indexing to see your inventory.'}
                     </Text>
@@ -900,6 +1131,55 @@ export default function ProductInventory() {
             Are you sure you want to delete "{productToDelete?.title}"? 
             This will remove it from your searchable catalog and cannot be undone.
           </Text>
+        </Modal.Section>
+      </Modal>
+
+      {/* Bulk Delete Confirmation Modal */}
+      <Modal
+        open={showBulkDeleteConfirm}
+        onClose={() => setShowBulkDeleteConfirm(false)}
+        title="Delete Multiple Products"
+        primaryAction={{
+          content: `Delete ${selectedProducts.length} Product${selectedProducts.length > 1 ? 's' : ''}`,
+          destructive: true,
+          onAction: handleConfirmBulkDelete
+        }}
+        secondaryActions={[{
+          content: 'Cancel',
+          onAction: () => setShowBulkDeleteConfirm(false)
+        }]}
+      >
+        <Modal.Section>
+          <BlockStack gap="300">
+            <Text>
+              Are you sure you want to delete {selectedProducts.length} product{selectedProducts.length > 1 ? 's' : ''}? 
+              This will remove them from your searchable catalog and cannot be undone.
+            </Text>
+            {selectedProducts.length > 0 && (
+              <Box>
+                <Text variant="bodyMd" as="p" fontWeight="semibold">
+                  Products to be deleted:
+                </Text>
+                <List type="bullet">
+                  {data.products
+                    .filter(p => selectedProducts.includes(p.id))
+                    .slice(0, 10)
+                    .map(product => (
+                      <List.Item key={product.id}>
+                        {product.title || 'Untitled'}
+                      </List.Item>
+                    ))}
+                  {selectedProducts.length > 10 && (
+                    <List.Item>
+                      <Text tone="subdued">
+                        ...and {selectedProducts.length - 10} more
+                      </Text>
+                    </List.Item>
+                  )}
+                </List>
+              </Box>
+            )}
+          </BlockStack>
         </Modal.Section>
       </Modal>
 
