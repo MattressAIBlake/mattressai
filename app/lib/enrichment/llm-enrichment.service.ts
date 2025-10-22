@@ -87,7 +87,7 @@ IMPORTANT: Respond ONLY with valid JSON matching this exact schema. Do not inclu
                   type: 'array',
                   items: {
                     type: 'string',
-                    enum: ['CertiPUR-US', 'OEKO-TEX', 'GREENGUARD', 'GOTS', 'GOLS', 'FSC', 'Rainforest Alliance', 'Cradle to Cradle']
+                    enum: ['CertiPUR-US', 'OEKO-TEX', 'GREENGUARD', 'GOTS', 'GOLS', 'FSC', 'Rainforest Alliance', 'Cradle to Cradle', 'Fair Trade', 'USDA Organic', 'Made Safe', 'Global Organic Textile Standard']
                   },
                   description: 'List of certifications the product has'
                 },
@@ -114,7 +114,10 @@ IMPORTANT: Respond ONLY with valid JSON matching this exact schema. Do not inclu
                       'pocketed-coils', 'bonnell-coils', 'continuous-coils', 'offset-coils',
                       'micro-coils', 'high-coil-count', 'perimeter-edge-support',
                       'center-support-beam', 'corner-guards', 'reinforced-edges',
-                      'individual-pocket-springs', 'tempered-steel-coils', 'caliber-coil-system'
+                      'individual-pocket-springs', 'tempered-steel-coils', 'caliber-coil-system',
+                      'individually-pocket-springs', 'individually-wrapped-coils', 'individually-wrapped-springs',
+                      'wrapped-coils', 'pocket-springs', 'edge-support', 'edge-reinforcement',
+                      'zoned-support', 'targeted-support', 'lumbar-zone', 'dual-support', 'progressive-support'
                     ]
                   },
                   description: 'List of support system features'

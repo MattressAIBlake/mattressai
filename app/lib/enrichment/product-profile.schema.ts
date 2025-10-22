@@ -16,7 +16,12 @@ export const ProductProfileSchema = z.object({
     'GOLS',
     'FSC',
     'Rainforest Alliance',
-    'Cradle to Cradle'
+    'Cradle to Cradle',
+    // Common alternative spellings/variations
+    'Fair Trade',
+    'USDA Organic',
+    'Made Safe',
+    'Global Organic Textile Standard'
   ])).optional(),
   features: z.array(z.enum([
     'cooling-gel',
@@ -52,7 +57,20 @@ export const ProductProfileSchema = z.object({
     'reinforced-edges',
     'individual-pocket-springs',
     'tempered-steel-coils',
-    'caliber-coil-system'
+    'caliber-coil-system',
+    // Common alternative spellings/variations the LLM might use
+    'individually-pocket-springs',
+    'individually-wrapped-coils',
+    'individually-wrapped-springs',
+    'wrapped-coils',
+    'pocket-springs',
+    'edge-support',
+    'edge-reinforcement',
+    'zoned-support',
+    'targeted-support',
+    'lumbar-zone',
+    'dual-support',
+    'progressive-support'
   ])).optional(),
 
   // Enrichment metadata

@@ -264,7 +264,66 @@ export class ProductIndexer {
           text.includes('comfort') ||
           text.includes('rest') ||
           text.includes('foam') ||
-          text.includes('spring');
+          text.includes('spring') ||
+          // Common mattress model names/descriptors
+          text.includes('luxe') ||
+          text.includes('elite') ||
+          text.includes('core') ||
+          text.includes('plus') ||
+          text.includes('reserve') ||
+          text.includes('signature') ||
+          text.includes('premier') ||
+          text.includes('collection') ||
+          text.includes('classic') ||
+          text.includes('deluxe') ||
+          text.includes('supreme') ||
+          text.includes('ultra') ||
+          // Top mattress brand names (major manufacturers)
+          text.includes('sealy') ||
+          text.includes('tempur-pedic') ||
+          text.includes('tempurpedic') ||
+          text.includes('tempur pedic') ||
+          text.includes('simmons') ||
+          text.includes('serta') ||
+          text.includes('sleep number') ||
+          text.includes('sleepnumber') ||
+          text.includes('therapedic') ||
+          text.includes('corsicana') ||
+          text.includes('restonic') ||
+          text.includes('kingsdown') ||
+          text.includes('englander') ||
+          text.includes('king koil') ||
+          text.includes('spring air') ||
+          text.includes('southerland') ||
+          text.includes('paramount') ||
+          text.includes('beautyrest') ||
+          text.includes('posturepedic') ||
+          // Popular DTC/online mattress brands
+          text.includes('helix') ||
+          text.includes('leesa') ||
+          text.includes('casper') ||
+          text.includes('tuft & needle') ||
+          text.includes('tuft and needle') ||
+          text.includes('tuftandneedle') ||
+          text.includes('purple') ||
+          text.includes('novaform') ||
+          text.includes('plushbeds') ||
+          text.includes('cocoon') ||
+          text.includes('birch') ||
+          text.includes('avocado') ||
+          text.includes('dreamcloud') ||
+          text.includes('brooklyn bedding') ||
+          text.includes('saatva') ||
+          text.includes('nectar') ||
+          text.includes('layla') ||
+          text.includes('bear mattress') ||
+          text.includes('amerisleep') ||
+          text.includes('ghostbed') ||
+          text.includes('loom & leaf') ||
+          text.includes('zenhaven') ||
+          text.includes('winkbed') ||
+          text.includes('nolah') ||
+          text.includes('sapira');
         
         if (mightBeMattress) {
           console.log(`  ⚠️  UNCERTAIN (might be mattress, will AI classify): "${product.title}"`);
