@@ -792,9 +792,31 @@ export class ProductIndexer {
   }
 
   /**
+   * Safely parse a field that might be an array or a JSON string
+   */
+  private parseArrayField(field: any): string[] {
+    if (!field) return [];
+    if (Array.isArray(field)) return field;
+    if (typeof field === 'string') {
+      try {
+        const parsed = JSON.parse(field);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch {
+        return [];
+      }
+    }
+    return [];
+  }
+
+  /**
    * Create content for embedding from product and enriched profile
    */
   private createEmbeddingContent(product: any, enrichedProfile: any): string {
+    // Parse array fields safely (they might be JSON strings from database cache)
+    const certifications = this.parseArrayField(enrichedProfile.certifications);
+    const features = this.parseArrayField(enrichedProfile.features);
+    const supportFeatures = this.parseArrayField(enrichedProfile.supportFeatures);
+    
     const parts = [
       product.title,
       product.description,
@@ -803,9 +825,9 @@ export class ProductIndexer {
       enrichedProfile.firmness && `Firmness: ${enrichedProfile.firmness}`,
       enrichedProfile.height && `Height: ${enrichedProfile.height}`,
       enrichedProfile.material && `Material: ${enrichedProfile.material}`,
-      enrichedProfile.certifications && enrichedProfile.certifications.length > 0 && `Certifications: ${enrichedProfile.certifications.join(', ')}`,
-      enrichedProfile.features && enrichedProfile.features.length > 0 && `Features: ${enrichedProfile.features.join(', ')}`,
-      enrichedProfile.supportFeatures && enrichedProfile.supportFeatures.length > 0 && `Support: ${enrichedProfile.supportFeatures.join(', ')}`
+      certifications.length > 0 && `Certifications: ${certifications.join(', ')}`,
+      features.length > 0 && `Features: ${features.join(', ')}`,
+      supportFeatures.length > 0 && `Support: ${supportFeatures.join(', ')}`
     ].filter(Boolean);
 
     const content = parts.join(' | ');
