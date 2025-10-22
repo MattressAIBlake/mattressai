@@ -221,6 +221,7 @@ export async function action({ request }) {
     
     const updates = {
       title: formData.get('title'),
+      imageUrl: formData.get('imageUrl') || null,
       vendor: formData.get('vendor'),
       productType: formData.get('productType'),
       body: formData.get('body'),
@@ -431,6 +432,7 @@ export async function action({ request }) {
 function EditProductModal({ product, active, onClose, onSave }) {
   const [formData, setFormData] = useState({
     title: '',
+    imageUrl: '',
     vendor: '',
     productType: '',
     body: '',
@@ -450,6 +452,7 @@ function EditProductModal({ product, active, onClose, onSave }) {
     if (product && active) {
       const initialData = {
         title: product.title || '',
+        imageUrl: product.imageUrl || '',
         vendor: product.vendor || '',
         productType: product.productType || '',
         body: product.body || '',
@@ -509,6 +512,27 @@ function EditProductModal({ product, active, onClose, onSave }) {
             onChange={handleChange('title')}
             autoComplete="off"
           />
+          <BlockStack gap="200">
+            <TextField
+              label="Image URL"
+              value={formData.imageUrl}
+              onChange={handleChange('imageUrl')}
+              helpText="URL of the product image"
+              autoComplete="off"
+            />
+            {formData.imageUrl && (
+              <Box>
+                <Text variant="bodySm" as="p" tone="subdued">Preview:</Text>
+                <Box paddingBlockStart="200">
+                  <Thumbnail 
+                    source={formData.imageUrl} 
+                    alt="Product preview" 
+                    size="large" 
+                  />
+                </Box>
+              </Box>
+            )}
+          </BlockStack>
           <TextField
             label="Product Type"
             value={formData.productType}
@@ -609,6 +633,7 @@ export default function ProductInventory() {
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
   const [showSuccessBanner, setShowSuccessBanner] = useState(false);
   const [indexingCompleteCount, setIndexingCompleteCount] = useState(0);
+  const [showHelpCard, setShowHelpCard] = useState(true);
   
   // Track previous job status to detect completion
   const previousJobRef = useRef(null);
@@ -823,7 +848,6 @@ export default function ProductInventory() {
       <Text tone="subdued">-</Text>
     ),
     product.title || 'Untitled',
-    product.productType || '-',
     product.firmness || '-',
     product.material || '-',
     <Badge tone={product.confidence > 0.8 ? 'success' : product.confidence > 0.5 ? 'info' : 'warning'}>
@@ -971,6 +995,58 @@ export default function ProductInventory() {
                 </Text>
               </InlineStack>
               
+              {/* AI Help Card - Collapsible */}
+              <Card>
+                <BlockStack gap="300">
+                  <button
+                    onClick={() => setShowHelpCard(!showHelpCard)}
+                    className="polaris-button-plain"
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      padding: 0,
+                      cursor: 'pointer',
+                      width: '100%',
+                      textAlign: 'left'
+                    }}
+                  >
+                    <InlineStack align="space-between" blockAlign="center">
+                      <InlineStack gap="200" blockAlign="center">
+                        <Text variant="headingSm" as="h3">💡 Tips for Best Results</Text>
+                      </InlineStack>
+                      <Text variant="bodySm" tone="subdued">
+                        {showHelpCard ? '▲' : '▼'}
+                      </Text>
+                    </InlineStack>
+                  </button>
+                  
+                  {showHelpCard && (
+                    <BlockStack gap="300">
+                      <Divider />
+                      <BlockStack gap="200">
+                        <Text variant="bodyMd" as="p">Our AI has done its best to:</Text>
+                        <List type="bullet">
+                          <List.Item>Extract accurate product attributes</List.Item>
+                          <List.Item>Classify firmness and materials</List.Item>
+                          <List.Item>Generate searchable descriptions</List.Item>
+                        </List>
+                      </BlockStack>
+                      
+                      <BlockStack gap="200">
+                        <Text variant="bodyMd" as="p" fontWeight="semibold">
+                          For optimal customer matching, please:
+                        </Text>
+                        <List>
+                          <List.Item>✓ Review each product's AI-generated attributes</List.Item>
+                          <List.Item>✓ Verify product photos are clear and accurate</List.Item>
+                          <List.Item>✓ Update descriptions where needed</List.Item>
+                        </List>
+                      </BlockStack>
+                    </BlockStack>
+                  )}
+                </BlockStack>
+              </Card>
+              
               {/* Search and Filters */}
               <InlineStack gap="400" wrap={false}>
                 <div style={{ flex: 2 }}>
@@ -1021,7 +1097,7 @@ export default function ProductInventory() {
               {data.products.length > 0 ? (
                 <>
                   <DataTable
-                    columnContentTypes={['text', 'text', 'text', 'text', 'text', 'text', 'text', 'text']}
+                    columnContentTypes={['text', 'text', 'text', 'text', 'text', 'text', 'text']}
                     headings={[
                       <Checkbox
                         checked={selectedProducts.length === data.products.length && data.products.length > 0}
@@ -1029,8 +1105,7 @@ export default function ProductInventory() {
                         ariaLabel="Select all products on this page"
                       />,
                       'Image',
-                      'Title',
-                      'Type',
+                      'Name',
                       'Firmness',
                       'Material',
                       'Confidence',
