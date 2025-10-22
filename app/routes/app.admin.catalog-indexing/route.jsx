@@ -109,7 +109,6 @@ export async function loader({ request }) {
     const page = parseInt(url.searchParams.get('page') || '1');
     const pageSize = 20;
     const search = url.searchParams.get('search') || '';
-    const filterFirmness = url.searchParams.get('firmness') || '';
 
     // Build where clause
     const where = {
@@ -119,8 +118,7 @@ export async function loader({ request }) {
           { title: { contains: search, mode: 'insensitive' } },
           { shopifyProductId: { contains: search } }
         ]
-      }),
-      ...(filterFirmness && { firmness: filterFirmness })
+      })
     };
 
     // Fetch products and count in parallel
@@ -134,13 +132,6 @@ export async function loader({ request }) {
       prisma.productProfile.count({ where })
     ]);
 
-    // Get unique filter values
-    const firmnessValues = await prisma.productProfile.findMany({
-      where: { tenant: session.shop, firmness: { not: null } },
-      select: { firmness: true },
-      distinct: ['firmness'],
-      orderBy: { firmness: 'asc' }
-    });
 
     // Check for active indexing job
     const currentJob = await prisma.indexJob.findFirst({
@@ -175,10 +166,8 @@ export async function loader({ request }) {
       page,
       pageSize,
       currentFilters: {
-        search,
-        firmness: filterFirmness
+        search
       },
-      firmnessOptions: firmnessValues.map(f => f.firmness).filter(Boolean),
       currentJob,
       recentJobs,
       isIndexing: !!currentJob,
@@ -622,18 +611,18 @@ export default function ProductInventory() {
   
   // State management - initialize with loader data to prevent hydration errors
   const [searchQuery, setSearchQuery] = useState(data.currentFilters.search || '');
-  const [selectedFirmness, setSelectedFirmness] = useState(data.currentFilters.firmness || '');
   const [editingProduct, setEditingProduct] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [productToDelete, setProductToDelete] = useState(null);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+  const [toastDuration, setToastDuration] = useState(4000);
   const [selectedProducts, setSelectedProducts] = useState([]);
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
   const [showSuccessBanner, setShowSuccessBanner] = useState(false);
   const [indexingCompleteCount, setIndexingCompleteCount] = useState(0);
-  const [showHelpCard, setShowHelpCard] = useState(true);
+  const [showHelpCard, setShowHelpCard] = useState(false);
   
   // Track previous job status to detect completion
   const previousJobRef = useRef(null);
@@ -661,8 +650,6 @@ export default function ProductInventory() {
       params.delete(type);
     }
     params.set('page', '1'); // Reset to page 1 on filter change
-    
-    if (type === 'firmness') setSelectedFirmness(value);
     
     setSearchParams(params);
     setSelectedProducts([]); // Clear selections on filter change
@@ -721,6 +708,12 @@ export default function ProductInventory() {
 
   // Handle start indexing
   const handleStartIndexing = () => {
+    // Show informational toast about indexing limitations
+    setToastMessage('⚠️ Important: Our AI indexing uses significant compute resources. You can run 1 indexing job per week. Please add all new products before indexing. You can edit your inventory anytime after indexing completes.');
+    setToastDuration(8000); // Longer duration for important message
+    setShowToast(true);
+    
+    // Submit the indexing job
     const formData = new FormData();
     formData.append('useAIEnrichment', 'true');
     formData.append('confidenceThreshold', '0.7');
@@ -735,11 +728,13 @@ export default function ProductInventory() {
   useEffect(() => {
     if (fetcher.data?.success) {
       setToastMessage(fetcher.data.message);
+      setToastDuration(4000);
       setShowToast(true);
       // Clear selections after successful bulk delete
       setSelectedProducts([]);
     } else if (fetcher.data?.error) {
       setToastMessage(fetcher.data.error);
+      setToastDuration(4000);
       setShowToast(true);
     }
   }, [fetcher.data]);
@@ -774,6 +769,7 @@ export default function ProductInventory() {
       setIndexingCompleteCount(data.productCount);
       setShowSuccessBanner(true);
       setToastMessage(`Indexing complete! ${data.productCount} products in catalog.`);
+      setToastDuration(5000);
       setShowToast(true);
       
       // Revalidate one final time to get latest data
@@ -786,6 +782,7 @@ export default function ProductInventory() {
       
       // Job failed
       setToastMessage(`Indexing failed: ${currentJob.errorMessage || 'Unknown error'}`);
+      setToastDuration(5000);
       setShowToast(true);
     }
     
@@ -1028,7 +1025,7 @@ export default function ProductInventory() {
                         <List type="bullet">
                           <List.Item>Extract accurate product attributes</List.Item>
                           <List.Item>Classify firmness and materials</List.Item>
-                          <List.Item>Generate searchable descriptions</List.Item>
+                          <List.Item>Generate matchable descriptions</List.Item>
                         </List>
                       </BlockStack>
                       
@@ -1048,30 +1045,14 @@ export default function ProductInventory() {
               </Card>
               
               {/* Search and Filters */}
-              <InlineStack gap="400" wrap={false}>
-                <div style={{ flex: 2 }}>
-                  <TextField
-                    placeholder="Search by title or ID..."
-                    value={searchQuery}
-                    onChange={handleSearch}
-                    autoComplete="off"
-                    clearButton
-                    onClearButtonClick={() => handleSearch('')}
-                  />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <Select
-                    label="Firmness"
-                    labelInline
-                    options={[
-                      { label: 'All', value: '' },
-                      ...data.firmnessOptions.map(f => ({ label: f, value: f }))
-                    ]}
-                    value={selectedFirmness}
-                    onChange={(value) => handleFilterChange('firmness', value)}
-                  />
-                </div>
-              </InlineStack>
+              <TextField
+                placeholder="Search for specific mattress"
+                value={searchQuery}
+                onChange={handleSearch}
+                autoComplete="off"
+                clearButton
+                onClearButtonClick={() => handleSearch('')}
+              />
               
               {/* Bulk Action Banner */}
               {selectedProducts.length > 0 && (
@@ -1131,8 +1112,8 @@ export default function ProductInventory() {
                 <Box padding="600">
                   <InlineStack align="center">
                     <Text variant="bodyMd" tone="subdued">
-                      {searchQuery || selectedFirmness
-                        ? 'No products match your filters'
+                      {searchQuery
+                        ? 'No products match your search'
                         : 'No products indexed yet. Start indexing to see your inventory.'}
                     </Text>
                   </InlineStack>
@@ -1264,7 +1245,7 @@ export default function ProductInventory() {
           <Toast
             content={toastMessage}
             onDismiss={() => setShowToast(false)}
-            duration={4000}
+            duration={toastDuration}
           />
         </Frame>
       )}
