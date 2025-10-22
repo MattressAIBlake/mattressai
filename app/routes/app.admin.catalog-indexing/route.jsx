@@ -695,6 +695,7 @@ export default function ProductInventory() {
   const [indexingCompleteCount, setIndexingCompleteCount] = useState(0);
   const [showHelpCard, setShowHelpCard] = useState(false);
   const [showIndexingWarning, setShowIndexingWarning] = useState(false);
+  const [estimatedProgress, setEstimatedProgress] = useState(0);
   
   // Track previous job status to detect completion
   const previousJobRef = useRef(null);
@@ -819,11 +820,26 @@ export default function ProductInventory() {
     
     // Only poll if there's an active job
     if (!currentJob || (currentJob.status !== 'pending' && currentJob.status !== 'running')) {
+      setEstimatedProgress(0);
       return;
     }
     
+    // Calculate time-based progress for smooth UI updates
+    const startTime = new Date(currentJob.startedAt).getTime();
+    const estimatedDuration = 120000; // 120 seconds
+    
+    const updateProgress = () => {
+      const elapsed = Date.now() - startTime;
+      const calculatedProgress = Math.min(95, Math.floor((elapsed / estimatedDuration) * 100));
+      setEstimatedProgress(calculatedProgress);
+    };
+    
+    // Initial progress calculation
+    updateProgress();
+    
     const interval = setInterval(() => {
       revalidator.revalidate();
+      updateProgress();
     }, 3000);
     
     return () => clearInterval(interval);
@@ -933,16 +949,24 @@ export default function ProductInventory() {
   const currentJob = data.currentJob;
   const totalPages = Math.ceil(data.totalCount / data.pageSize);
   
-  // Calculate stage and progress information
+  // Calculate stage and progress information using time-based estimation
   const isIndexing = currentJob && (currentJob.status === 'pending' || currentJob.status === 'running');
-  const stageInfo = isIndexing 
-    ? getIndexingStage(currentJob.processedProducts || 0, currentJob.totalProducts || 0)
-    : null;
-  const progressPercentage = isIndexing && currentJob.totalProducts > 0
-    ? Math.round(((currentJob.processedProducts || 0) / currentJob.totalProducts) * 100)
+  
+  // Use time-based progress for smooth UI updates (doesn't rely on database updates during processing)
+  const progressPercentage = isIndexing ? estimatedProgress : 0;
+  
+  // Estimate products processed based on time-based progress
+  const estimatedProcessed = isIndexing && currentJob.totalProducts > 0
+    ? Math.floor((estimatedProgress / 100) * currentJob.totalProducts)
     : 0;
-  const estimatedTime = isIndexing && currentJob.startedAt
-    ? estimateTimeRemaining(currentJob.processedProducts || 0, currentJob.totalProducts || 0, currentJob.startedAt)
+  
+  const stageInfo = isIndexing 
+    ? getIndexingStage(estimatedProcessed, currentJob.totalProducts || 0)
+    : null;
+  
+  // Calculate estimated time remaining based on progress
+  const estimatedTime = isIndexing && estimatedProgress > 0 && estimatedProgress < 95
+    ? Math.ceil((120 * (100 - estimatedProgress)) / 100)
     : null;
 
   return (
@@ -1021,7 +1045,7 @@ export default function ProductInventory() {
                   <BlockStack gap="200">
                     <InlineStack align="space-between">
                       <Text variant="bodyMd">
-                        Processing: {currentJob.processedProducts || 0} / {currentJob.totalProducts} products
+                        Processing: {estimatedProcessed} / {currentJob.totalProducts} products
                       </Text>
                       <Text variant="bodyMd" tone="subdued">
                         {progressPercentage}%
