@@ -592,15 +592,6 @@ function EditProductModal({ product, active, onClose, onSave }) {
                 <Text variant="bodySm">Uploading image...</Text>
               </InlineStack>
             )}
-            
-            <TextField
-              label="Or paste image URL"
-              value={formData.imageUrl}
-              onChange={handleChange('imageUrl')}
-              helpText="Paste an existing image URL as an alternative"
-              autoComplete="off"
-              placeholder="https://..."
-            />
           </BlockStack>
           <TextField
             label="Product Type"
