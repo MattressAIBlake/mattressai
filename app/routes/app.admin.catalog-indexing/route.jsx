@@ -623,6 +623,7 @@ export default function ProductInventory() {
   const [showSuccessBanner, setShowSuccessBanner] = useState(false);
   const [indexingCompleteCount, setIndexingCompleteCount] = useState(0);
   const [showHelpCard, setShowHelpCard] = useState(false);
+  const [showIndexingWarning, setShowIndexingWarning] = useState(false);
   
   // Track previous job status to detect completion
   const previousJobRef = useRef(null);
@@ -706,12 +707,14 @@ export default function ProductInventory() {
     setProductToDelete(null);
   };
 
-  // Handle start indexing
+  // Handle start indexing - show warning modal
   const handleStartIndexing = () => {
-    // Show informational toast about indexing limitations
-    setToastMessage('⚠️ Important: Our AI indexing uses significant compute resources. You can run 1 indexing job per week. Please add all new products before indexing. You can edit your inventory anytime after indexing completes.');
-    setToastDuration(8000); // Longer duration for important message
-    setShowToast(true);
+    setShowIndexingWarning(true);
+  };
+
+  // Actually start indexing after user confirms
+  const confirmAndStartIndexing = () => {
+    setShowIndexingWarning(false);
     
     // Submit the indexing job
     const formData = new FormData();
@@ -1235,6 +1238,45 @@ export default function ProductInventory() {
                 </List>
               </Box>
             )}
+          </BlockStack>
+        </Modal.Section>
+      </Modal>
+
+      {/* Indexing Warning Modal */}
+      <Modal
+        open={showIndexingWarning}
+        onClose={() => setShowIndexingWarning(false)}
+        title="⚠️ AI Indexing Limitations"
+        primaryAction={{
+          content: 'Accept and Run',
+          onAction: confirmAndStartIndexing
+        }}
+        secondaryActions={[{
+          content: 'Cancel',
+          onAction: () => setShowIndexingWarning(false)
+        }]}
+      >
+        <Modal.Section>
+          <BlockStack gap="400">
+            <Text variant="bodyMd">
+              Our AI indexing uses significant compute resources. Due to this:
+            </Text>
+            <List type="bullet">
+              <List.Item>
+                <Text fontWeight="semibold">You can run 1 indexing job per week</Text>
+              </List.Item>
+              <List.Item>
+                Please add all new products to your Shopify store before running indexing
+              </List.Item>
+              <List.Item>
+                You can manually edit your inventory anytime after indexing completes
+              </List.Item>
+            </List>
+            <Box paddingBlockStart="200">
+              <Text variant="bodyMd" tone="subdued">
+                Click "Accept and Run" to start the AI indexing process.
+              </Text>
+            </Box>
           </BlockStack>
         </Modal.Section>
       </Modal>
