@@ -173,6 +173,12 @@ export async function loader({ request }) {
       isIndexing: !!currentJob,
       isIndexed,
       productCount
+    }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
     });
   } catch (error) {
     console.error('❌ Error loading catalog indexing page:', error);
