@@ -129,7 +129,8 @@ IMPORTANT: Respond ONLY with valid JSON matching this exact schema. Do not inclu
                       evidence: { type: 'string', description: 'The specific text that supports this attribute' },
                       confidence: { type: 'number', minimum: 0.0, maximum: 1.0, description: 'Confidence in this extraction' }
                     },
-                    required: ['source', 'evidence', 'confidence']
+                    required: ['source', 'evidence', 'confidence'],
+                    additionalProperties: false
                   },
                   description: 'Evidence for each extracted attribute'
                 }
