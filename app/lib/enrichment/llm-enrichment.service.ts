@@ -66,7 +66,6 @@ IMPORTANT: Respond ONLY with valid JSON matching this exact schema. Do not inclu
           type: 'json_schema',
           json_schema: {
             name: 'product_profile',
-            strict: true,
             schema: {
               type: 'object',
               properties: {
