@@ -1058,7 +1058,7 @@ export default function ProductInventory() {
                     />
                     {estimatedTime && estimatedTime > 0 && (
                       <Text variant="bodySm" tone="subdued">
-                        Estimated time remaining: ~{estimatedTime} {estimatedTime === 1 ? 'minute' : 'minutes'}
+                        Estimated time remaining: ~{estimatedTime} {estimatedTime === 1 ? 'second' : 'seconds'}
                       </Text>
                     )}
                   </BlockStack>
