@@ -8,10 +8,18 @@ import crypto from 'crypto';
  */
 export function verifyProxyHmac(requestUrl: string, sharedSecret: string): boolean {
   try {
-    const url = new URL(requestUrl);
+    // Extract the raw query string BEFORE creating URL object
+    // This is critical because URL object may reorder parameters
+    const queryStartIndex = requestUrl.indexOf('?');
+    if (queryStartIndex === -1) {
+      console.log('❌ No query string found');
+      return false;
+    }
     
-    // Extract signature from the URL
-    // Note: Shopify app proxy uses 'signature' parameter, OAuth uses 'hmac'
+    const rawQueryString = requestUrl.substring(queryStartIndex + 1);
+    
+    // Now create URL object just to extract signature
+    const url = new URL(requestUrl);
     const signature = url.searchParams.get('signature') || url.searchParams.get('hmac');
     
     if (!signature) {
@@ -19,19 +27,10 @@ export function verifyProxyHmac(requestUrl: string, sharedSecret: string): boole
       return false;
     }
 
-    // Work with the raw query string to preserve exact encoding
-    // This is critical because URL decoding/encoding might change the format
-    const queryString = url.search.slice(1); // Remove leading '?'
-    
-    if (!queryString) {
-      console.log('❌ No query string found');
-      return false;
-    }
-
-    // Parse parameters manually to preserve exact encoding
+    // Parse parameters manually from the RAW query string
     const params: Array<{ key: string; value: string; raw: string }> = [];
     
-    queryString.split('&').forEach(pair => {
+    rawQueryString.split('&').forEach(pair => {
       const equalsIndex = pair.indexOf('=');
       if (equalsIndex === -1) {
         // Parameter without value (shouldn't happen with Shopify)
@@ -47,14 +46,10 @@ export function verifyProxyHmac(requestUrl: string, sharedSecret: string): boole
       }
     });
 
-    // Sort parameters alphabetically by key (decoded for comparison)
-    params.sort((a, b) => {
-      const keyA = decodeURIComponent(a.key);
-      const keyB = decodeURIComponent(b.key);
-      return keyA.localeCompare(keyB);
-    });
+    // Sort parameters alphabetically by key
+    params.sort((a, b) => a.key.localeCompare(b.key));
 
-    // Rebuild the query string with sorted parameters, preserving original encoding
+    // Rebuild the query string with sorted parameters
     const sortedQueryString = params.map(p => p.raw).join('&');
 
     // Calculate HMAC-SHA256
@@ -68,6 +63,7 @@ export function verifyProxyHmac(requestUrl: string, sharedSecret: string): boole
       fullUrl: requestUrl,
       path: url.pathname,
       paramCount: params.length,
+      sortedParams: params.map(p => p.key),
       sortedQueryString: sortedQueryString,
       queryStringLength: sortedQueryString.length,
       secretLength: sharedSecret?.length,
