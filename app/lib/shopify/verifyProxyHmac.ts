@@ -9,70 +9,96 @@ import crypto from 'crypto';
 export function verifyProxyHmac(requestUrl: string, sharedSecret: string): boolean {
   try {
     const url = new URL(requestUrl);
-    const hmac = url.searchParams.get('signature') || url.searchParams.get('hmac');
     
-    // DEBUG LOGGING - REMOVE IN PRODUCTION
-    console.log('🔍 HMAC Verification Debug:', {
+    // Extract signature from the URL
+    // Note: Shopify app proxy uses 'signature' parameter, OAuth uses 'hmac'
+    const signature = url.searchParams.get('signature') || url.searchParams.get('hmac');
+    
+    if (!signature) {
+      console.log('❌ No signature/hmac found in request');
+      return false;
+    }
+
+    // Work with the raw query string to preserve exact encoding
+    // This is critical because URL decoding/encoding might change the format
+    const queryString = url.search.slice(1); // Remove leading '?'
+    
+    if (!queryString) {
+      console.log('❌ No query string found');
+      return false;
+    }
+
+    // Parse parameters manually to preserve exact encoding
+    const params: Array<{ key: string; value: string; raw: string }> = [];
+    
+    queryString.split('&').forEach(pair => {
+      const equalsIndex = pair.indexOf('=');
+      if (equalsIndex === -1) {
+        // Parameter without value (shouldn't happen with Shopify)
+        return;
+      }
+      
+      const key = pair.substring(0, equalsIndex);
+      const value = pair.substring(equalsIndex + 1);
+      
+      // Exclude signature and hmac parameters
+      if (key !== 'signature' && key !== 'hmac') {
+        params.push({ key, value, raw: pair });
+      }
+    });
+
+    // Sort parameters alphabetically by key (decoded for comparison)
+    params.sort((a, b) => {
+      const keyA = decodeURIComponent(a.key);
+      const keyB = decodeURIComponent(b.key);
+      return keyA.localeCompare(keyB);
+    });
+
+    // Rebuild the query string with sorted parameters, preserving original encoding
+    const sortedQueryString = params.map(p => p.raw).join('&');
+
+    // Calculate HMAC-SHA256
+    const computedSignature = crypto
+      .createHmac('sha256', sharedSecret)
+      .update(sortedQueryString)
+      .digest('hex');
+
+    // DEBUG LOGGING
+    console.log('🔍 Signature Verification Debug:', {
       fullUrl: requestUrl,
       path: url.pathname,
-      hasHmac: !!hmac,
-      hmacLength: hmac?.length,
+      paramCount: params.length,
+      sortedQueryString: sortedQueryString,
+      queryStringLength: sortedQueryString.length,
       secretLength: sharedSecret?.length,
-      secretPrefix: sharedSecret?.substring(0, 8) + '...',
-      queryParams: Array.from(url.searchParams.keys()),
-      hasSignature: url.searchParams.has('signature'),
-      hasHmacParam: url.searchParams.has('hmac')
+      secretPrefix: sharedSecret?.substring(0, 8) + '...'
     });
+
+    console.log('🔐 Signature Comparison:', {
+      computedSignature: computedSignature.substring(0, 16) + '...' + computedSignature.substring(computedSignature.length - 16),
+      receivedSignature: signature.substring(0, 16) + '...' + signature.substring(signature.length - 16),
+      signatureLength: signature.length,
+      computedLength: computedSignature.length,
+      exactMatch: computedSignature === signature.toLowerCase()
+    });
+
+    // Validate format
+    const signatureLower = signature.toLowerCase();
+    if (!/^[0-9a-f]+$/.test(signatureLower) || signatureLower.length !== computedSignature.length) {
+      console.log('❌ Signature format mismatch');
+      return false;
+    }
+
+    // Constant-time comparison for security
+    const isValid = crypto.timingSafeEqual(
+      Buffer.from(computedSignature, 'hex'), 
+      Buffer.from(signatureLower, 'hex')
+    );
     
-    if (!hmac) {
-      console.log('❌ No HMAC/signature found in request');
-      return false;
-    }
-
-    // Remove signature/hmac from query string, keeping URL encoding intact
-    const queryString = url.search.slice(1); // Remove leading '?'
-    const pairs = queryString.split('&').filter(pair => {
-      const key = pair.split('=')[0];
-      return key !== 'signature' && key !== 'hmac';
-    });
-
-    // Shopify requires parameters to be sorted alphabetically by key
-    // Must preserve URL encoding (e.g., %2F should stay as %2F, not become /)
-    const sortedParams = pairs.sort((a, b) => {
-      const keyA = a.split('=')[0];
-      const keyB = b.split('=')[0];
-      return keyA.localeCompare(keyB);
-    }).join('&');
-
-    const message = sortedParams;
-    const digest = crypto.createHmac('sha256', sharedSecret).update(message).digest('hex');
-
-    console.log('🔐 HMAC Comparison:', {
-      message: message,
-      messageLength: message.length,
-      parametersSorted: true,
-      computedDigest: digest.substring(0, 12) + '...' + digest.substring(digest.length - 8),
-      receivedHmac: hmac.substring(0, 12) + '...' + hmac.substring(hmac.length - 8),
-      digestLength: digest.length,
-      hmacLength: hmac.length,
-      exactMatch: digest === hmac.toLowerCase()
-    });
-
-    // Validate that both are valid hex strings of same length before comparing
-    const hmacLower = hmac.toLowerCase();
-    if (!/^[0-9a-f]+$/.test(hmacLower) || hmacLower.length !== digest.length) {
-      console.log('❌ HMAC format mismatch - invalid hex or length mismatch');
-      return false;
-    }
-
-    // Shopify sends hex hmac; compare in constant time
-    // Both digest and hmac are hex strings, so use 'hex' encoding
-    const isValid = crypto.timingSafeEqual(Buffer.from(digest, 'hex'), Buffer.from(hmacLower, 'hex'));
-    console.log(isValid ? '✅ HMAC Valid' : '❌ HMAC Invalid');
+    console.log(isValid ? '✅ Signature Valid' : '❌ Signature Invalid');
     return isValid;
   } catch (error) {
-    // If any error occurs during verification, treat as invalid
-    console.error('❌ Error verifying proxy HMAC:', error);
+    console.error('❌ Error verifying proxy signature:', error);
     return false;
   }
 }
