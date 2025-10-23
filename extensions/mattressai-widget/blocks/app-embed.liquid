@@ -167,18 +167,6 @@
       "id": "auto_open", 
       "label": "Auto open on first visit", 
       "default": false 
-    },
-    { 
-      "type": "checkbox", 
-      "id": "show_compare", 
-      "label": "Enable product comparison", 
-      "default": true 
-    },
-    { 
-      "type": "checkbox", 
-      "id": "guided_mode", 
-      "label": "Enable guided question mode", 
-      "default": true 
     }
   ]
 }
@@ -189,8 +177,6 @@
   id="mattressai-root" 
   data-tenant="{{ shop.permanent_domain | escape }}"
   data-auto-open="{{ block.settings.auto_open }}"
-  data-show-compare="{{ block.settings.show_compare }}"
-  data-guided-mode="{{ block.settings.guided_mode }}"
   data-primary-color="{{ block.settings.primary_color }}"
   data-widget-title="{{ block.settings.widget_title | escape }}"
   data-widget-subtitle="{{ block.settings.widget_subtitle | escape }}"

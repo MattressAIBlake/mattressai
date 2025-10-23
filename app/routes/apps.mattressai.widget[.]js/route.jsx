@@ -60,8 +60,6 @@ export const loader = async ({ request }) => {
       this.config = {
         tenant: root.dataset.tenant,
         autoOpen: root.dataset.autoOpen === 'true',
-        showCompare: root.dataset.showCompare === 'true',
-        guidedMode: root.dataset.guidedMode === 'true',
         primaryColor: root.dataset.primaryColor || '#3B82F6',
         widgetTitle: root.dataset.widgetTitle || 'Chat with us',
         widgetSubtitle: root.dataset.widgetSubtitle || 'We\\'re here to help',
