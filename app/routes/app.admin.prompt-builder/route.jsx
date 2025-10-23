@@ -18,7 +18,8 @@ import {
   Divider,
   Box,
   Badge,
-  Toast
+  Toast,
+  Frame
 } from '@shopify/polaris';
 import { TitleBar } from '@shopify/app-bridge-react';
 import { authenticate } from '~/shopify.server';
@@ -1177,11 +1178,13 @@ export default function PromptBuilder() {
       
       {/* Toast notification */}
       {showToast && (
-        <Toast
-          content={toastMessage}
-          onDismiss={() => setShowToast(false)}
-          duration={5000}
-        />
+        <Frame>
+          <Toast
+            content={toastMessage}
+            onDismiss={() => setShowToast(false)}
+            duration={5000}
+          />
+        </Frame>
       )}
     </Page>
   );
