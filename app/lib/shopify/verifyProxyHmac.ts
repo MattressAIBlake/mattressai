@@ -29,22 +29,29 @@ export function verifyProxyHmac(requestUrl: string, sharedSecret: string): boole
       return false;
     }
 
-    // Remove signature/hmac from params, then sort and join
+    // Remove signature/hmac from params, then sort alphabetically
     const params = new URLSearchParams(url.search);
     params.delete('signature');
     params.delete('hmac');
 
-    const message = params.toString(); // Already URL-encoded & sorted by URLSearchParams iteration
+    // Shopify requires parameters to be sorted alphabetically by key
+    const sortedParams = Array.from(params.entries())
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([key, value]) => `${key}=${value}`)
+      .join('&');
+
+    const message = sortedParams;
     const digest = crypto.createHmac('sha256', sharedSecret).update(message).digest('hex');
 
     console.log('🔐 HMAC Comparison:', {
       message: message,
       messageLength: message.length,
+      parametersSorted: true,
       computedDigest: digest.substring(0, 12) + '...' + digest.substring(digest.length - 8),
       receivedHmac: hmac.substring(0, 12) + '...' + hmac.substring(hmac.length - 8),
       digestLength: digest.length,
       hmacLength: hmac.length,
-      match: digest === hmac.toLowerCase()
+      exactMatch: digest === hmac.toLowerCase()
     });
 
     // Validate that both are valid hex strings of same length before comparing
