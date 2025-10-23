@@ -204,11 +204,11 @@ export const action = async ({ request }) => {
             }
           }`,
         {
-          variables: {
-            name: planConfig.name,
-            returnUrl: returnUrl,
-            test: process.env.NODE_ENV !== 'production',
-            lineItems: [
+        variables: {
+          name: planConfig.name,
+          returnUrl: returnUrl,
+          test: null,
+          lineItems: [
               {
                 plan: {
                   appRecurringPricingDetails: {

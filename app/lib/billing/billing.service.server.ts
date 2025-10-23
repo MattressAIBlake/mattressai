@@ -442,7 +442,7 @@ export async function requestBillingApproval(
       variables: {
         name: planConfig.name,
         returnUrl: returnUrl,
-        test: process.env.NODE_ENV !== 'production',
+        test: null,
         lineItems: [
           {
             plan: {
