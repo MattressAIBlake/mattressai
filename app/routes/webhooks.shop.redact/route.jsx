@@ -4,11 +4,12 @@ import { redactShopData } from '~/lib/gdpr/gdpr.service.server';
 
 export const action = async ({ request }) => {
   // Verify webhook HMAC
-  const shopifySecret = process.env.SHOPIFY_APP_SECRET;
+  const shopifySecret = process.env.SHOPIFY_API_SECRET;
   const signature = request.headers.get('X-Shopify-Hmac-Sha256');
   const rawBody = await request.text();
 
   if (!shopifySecret || !signature || !verifyWebhookHmac(rawBody, signature, shopifySecret)) {
+    console.error('Webhook HMAC verification failed for shop redact');
     throw new Response('Unauthorized', { status: 401 });
   }
 

@@ -408,7 +408,7 @@ const sendWebhookAlert = async (
     throw new Error('Webhook URL not configured');
   }
 
-  const secret = process.env.WEBHOOK_SECRET || process.env.SHOPIFY_APP_SECRET || '';
+  const secret = process.env.WEBHOOK_SECRET || process.env.SHOPIFY_API_SECRET || '';
   
   const body = JSON.stringify({
     tenant: tenantId,

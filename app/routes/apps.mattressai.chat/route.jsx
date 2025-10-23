@@ -14,7 +14,7 @@ import { unauthenticated } from '~/shopify.server';
 
 export const action = async ({ request }) => {
   // Verify App Proxy HMAC (optional for widget requests)
-  const shopifySecret = process.env.SHOPIFY_APP_SECRET;
+  const shopifySecret = process.env.SHOPIFY_API_SECRET;
   const isDevelopment = process.env.NODE_ENV === 'development';
   
   // Try to verify HMAC if secret is available and params are present
@@ -37,7 +37,7 @@ export const action = async ({ request }) => {
       }
     }
   } else if (!isDevelopment) {
-    console.warn('SHOPIFY_APP_SECRET not configured - HMAC verification disabled');
+    console.warn('SHOPIFY_API_SECRET not configured - HMAC verification disabled');
   }
 
   return handleChatRequest(request);
