@@ -62,16 +62,16 @@ export default function AlertsManagement() {
     settingsFetcher.load('/app/admin/alerts/settings');
   }, []);
 
-  // Update state when settings load
+  // Update state when settings load (only after successful save)
   useEffect(() => {
-    if (settingsFetcher.data?.settings) {
+    if (settingsFetcher.data?.settings && settingsFetcher.state === 'idle') {
       const s = settingsFetcher.data.settings;
-      setTriggers(s.triggers || triggers);
-      setChannels(s.channels || channels);
-      setQuietHours(s.quietHours || quietHours);
-      setThrottles(s.throttles || throttles);
+      if (s.triggers) setTriggers(s.triggers);
+      if (s.channels) setChannels(s.channels);
+      if (s.quietHours) setQuietHours(s.quietHours);
+      if (s.throttles) setThrottles(s.throttles);
     }
-  }, [settingsFetcher.data]);
+  }, [settingsFetcher.data, settingsFetcher.state]);
 
   const handleSaveSettings = useCallback(() => {
     settingsFetcher.submit(
@@ -89,13 +89,31 @@ export default function AlertsManagement() {
     );
   }, [triggers, channels, quietHours, throttles, settingsFetcher]);
 
-  const handleSendTest = useCallback((channel) => {
-    const config = channels[channel];
-    testFetcher.submit(
-      { action: 'test', channel, config },
-      { method: 'post', action: '/app/admin/alerts/settings', encType: 'application/json' }
+  const handleSendTest = useCallback(async (channel) => {
+    // First, save the current settings to ensure they're persisted
+    settingsFetcher.submit(
+      { 
+        triggers, 
+        channels, 
+        quietHours: quietHours.enabled ? quietHours : null, 
+        throttles 
+      },
+      { 
+        method: 'post', 
+        action: '/app/admin/alerts/settings', 
+        encType: 'application/json' 
+      }
     );
-  }, [channels, testFetcher]);
+    
+    // Wait a moment for the save to complete, then send the test
+    setTimeout(() => {
+      const config = channels[channel];
+      testFetcher.submit(
+        { action: 'test', channel, config },
+        { method: 'post', action: '/app/admin/alerts/settings', encType: 'application/json' }
+      );
+    }, 500);
+  }, [triggers, channels, quietHours, throttles, testFetcher, settingsFetcher]);
 
   const handleLoadHistory = useCallback(() => {
     historyFetcher.load('/app/admin/alerts/history');
@@ -125,18 +143,43 @@ export default function AlertsManagement() {
     <Page>
       <TitleBar title="Alert Settings" />
       <Layout>
-        {settingsFetcher.data?.success && (
+        {settingsFetcher.data?.success && settingsFetcher.state === 'idle' && (
           <Layout.Section>
-            <Banner status="success" onDismiss={() => {}}>
-              Settings saved successfully
+            <Banner 
+              status="success" 
+              onDismiss={() => {
+                // Clear the success message by resetting fetcher
+                settingsFetcher.data = null;
+              }}
+            >
+              {settingsFetcher.data.message || 'Settings saved successfully'}
             </Banner>
           </Layout.Section>
         )}
 
-        {testFetcher.data?.success && (
+        {testFetcher.data?.success && testFetcher.state === 'idle' && (
           <Layout.Section>
-            <Banner status="success" onDismiss={() => {}}>
-              Test alert sent successfully
+            <Banner 
+              status="success" 
+              onDismiss={() => {
+                // Clear the success message by resetting fetcher
+                testFetcher.data = null;
+              }}
+            >
+              {testFetcher.data.message || 'Test alert sent successfully'}
+            </Banner>
+          </Layout.Section>
+        )}
+
+        {testFetcher.data?.error && testFetcher.state === 'idle' && (
+          <Layout.Section>
+            <Banner 
+              status="critical" 
+              onDismiss={() => {
+                testFetcher.data = null;
+              }}
+            >
+              {testFetcher.data.error}
             </Banner>
           </Layout.Section>
         )}
@@ -202,7 +245,11 @@ export default function AlertsManagement() {
                           autoComplete="off"
                         />
                       </div>
-                      <Button onClick={() => handleSendTest('email')} disabled={!channels.email.to}>
+                      <Button 
+                        onClick={() => handleSendTest('email')} 
+                        disabled={!channels.email.to}
+                        loading={settingsFetcher.state === 'submitting' || testFetcher.state === 'submitting'}
+                      >
                         Test
                       </Button>
                     </div>
@@ -221,7 +268,11 @@ export default function AlertsManagement() {
                           autoComplete="off"
                         />
                       </div>
-                      <Button onClick={() => handleSendTest('sms')} disabled={!channels.sms.to}>
+                      <Button 
+                        onClick={() => handleSendTest('sms')} 
+                        disabled={!channels.sms.to}
+                        loading={settingsFetcher.state === 'submitting' || testFetcher.state === 'submitting'}
+                      >
                         Test
                       </Button>
                     </div>
@@ -240,7 +291,11 @@ export default function AlertsManagement() {
                           autoComplete="off"
                         />
                       </div>
-                      <Button onClick={() => handleSendTest('slack')} disabled={!channels.slack.url}>
+                      <Button 
+                        onClick={() => handleSendTest('slack')} 
+                        disabled={!channels.slack.url}
+                        loading={settingsFetcher.state === 'submitting' || testFetcher.state === 'submitting'}
+                      >
                         Test
                       </Button>
                     </div>
@@ -259,7 +314,11 @@ export default function AlertsManagement() {
                           autoComplete="off"
                         />
                       </div>
-                      <Button onClick={() => handleSendTest('webhook')} disabled={!channels.webhook.url}>
+                      <Button 
+                        onClick={() => handleSendTest('webhook')} 
+                        disabled={!channels.webhook.url}
+                        loading={settingsFetcher.state === 'submitting' || testFetcher.state === 'submitting'}
+                      >
                         Test
                       </Button>
                     </div>
