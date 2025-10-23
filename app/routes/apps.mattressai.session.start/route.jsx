@@ -3,30 +3,31 @@ import { verifyProxyHmac } from '~/lib/shopify/verifyProxyHmac';
 import { createOrGetSession } from '~/lib/session/session-orchestrator.service.server';
 
 export const action = async ({ request }) => {
-  // Verify App Proxy HMAC (optional in development/preview mode)
+  // Verify App Proxy HMAC (optional for widget requests)
   const shopifySecret = process.env.SHOPIFY_APP_SECRET;
   const isDevelopment = process.env.NODE_ENV === 'development';
   
-  // Try to verify HMAC if secret is available
+  // Try to verify HMAC if secret is available and params are present
   if (shopifySecret) {
-    const isValidHmac = verifyProxyHmac(request.url, shopifySecret);
+    const url = new URL(request.url);
+    const hasHmacParams = url.searchParams.has('signature') || url.searchParams.has('hmac');
     
-    // In production, require valid HMAC
-    // In development or theme editor preview, allow without HMAC but log warning
-    if (!isValidHmac && !isDevelopment) {
-      const url = new URL(request.url);
-      const hasHmacParams = url.searchParams.has('signature') || url.searchParams.has('hmac');
+    // Only validate HMAC if params are present
+    if (hasHmacParams) {
+      const isValidHmac = verifyProxyHmac(request.url, shopifySecret);
       
-      // If HMAC params are present but invalid, reject
-      if (hasHmacParams) {
+      if (!isValidHmac) {
+        console.error('Invalid HMAC signature for session start request');
         throw new Response('Unauthorized', { status: 401 });
       }
-      
-      // If no HMAC params at all (theme editor preview), allow with warning
-      console.warn('Session start request without HMAC signature (theme editor preview mode)');
+    } else {
+      // No HMAC params - this is a direct widget request, which is allowed
+      if (!isDevelopment) {
+        console.log('Session start request from widget (no HMAC validation)');
+      }
     }
   } else if (!isDevelopment) {
-    console.error('SHOPIFY_APP_SECRET not configured - cannot verify requests');
+    console.warn('SHOPIFY_APP_SECRET not configured - HMAC verification disabled');
   }
 
   try {
