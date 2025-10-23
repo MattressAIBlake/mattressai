@@ -291,13 +291,17 @@ async function handleChatSession({
       if (promptVersion && promptVersion.runtimeRules) {
         const runtimeRules = promptVersion.runtimeRules;
         
-        // Check if we should show the lead form
+        // Use the proper trigger function that respects all settings
         // Note: We track if form was shown using session storage on client side
         // Backend can't track this, so we send the event and let client decide
-        const leadData = extractLeadFromConversation(conversationHistory);
-        const hasEnoughData = leadData.email || leadData.phone || leadData.name;
+        const shouldShow = shouldTriggerLeadForm(
+          conversationHistory,
+          runtimeRules,
+          false // Client tracks if form was shown via sessionStorage
+        );
         
-        if (runtimeRules.leadCapture?.enabled && hasEnoughData) {
+        if (shouldShow) {
+          const leadData = extractLeadFromConversation(conversationHistory);
           const fields = getFormFields(leadData, runtimeRules.leadCapture.fields);
           
           stream.sendMessage({
