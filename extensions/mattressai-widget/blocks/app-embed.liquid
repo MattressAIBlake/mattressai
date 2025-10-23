@@ -188,6 +188,39 @@
 ></div>
 
 <!-- Widget Assets -->
-<script src="{{ 'tracking.js' | asset_url }}" data-tenant="{{ shop.permanent_domain | escape }}" defer></script>
-<script src="{{ shop.url }}/apps/mattressai/widget.js?v=20" data-tenant="{{ shop.permanent_domain | escape }}" defer></script>
+<script src="{{ 'tracking.js' | asset_url }}" data-tenant="{{ shop.permanent_domain | escape }}" async></script>
 <link rel="stylesheet" href="{{ 'widget.css' | asset_url }}">
+
+<!-- Debug: Log script loading -->
+<script>
+  console.log('🔵 MattressAI: Starting widget load process...');
+  console.log('🔵 MattressAI: Root element exists:', !!document.getElementById('mattressai-root'));
+</script>
+
+<!-- Load widget.js dynamically with better error handling -->
+<script>
+  (function() {
+    const widgetScript = document.createElement('script');
+    widgetScript.src = '{{ shop.url }}/apps/mattressai/widget.js?v=23';
+    widgetScript.setAttribute('data-tenant', '{{ shop.permanent_domain | escape }}');
+    
+    widgetScript.onload = function() {
+      console.log('✅ MattressAI: widget.js loaded successfully');
+      console.log('✅ MattressAI: window.MattressAI exists:', !!window.MattressAI);
+      if (window.MattressAI) {
+        console.log('✅ MattressAI: Calling init()...');
+        window.MattressAI.init();
+      }
+    };
+    
+    widgetScript.onerror = function(e) {
+      console.error('❌ MattressAI: Failed to load widget.js');
+      console.error('Error:', e);
+      console.error('Script src:', widgetScript.src);
+    };
+    
+    console.log('🔵 MattressAI: Appending script tag to head...');
+    console.log('🔵 MattressAI: Script URL:', widgetScript.src);
+    document.head.appendChild(widgetScript);
+  })();
+</script>
