@@ -789,7 +789,18 @@ export const loader = async ({ request }) => {
       // View Product button
       const viewBtn = document.createElement('a');
       viewBtn.className = 'rec-card__btn rec-card__btn--primary';
-      viewBtn.href = product.url || '#';
+      
+      // Convert Shopify myshopify.com URLs to relative URLs that work on custom domains
+      let productUrl = product.url || '#';
+      if (productUrl !== '#' && productUrl.includes('/products/')) {
+        // Extract just the /products/handle part from the full URL
+        const match = productUrl.match(/\/products\/[^?#]+/);
+        if (match) {
+          productUrl = match[0]; // Use relative URL like /products/product-handle
+        }
+      }
+      
+      viewBtn.href = productUrl;
       viewBtn.target = '_blank';
       viewBtn.rel = 'noopener noreferrer';
       viewBtn.setAttribute('aria-label', \`View \${product.title}\`);
