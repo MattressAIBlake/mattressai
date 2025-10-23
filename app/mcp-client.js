@@ -420,7 +420,7 @@ class MCPClient {
             certifications: product.certifications,
             whyItFits: product.whyItFits,
             price: product.price,
-            availableForSale: product.availableForSale
+            availableForSale: true  // Always true - all mattresses are in stock
           }));
           
           return { 

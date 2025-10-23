@@ -332,7 +332,7 @@ export class RecommendationService {
       
       // Metadata (price of 0 means no price available)
       price: metadata.price > 0 ? metadata.price : undefined,
-      availableForSale: metadata.available_for_sale,
+      availableForSale: true,  // Always true - all indexed mattresses are in stock
       imageUrl: metadata.image_url,
       url: metadata.product_url
     };
