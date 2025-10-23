@@ -69,7 +69,6 @@ export const loader = async ({ request }) => {
         avatarImage: root.dataset.avatarImage || '',
         avatarBackground: root.dataset.avatarBackground || '#3B82F6',
         headerTextColor: root.dataset.headerTextColor || '#FFFFFF',
-        messageTextColor: root.dataset.messageTextColor || '#374151',
         bubbleStyle: root.dataset.bubbleStyle || 'text',
         bubbleText: root.dataset.bubbleText || 'Mattress Match',
         bubbleSize: parseInt(root.dataset.bubbleSize || '64', 10),
@@ -82,7 +81,6 @@ export const loader = async ({ request }) => {
       document.documentElement.style.setProperty('--mattress-primary', this.config.primaryColor);
       document.documentElement.style.setProperty('--mattress-avatar-bg', this.config.avatarBackground);
       document.documentElement.style.setProperty('--mattress-header-text', this.config.headerTextColor);
-      document.documentElement.style.setProperty('--mattress-message-text', this.config.messageTextColor);
       document.documentElement.style.setProperty('--mattress-bubble-size', this.config.bubbleSize + 'px');
       document.documentElement.style.setProperty('--mattress-position-bottom', this.config.positionBottom + 'px');
       document.documentElement.style.setProperty('--mattress-position-side', this.config.positionSide + 'px');
@@ -1457,7 +1455,7 @@ export const loader = async ({ request }) => {
       box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
       line-height: 1.6;
       font-size: 15px;
-      color: var(--mattress-message-text, #374151);
+      color: var(--mattress-text, #374151);
       white-space: normal;
       font-weight: 400;
       letter-spacing: 0.01em;
