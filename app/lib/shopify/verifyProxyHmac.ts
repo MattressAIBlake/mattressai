@@ -32,6 +32,7 @@ export function verifyProxyHmac(requestUrl: string, sharedSecret: string): boole
 
     // Parse parameters manually from the RAW query string
     const params: Array<{ key: string; value: string; raw: string }> = [];
+    const paramsExcludingEmpty: Array<{ key: string; value: string; raw: string }> = [];
     
     rawQueryString.split('&').forEach(pair => {
       const equalsIndex = pair.indexOf('=');
@@ -46,51 +47,69 @@ export function verifyProxyHmac(requestUrl: string, sharedSecret: string): boole
       // Exclude signature and hmac parameters
       if (key !== 'signature' && key !== 'hmac') {
         params.push({ key, value, raw: pair });
+        
+        // Also track non-empty parameters
+        if (value !== '') {
+          paramsExcludingEmpty.push({ key, value, raw: pair });
+        }
       }
     });
 
-    // Try without sorting first (Shopify might sign in original order)
+    // Test 1: Unsorted with all params (including empty)
     const unsortedQueryString = params.map(p => p.raw).join('&');
     const unsortedSignature = crypto
       .createHmac('sha256', trimmedSecret)
       .update(unsortedQueryString)
       .digest('hex');
     
-    // Sort parameters alphabetically by key
-    params.sort((a, b) => a.key.localeCompare(b.key));
-
-    // Rebuild the query string with sorted parameters
-    const sortedQueryString = params.map(p => p.raw).join('&');
-
-    // Calculate HMAC-SHA256
+    // Test 2: Sorted with all params (including empty)
+    const sortedParams = [...params].sort((a, b) => a.key.localeCompare(b.key));
+    const sortedQueryString = sortedParams.map(p => p.raw).join('&');
     const computedSignature = crypto
       .createHmac('sha256', trimmedSecret)
       .update(sortedQueryString)
+      .digest('hex');
+    
+    // Test 3: Unsorted excluding empty params
+    const unsortedNoEmptyQS = paramsExcludingEmpty.map(p => p.raw).join('&');
+    const unsortedNoEmptySignature = crypto
+      .createHmac('sha256', trimmedSecret)
+      .update(unsortedNoEmptyQS)
+      .digest('hex');
+    
+    // Test 4: Sorted excluding empty params
+    const sortedNoEmpty = [...paramsExcludingEmpty].sort((a, b) => a.key.localeCompare(b.key));
+    const sortedNoEmptyQS = sortedNoEmpty.map(p => p.raw).join('&');
+    const sortedNoEmptySignature = crypto
+      .createHmac('sha256', trimmedSecret)
+      .update(sortedNoEmptyQS)
       .digest('hex');
 
     // DEBUG LOGGING
     console.log('🔍 Signature Verification Debug:', {
       fullUrl: requestUrl,
       path: url.pathname,
-      paramCount: params.length,
-      sortedParams: params.map(p => p.key),
+      totalParams: params.length,
+      nonEmptyParams: paramsExcludingEmpty.length,
       sortedQueryString: sortedQueryString,
       unsortedQueryString: unsortedQueryString,
-      queryStringLength: sortedQueryString.length,
+      sortedNoEmptyQS: sortedNoEmptyQS,
+      unsortedNoEmptyQS: unsortedNoEmptyQS,
       secretLength: sharedSecret?.length,
       trimmedSecretLength: trimmedSecret?.length,
-      secretPrefix: sharedSecret?.substring(0, 8) + '...',
-      trimmedPrefix: trimmedSecret?.substring(0, 8) + '...',
       secretHasQuotes: sharedSecret !== trimmedSecret
     });
 
-    console.log('🔐 Signature Comparison:', {
-      computedSorted: computedSignature.substring(0, 16) + '...' + computedSignature.substring(computedSignature.length - 16),
-      computedUnsorted: unsortedSignature.substring(0, 16) + '...' + unsortedSignature.substring(unsortedSignature.length - 16),
-      receivedSignature: signature.substring(0, 16) + '...' + signature.substring(signature.length - 16),
-      signatureLength: signature.length,
-      sortedMatch: computedSignature === signature.toLowerCase(),
-      unsortedMatch: unsortedSignature === signature.toLowerCase()
+    console.log('🔐 Signature Comparison (4 tests):', {
+      test1_sortedWithEmpty: computedSignature.substring(0, 16) + '...',
+      test2_unsortedWithEmpty: unsortedSignature.substring(0, 16) + '...',
+      test3_sortedNoEmpty: sortedNoEmptySignature.substring(0, 16) + '...',
+      test4_unsortedNoEmpty: unsortedNoEmptySignature.substring(0, 16) + '...',
+      receivedSignature: signature.substring(0, 16) + '...',
+      match1: computedSignature === signature.toLowerCase(),
+      match2: unsortedSignature === signature.toLowerCase(),
+      match3: sortedNoEmptySignature === signature.toLowerCase(),
+      match4: unsortedNoEmptySignature === signature.toLowerCase()
     });
 
     // Validate format
@@ -100,24 +119,28 @@ export function verifyProxyHmac(requestUrl: string, sharedSecret: string): boole
       return false;
     }
 
-    // Try both sorted and unsorted (Shopify docs say sorted, but let's verify)
-    let isValid = false;
-    
-    // Check sorted version
+    // Try all 4 variations
     if (computedSignature === signatureLower) {
-      isValid = true;
-      console.log('✅ Signature Valid (sorted parameters)');
+      console.log('✅ Signature Valid (sorted with empty params)');
+      return true;
     }
-    // Check unsorted version
     else if (unsortedSignature === signatureLower) {
-      isValid = true;
-      console.log('✅ Signature Valid (unsorted/original order parameters)');
+      console.log('✅ Signature Valid (unsorted with empty params)');
+      return true;
+    }
+    else if (sortedNoEmptySignature === signatureLower) {
+      console.log('✅ Signature Valid (sorted excluding empty params)');
+      return true;
+    }
+    else if (unsortedNoEmptySignature === signatureLower) {
+      console.log('✅ Signature Valid (unsorted excluding empty params)');
+      return true;
     }
     else {
-      console.log('❌ Signature Invalid (tried both sorted and unsorted)');
+      console.log('❌ Signature Invalid (tried all 4 variations)');
+      console.log('💡 This means the SHOPIFY_API_SECRET is likely incorrect');
+      return false;
     }
-    
-    return isValid;
   } catch (error) {
     console.error('❌ Error verifying proxy signature:', error);
     return false;
