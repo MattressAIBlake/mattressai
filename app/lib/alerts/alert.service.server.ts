@@ -561,8 +561,8 @@ export const getOrCreateAlertSettings = async (tenantId: string): Promise<any> =
           birdeye: {}
         }),
         throttles: JSON.stringify({
-          perDay: 2,
-          perSession: 2
+          perDay: -1,
+          perSession: -1
         })
       }
     });

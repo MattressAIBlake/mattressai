@@ -74,13 +74,12 @@ export const action = async ({ request }) => {
     }
 
     // Handle settings update
-    const { triggers, channels, quietHours, throttles, digest } = body;
+    const { triggers, channels, quietHours, digest } = body;
 
     const settings = await updateAlertSettings(shop, {
       triggers,
       channels,
       quietHours,
-      throttles,
       digest
     });
 

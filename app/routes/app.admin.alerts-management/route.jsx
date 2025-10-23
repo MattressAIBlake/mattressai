@@ -52,11 +52,6 @@ export default function AlertsManagement() {
     tz: 'America/Chicago'
   });
 
-  const [throttles, setThrottles] = useState({
-    perDay: 2,
-    perSession: 2
-  });
-
   // Load settings on mount
   useEffect(() => {
     settingsFetcher.load('/app/admin/alerts/settings');
@@ -69,7 +64,6 @@ export default function AlertsManagement() {
       if (s.triggers) setTriggers(s.triggers);
       if (s.channels) setChannels(s.channels);
       if (s.quietHours) setQuietHours(s.quietHours);
-      if (s.throttles) setThrottles(s.throttles);
     }
   }, [settingsFetcher.data, settingsFetcher.state]);
 
@@ -78,8 +72,7 @@ export default function AlertsManagement() {
       { 
         triggers, 
         channels, 
-        quietHours: quietHours.enabled ? quietHours : null, 
-        throttles 
+        quietHours: quietHours.enabled ? quietHours : null
       },
       { 
         method: 'post', 
@@ -87,7 +80,7 @@ export default function AlertsManagement() {
         encType: 'application/json' 
       }
     );
-  }, [triggers, channels, quietHours, throttles, settingsFetcher]);
+  }, [triggers, channels, quietHours, settingsFetcher]);
 
   const handleSendTest = useCallback(async (channel) => {
     // First, save the current settings to ensure they're persisted
@@ -95,8 +88,7 @@ export default function AlertsManagement() {
       { 
         triggers, 
         channels, 
-        quietHours: quietHours.enabled ? quietHours : null, 
-        throttles 
+        quietHours: quietHours.enabled ? quietHours : null
       },
       { 
         method: 'post', 
@@ -113,7 +105,7 @@ export default function AlertsManagement() {
         { method: 'post', action: '/app/admin/alerts/settings', encType: 'application/json' }
       );
     }, 500);
-  }, [triggers, channels, quietHours, throttles, testFetcher, settingsFetcher]);
+  }, [triggers, channels, quietHours, testFetcher, settingsFetcher]);
 
   const handleLoadHistory = useCallback(() => {
     historyFetcher.load('/app/admin/alerts/history');
@@ -365,33 +357,6 @@ export default function AlertsManagement() {
                       />
                     </>
                   )}
-                </BlockStack>
-              </div>
-            </div>
-          </Card>
-        </Layout.Section>
-
-        <Layout.Section variant="oneHalf">
-          <Card>
-            <div style={{ padding: '16px' }}>
-              <Text variant="headingMd" as="h2">Throttles</Text>
-              <div style={{ marginTop: '16px' }}>
-                <BlockStack gap="300">
-                  <TextField
-                    label="Max alerts per day"
-                    type="number"
-                    value={throttles.perDay.toString()}
-                    onChange={(value) => setThrottles({ ...throttles, perDay: parseInt(value, 10) })}
-                    autoComplete="off"
-                    helpText="Based on your current plan. -1 for unlimited."
-                  />
-                  <TextField
-                    label="Max alerts per session"
-                    type="number"
-                    value={throttles.perSession.toString()}
-                    onChange={(value) => setThrottles({ ...throttles, perSession: parseInt(value, 10) })}
-                    autoComplete="off"
-                  />
                 </BlockStack>
               </div>
             </div>

@@ -279,7 +279,6 @@ const enqueueAlert = async (
   }
 
   const triggers = JSON.parse(settings.triggers);
-  const throttles = JSON.parse(settings.throttles);
 
   // Determine alert type based on end reason and intent
   let alertType: string | null = null;
@@ -301,54 +300,7 @@ const enqueueAlert = async (
     return;
   }
 
-  // Check throttles based on tenant plan
-  const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-  const recentAlerts = await prisma.alert.count({
-    where: {
-      tenantId,
-      createdAt: { gte: oneDayAgo }
-    }
-  });
-
-  // Get tenant plan to check daily alert limit
-  const tenant = await prisma.tenant.findUnique({
-    where: { id: tenantId }
-  });
-
-  if (tenant?.quotas) {
-    const quotas = JSON.parse(tenant.quotas);
-    const dailyLimit = quotas.alertsPerDay || throttles.perDay || 2;
-    
-    // -1 means unlimited
-    if (dailyLimit !== -1 && recentAlerts >= dailyLimit) {
-      // Throttle limit reached
-      await prisma.alert.create({
-        data: {
-          tenantId,
-          sessionId,
-          type: alertType,
-          channel: 'throttled',
-          payload: JSON.stringify({ reason: 'daily_limit_reached' }),
-          status: 'skipped'
-        }
-      });
-      return;
-    }
-  }
-
-  // Check per-session throttle
-  const sessionAlerts = await prisma.alert.count({
-    where: {
-      sessionId,
-      status: { in: ['queued', 'sent'] }
-    }
-  });
-
-  if (sessionAlerts >= (throttles.perSession || 2)) {
-    return;
-  }
-
-  // Create alert records for each enabled channel
+  // Create alert records for each enabled channel (unlimited - no throttling)
   const channels = JSON.parse(settings.channels);
   const payload = {
     sessionId,
