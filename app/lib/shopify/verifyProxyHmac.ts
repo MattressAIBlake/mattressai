@@ -20,5 +20,6 @@ export function verifyProxyHmac(requestUrl: string, sharedSecret: string): boole
   const digest = crypto.createHmac('sha256', sharedSecret).update(message).digest('hex');
 
   // Shopify sends hex hmac; compare in constant time
-  return crypto.timingSafeEqual(Buffer.from(digest, 'utf8'), Buffer.from(hmac, 'utf8'));
+  // Both digest and hmac are hex strings, so use 'hex' encoding
+  return crypto.timingSafeEqual(Buffer.from(digest, 'hex'), Buffer.from(hmac, 'hex'));
 }
