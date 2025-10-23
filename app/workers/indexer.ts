@@ -707,10 +707,14 @@ export class ProductIndexer {
       try {
         console.log(`  🔄 Processing product: "${product.title}" (${product.id})`);
         
+        // Extract price and availability from first variant
+        const firstVariant = product.variants?.edges?.[0]?.node;
+        const price = firstVariant?.price ? parseFloat(firstVariant.price) : null;
+        
         // Enrich product profile with retry logic
         console.log(`    📝 Enriching product profile...`);
         const enrichedProfile = await retryIfRetryable(
-          () => this.enrichProduct(product),
+          () => this.enrichProduct(product, price),
           { maxRetries: 2, initialDelay: 500 }
         );
         console.log(`    ✅ Enrichment complete`);
@@ -725,10 +729,6 @@ export class ProductIndexer {
         );
         const embedding = embeddings[0];
         console.log(`    ✅ Embedding generated (${embedding.length} dimensions)`);
-
-        // Extract price and availability from first variant
-        const firstVariant = product.variants?.edges?.[0]?.node;
-        const price = firstVariant?.price ? parseFloat(firstVariant.price) : 0;
         // Always mark as available - we assume all indexed mattresses are in stock
         const availableForSale = true;
 
@@ -742,7 +742,7 @@ export class ProductIndexer {
             title: product.title,
             image_url: product.featuredImage?.url || '',
             product_url: product.onlineStoreUrl || '',
-            price: price,
+            price: price || 0,
             available_for_sale: availableForSale,
             product_type: product.productType || '',
             vendor: product.vendor || '',
@@ -787,7 +787,7 @@ export class ProductIndexer {
   /**
    * Enrich a single product
    */
-  private async enrichProduct(product: any) {
+  private async enrichProduct(product: any, price?: number | null) {
     console.log(`      🔍 Checking for existing profile...`);
     // Create content hash for change detection
     const content = JSON.stringify({
@@ -846,6 +846,7 @@ export class ProductIndexer {
           shopifyProductId: product.id,
           title: product.title,
           imageUrl: product.featuredImage?.url || null,
+          productUrl: product.onlineStoreUrl || null,
           body: product.description,
           vendor: product.vendor,
           productType: product.productType,
@@ -855,6 +856,7 @@ export class ProductIndexer {
           firmness: enrichedProfile.firmness,
           height: enrichedProfile.height,
           material: enrichedProfile.material,
+          price: price,
           certifications: enrichedProfile.certifications && enrichedProfile.certifications.length > 0 ? JSON.stringify(enrichedProfile.certifications) : null,
           features: enrichedProfile.features && enrichedProfile.features.length > 0 ? JSON.stringify(enrichedProfile.features) : null,
           supportFeatures: enrichedProfile.supportFeatures && enrichedProfile.supportFeatures.length > 0 ? JSON.stringify(enrichedProfile.supportFeatures) : null,

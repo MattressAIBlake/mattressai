@@ -183,15 +183,24 @@ export class RecommendationService {
     // Filter by availability - REMOVED: Assume all products in stock
     // All indexed mattresses are considered available for sale
     
-    // Filter by budget
+    // Filter by budget - exclude products without price data when budget specified
     if (intent.budget) {
+      const priceFilter: any = {};
+      
       if (intent.budget.min !== undefined) {
-        filters.price = { $gte: intent.budget.min };
+        priceFilter.$gte = intent.budget.min;
       }
       if (intent.budget.max !== undefined) {
-        filters.price = { ...filters.price, $lte: intent.budget.max };
+        priceFilter.$lte = intent.budget.max;
+      }
+      
+      // Exclude products with price = 0 (our sentinel for null) when budget specified
+      if (Object.keys(priceFilter).length > 0) {
+        priceFilter.$gt = 0; // Ensure price > 0 (has valid price data)
+        filters.price = priceFilter;
       }
     }
+    // When no budget specified, include all products (including those with price = 0/null)
     
     // Filter by material (if specified)
     if (intent.preferredMaterial) {

@@ -103,6 +103,69 @@ async function processProductUpdate(shopifyProductId: string, tenant: string) {
     const embeddings = await embeddingProvider.generateEmbeddings([contentForEmbedding]);
     const embedding = embeddings[0];
 
+    // Extract price from first variant
+    const firstVariant = productData.variants?.edges?.[0]?.node;
+    const price = firstVariant?.price ? parseFloat(firstVariant.price) : null;
+
+    // Update ProductProfile in database
+    const { prisma } = await import('~/db.server');
+    const contentHash = `${shopifyProductId}-${productData.title}-${Date.now()}`;
+    
+    await prisma.productProfile.upsert({
+      where: { 
+        contentHash: contentHash
+      },
+      create: {
+        tenant,
+        shopifyProductId,
+        title: productData.title,
+        imageUrl: productData.featuredImage?.url || null,
+        productUrl: productData.onlineStoreUrl || null,
+        body: productData.description,
+        vendor: productData.vendor,
+        productType: productData.productType,
+        tags: JSON.stringify(productData.tags || []),
+        contentHash,
+        firmness: enrichedProfile.firmness,
+        height: enrichedProfile.height,
+        material: enrichedProfile.material,
+        price: price,
+        certifications: enrichedProfile.certifications ? JSON.stringify(enrichedProfile.certifications) : null,
+        features: enrichedProfile.features ? JSON.stringify(enrichedProfile.features) : null,
+        supportFeatures: enrichedProfile.supportFeatures ? JSON.stringify(enrichedProfile.supportFeatures) : null,
+        enrichmentMethod: enrichedProfile.enrichmentMethod,
+        confidence: enrichedProfile.confidence,
+        sourceEvidence: enrichedProfile.sourceEvidence ? JSON.stringify(enrichedProfile.sourceEvidence) : null,
+        modelVersion: enrichedProfile.modelVersion,
+        lockedFirmness: false,
+        lockedHeight: false,
+        lockedMaterial: false,
+        lockedCertifications: false,
+        lockedFeatures: false,
+        lockedSupportFeatures: false
+      },
+      update: {
+        title: productData.title,
+        imageUrl: productData.featuredImage?.url || null,
+        productUrl: productData.onlineStoreUrl || null,
+        body: productData.description,
+        vendor: productData.vendor,
+        productType: productData.productType,
+        tags: JSON.stringify(productData.tags || []),
+        firmness: enrichedProfile.firmness,
+        height: enrichedProfile.height,
+        material: enrichedProfile.material,
+        price: price,
+        certifications: enrichedProfile.certifications ? JSON.stringify(enrichedProfile.certifications) : null,
+        features: enrichedProfile.features ? JSON.stringify(enrichedProfile.features) : null,
+        supportFeatures: enrichedProfile.supportFeatures ? JSON.stringify(enrichedProfile.supportFeatures) : null,
+        enrichmentMethod: enrichedProfile.enrichmentMethod,
+        confidence: enrichedProfile.confidence,
+        sourceEvidence: enrichedProfile.sourceEvidence ? JSON.stringify(enrichedProfile.sourceEvidence) : null,
+        modelVersion: enrichedProfile.modelVersion
+      }
+    });
+
     // Update vector in database
     const vectorStoreProvider = getVectorStoreProvider(tenant);
 
@@ -113,6 +176,9 @@ async function processProductUpdate(shopifyProductId: string, tenant: string) {
         tenant_id: tenant,
         shopify_product_id: shopifyProductId,
         title: productData.title,
+        image_url: productData.featuredImage?.url || '',
+        product_url: productData.onlineStoreUrl || '',
+        price: price || 0,
         product_type: productData.productType,
         vendor: productData.vendor,
         enriched_profile: JSON.stringify(enrichedProfile),
@@ -141,6 +207,11 @@ async function fetchProductFromShopify(productId: string, accessToken: string, s
         vendor
         productType
         tags
+        onlineStoreUrl
+        featuredImage {
+          url
+          altText
+        }
         metafields(namespace: "custom", first: 10) {
           edges {
             node {

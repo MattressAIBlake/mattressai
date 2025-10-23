@@ -118,6 +118,7 @@ model ProductProfile {
   shopifyProductId      String
   title                 String
   imageUrl              String?
+  productUrl            String?
   body                  String?
   vendor                String?
   productType           String?
@@ -125,6 +126,7 @@ model ProductProfile {
   firmness              String?
   height                String?
   material              String?
+  price                 Float?
   certifications        String?
   features              String?
   supportFeatures       String?
@@ -146,6 +148,7 @@ model ProductProfile {
   @@index([tenant])
   @@index([shopifyProductId])
   @@index([contentHash])
+  @@index([productUrl])
 }
 
 model ChatSession {

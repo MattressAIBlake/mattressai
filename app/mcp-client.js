@@ -411,6 +411,7 @@ class MCPClient {
             title: product.title,
             vendor: product.vendor,
             imageUrl: product.imageUrl,
+            url: product.url,
             score: product.score,
             fitScore: product.fitScore,
             firmness: product.firmness,
