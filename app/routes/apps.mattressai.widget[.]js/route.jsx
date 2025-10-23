@@ -1273,6 +1273,7 @@ export const loader = async ({ request }) => {
       margin: 0;
       font-size: 16px;
       font-weight: 600;
+      color: inherit;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -1281,6 +1282,7 @@ export const loader = async ({ request }) => {
     .mattressai-widget__subtitle {
       margin: 2px 0 0;
       font-size: 12px;
+      color: inherit;
       opacity: 0.9;
       white-space: nowrap;
       overflow: hidden;
