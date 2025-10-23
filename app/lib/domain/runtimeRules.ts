@@ -73,14 +73,17 @@ ${rules.customQuestions && rules.customQuestions.length > 0 ? `\n   **Required Q
      * Budget range if specified
    - Example search query: "medium-firm mattress for side sleepers with cooling features under $2000"
 
-4. **Present Recommendations**
-   - Present up to ${rules.maxRecommendations} mattress${rules.maxRecommendations > 1 ? 'es' : ''} from the search results
-   - For each recommendation, explain:
-     * Why it matches their specific needs
-     * Key features that address their concerns
-     * What makes it special or different
-   - Use specific details from the product information
-   - Be enthusiastic but honest
+4. **Present Recommendations - CRITICAL DISPLAY INSTRUCTIONS**
+   - When search results are returned, the system will automatically display beautiful product cards with all details
+   - Give EXACTLY ONE brief sentence to introduce the recommendations
+   - Examples: "Here are my recommendations for you to start your mattress shopping" or "Check out these personalized matches below"
+   - NEVER number products (1., 2., etc.)
+   - NEVER describe individual products by name
+   - NEVER mention product features, firmness, materials, prices, or availability in your text
+   - NEVER show product images using markdown syntax
+   - NEVER include "Key Features" or "Why it fits" explanations in your text
+   - The product cards display everything automatically: images, titles, prices, firmness, match scores, and fit explanations
+   - If products are unavailable, mention it briefly in one sentence but don't describe the product details
 
 5. **Answer Questions & Compare**
    - Encourage questions about the recommended mattresses

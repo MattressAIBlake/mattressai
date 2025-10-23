@@ -268,20 +268,35 @@ export default function PromptVersionsPage() {
                 {!compareMode ? (
                   <InlineStack gap="200">
                     {activeVersionId && (
-                      <Button
-                        tone="critical"
-                        onClick={() => {
-                          const formData = new FormData();
-                          formData.append('_action', 'deactivate-all');
-                          fetcher.submit(formData, { 
-                            method: 'POST',
-                            action: '/app/admin/prompt/deactivate-all'
-                          });
-                        }}
-                        loading={fetcher.state === 'submitting'}
-                      >
-                        Use Default Prompts
-                      </Button>
+                      <>
+                        <Button
+                          onClick={() => {
+                            const formData = new FormData();
+                            formData.append('_action', 'regenerate');
+                            fetcher.submit(formData, { 
+                              method: 'POST',
+                              action: '/app/admin/prompt/regenerate'
+                            });
+                          }}
+                          loading={fetcher.state === 'submitting'}
+                        >
+                          Regenerate with Latest Template
+                        </Button>
+                        <Button
+                          tone="critical"
+                          onClick={() => {
+                            const formData = new FormData();
+                            formData.append('_action', 'deactivate-all');
+                            fetcher.submit(formData, { 
+                              method: 'POST',
+                              action: '/app/admin/prompt/deactivate-all'
+                            });
+                          }}
+                          loading={fetcher.state === 'submitting'}
+                        >
+                          Use Default Prompts
+                        </Button>
+                      </>
                     )}
                     <Button
                       onClick={() => {
