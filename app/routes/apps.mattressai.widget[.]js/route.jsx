@@ -311,10 +311,10 @@ export const loader = async ({ request }) => {
             <div class="mattressai-message__content">\${this.config.welcomeMessage}</div>
           </div>
           <div class="mattressai-quick-replies" id="mattressai-quick-replies">
-            <button class="mattressai-quick-reply" data-message="I need help choosing a product">Product help</button>
-            <button class="mattressai-quick-reply" data-message="What are your best sellers?">Best sellers</button>
-            <button class="mattressai-quick-reply" data-message="Do you have any sales or promotions?">Sales</button>
-            <button class="mattressai-quick-reply" data-message="I have a question">Ask a question</button>
+            <button class="mattressai-quick-reply" data-message="I'm looking for a soft mattress">Soft</button>
+            <button class="mattressai-quick-reply" data-message="I'm looking for a medium mattress">Medium</button>
+            <button class="mattressai-quick-reply" data-message="I'm looking for a firm mattress">Firm</button>
+            <button class="mattressai-quick-reply" data-message="Help me get started">Help me get started</button>
           </div>
         </div>
         
