@@ -180,10 +180,8 @@ export class RecommendationService {
       tenant_id: this.tenant
     };
     
-    // Filter by availability
-    if (!includeOutOfStock) {
-      filters.available_for_sale = true;
-    }
+    // Filter by availability - REMOVED: Assume all products in stock
+    // All indexed mattresses are considered available for sale
     
     // Filter by budget
     if (intent.budget) {

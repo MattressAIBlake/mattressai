@@ -110,7 +110,7 @@ export const RecCard = ({ product, onAddToCart, onViewDetails, onSave, onCompare
           <button
             className="rec-card__btn rec-card__btn--primary"
             onClick={handleAddToCart}
-            disabled={isLoading || !product.availableForSale}
+            disabled={isLoading}
             aria-label={`Add ${product.title} to cart`}
           >
             {isLoading ? (

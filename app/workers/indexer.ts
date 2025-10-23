@@ -699,7 +699,8 @@ export class ProductIndexer {
         // Extract price and availability from first variant
         const firstVariant = product.variants?.edges?.[0]?.node;
         const price = firstVariant?.price ? parseFloat(firstVariant.price) : 0;
-        const availableForSale = firstVariant?.availableForSale ?? false;
+        // Always mark as available - we assume all indexed mattresses are in stock
+        const availableForSale = true;
 
         // Prepare vector record (Pinecone requires non-null values)
         const vectorRecord = {

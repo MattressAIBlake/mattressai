@@ -793,11 +793,7 @@ export const loader = async ({ request }) => {
       viewBtn.target = '_blank';
       viewBtn.rel = 'noopener noreferrer';
       viewBtn.setAttribute('aria-label', \`View \${product.title}\`);
-      viewBtn.textContent = product.availableForSale ? 'View Product' : 'Out of Stock';
-      if (!product.availableForSale) {
-        viewBtn.style.opacity = '0.6';
-        viewBtn.style.cursor = 'not-allowed';
-      }
+      viewBtn.textContent = 'View Product';
       actions.appendChild(viewBtn);
       
       content.appendChild(actions);

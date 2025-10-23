@@ -150,7 +150,6 @@ export const CompareDrawer = ({ products, onClose, onRemove, onAddToCart }) => {
                       <button
                         className="compare-table__cta-btn"
                         onClick={() => onAddToCart(product)}
-                        disabled={!product.availableForSale}
                       >
                         Add to Cart
                       </button>
