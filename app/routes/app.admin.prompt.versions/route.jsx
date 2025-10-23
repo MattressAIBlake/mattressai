@@ -261,18 +261,37 @@ export default function PromptVersionsPage() {
                   </Text>
                   <Text variant="bodyMd" as="p" tone="subdued">
                     {totalVersions} version{totalVersions !== 1 ? 's' : ''} total
+                    {activeVersionId ? ' • 1 active' : ' • Using default prompts'}
                   </Text>
                 </BlockStack>
                 
                 {!compareMode ? (
-                  <Button
-                    onClick={() => {
-                      setCompareMode(true);
-                      setSelectedVersions([]);
-                    }}
-                  >
-                    Compare Versions
-                  </Button>
+                  <InlineStack gap="200">
+                    {activeVersionId && (
+                      <Button
+                        tone="critical"
+                        onClick={() => {
+                          const formData = new FormData();
+                          formData.append('_action', 'deactivate-all');
+                          fetcher.submit(formData, { 
+                            method: 'POST',
+                            action: '/app/admin/prompt/deactivate-all'
+                          });
+                        }}
+                        loading={fetcher.state === 'submitting'}
+                      >
+                        Use Default Prompts
+                      </Button>
+                    )}
+                    <Button
+                      onClick={() => {
+                        setCompareMode(true);
+                        setSelectedVersions([]);
+                      }}
+                    >
+                      Compare Versions
+                    </Button>
+                  </InlineStack>
                 ) : (
                   <InlineStack gap="200">
                     <Button
