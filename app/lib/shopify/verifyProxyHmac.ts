@@ -29,16 +29,20 @@ export function verifyProxyHmac(requestUrl: string, sharedSecret: string): boole
       return false;
     }
 
-    // Remove signature/hmac from params, then sort alphabetically
-    const params = new URLSearchParams(url.search);
-    params.delete('signature');
-    params.delete('hmac');
+    // Remove signature/hmac from query string, keeping URL encoding intact
+    const queryString = url.search.slice(1); // Remove leading '?'
+    const pairs = queryString.split('&').filter(pair => {
+      const key = pair.split('=')[0];
+      return key !== 'signature' && key !== 'hmac';
+    });
 
     // Shopify requires parameters to be sorted alphabetically by key
-    const sortedParams = Array.from(params.entries())
-      .sort((a, b) => a[0].localeCompare(b[0]))
-      .map(([key, value]) => `${key}=${value}`)
-      .join('&');
+    // Must preserve URL encoding (e.g., %2F should stay as %2F, not become /)
+    const sortedParams = pairs.sort((a, b) => {
+      const keyA = a.split('=')[0];
+      const keyB = b.split('=')[0];
+      return keyA.localeCompare(keyB);
+    }).join('&');
 
     const message = sortedParams;
     const digest = crypto.createHmac('sha256', sharedSecret).update(message).digest('hex');
