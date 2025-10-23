@@ -92,6 +92,20 @@
       "info": "Background color for text-style avatars"
     },
     { 
+      "type": "color", 
+      "id": "header_text_color", 
+      "label": "Header text color", 
+      "default": "#FFFFFF",
+      "info": "Color for widget title and subtitle in header"
+    },
+    { 
+      "type": "color", 
+      "id": "message_text_color", 
+      "label": "Message text color", 
+      "default": "#374151",
+      "info": "Color for assistant message text"
+    },
+    { 
       "type": "header",
       "content": "Widget Text"
     },
@@ -185,6 +199,8 @@
   data-avatar-text="{{ block.settings.avatar_text | escape }}"
   data-avatar-image="{{ block.settings.avatar_image | image_url: width: 72, height: 72, crop: 'center' }}"
   data-avatar-background="{{ block.settings.avatar_background }}"
+  data-header-text-color="{{ block.settings.header_text_color }}"
+  data-message-text-color="{{ block.settings.message_text_color }}"
   data-bubble-style="{{ block.settings.bubble_style }}"
   data-bubble-text="{{ block.settings.bubble_text | escape }}"
   data-bubble-size="{{ block.settings.bubble_size }}"
