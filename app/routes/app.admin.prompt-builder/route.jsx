@@ -17,7 +17,8 @@ import {
   ProgressBar,
   Divider,
   Box,
-  Badge
+  Badge,
+  Toast
 } from '@shopify/polaris';
 import { TitleBar } from '@shopify/app-bridge-react';
 import { authenticate } from '~/shopify.server';
@@ -329,6 +330,8 @@ export default function PromptBuilder() {
   const [showAdvancedEditor, setShowAdvancedEditor] = useState(false);
   const [advancedPromptText, setAdvancedPromptText] = useState('');
   const [savingAdvanced, setSavingAdvanced] = useState(false);
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
 
   // Handle compile fetcher response
   useEffect(() => {
@@ -346,6 +349,8 @@ export default function PromptBuilder() {
       if (activateFetcher.data.success) {
         // Success - show success message
         setActivationSuccess(true);
+        setToastMessage('✓ Prompt Activated Successfully! Your AI assistant is now using the new configuration. Changes are live for all customer conversations.');
+        setShowToast(true);
       } else {
         console.error('Activation failed:', activateFetcher.data.error);
         alert(`Activation failed: ${activateFetcher.data.error}`);
@@ -1169,6 +1174,15 @@ export default function PromptBuilder() {
           )}
         </Layout.Section>
       </Layout>
+      
+      {/* Toast notification */}
+      {showToast && (
+        <Toast
+          content={toastMessage}
+          onDismiss={() => setShowToast(false)}
+          duration={5000}
+        />
+      )}
     </Page>
   );
 }
