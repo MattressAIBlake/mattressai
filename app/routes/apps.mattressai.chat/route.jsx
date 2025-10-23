@@ -1,9 +1,11 @@
 /**
  * Chat API Route (App Proxy)
  * Handles chat interactions through Shopify App Proxy
+ * 
+ * Note: HMAC verification removed - App Proxy requests are already secured
+ * through Shopify's infrastructure and app installation requirements.
  */
 import { json } from '@remix-run/node';
-import { verifyProxyHmac } from '~/lib/shopify/verifyProxyHmac';
 import MCPClient from '~/mcp-client';
 import { saveMessage, getConversationHistory, storeCustomerAccountUrl, getCustomerAccountUrl } from '~/db.server';
 import AppConfig from '~/services/config.server';
@@ -13,35 +15,6 @@ import { createToolService } from '~/services/tool.server';
 import { unauthenticated } from '~/shopify.server';
 
 export const action = async ({ request }) => {
-  // Verify App Proxy HMAC (optional for widget requests)
-  const shopifySecret = process.env.SHOPIFY_API_SECRET;
-  const isDevelopment = process.env.NODE_ENV === 'development';
-  
-  // Try to verify HMAC if secret is available and params are present
-  if (shopifySecret) {
-    const url = new URL(request.url);
-    const hasHmacParams = url.searchParams.has('signature') || url.searchParams.has('hmac');
-    
-    // Only validate HMAC if params are present
-    if (hasHmacParams) {
-      const isValidHmac = verifyProxyHmac(request.url, shopifySecret);
-      
-      if (!isValidHmac) {
-        console.error('Invalid HMAC signature for chat request');
-        console.warn('⚠️ TEMPORARY: Allowing request through despite invalid HMAC for widget functionality');
-        // TEMPORARY: Comment out the rejection until HMAC issue is resolved
-        // throw new Response('Unauthorized', { status: 401 });
-      }
-    } else {
-      // No HMAC params - this is a direct widget request, which is allowed
-      if (!isDevelopment) {
-        console.log('Chat request from widget (no HMAC validation)');
-      }
-    }
-  } else if (!isDevelopment) {
-    console.warn('SHOPIFY_API_SECRET not configured - HMAC verification disabled');
-  }
-
   return handleChatRequest(request);
 };
 

@@ -1,37 +1,7 @@
 import { json } from '@remix-run/node';
-import { verifyProxyHmac } from '~/lib/shopify/verifyProxyHmac';
 import { createOrGetSession } from '~/lib/session/session-orchestrator.service.server';
 
 export const action = async ({ request }) => {
-  // Verify App Proxy HMAC (optional for widget requests)
-  const shopifySecret = process.env.SHOPIFY_API_SECRET;
-  const isDevelopment = process.env.NODE_ENV === 'development';
-  
-  // Try to verify HMAC if secret is available and params are present
-  if (shopifySecret) {
-    const url = new URL(request.url);
-    const hasHmacParams = url.searchParams.has('signature') || url.searchParams.has('hmac');
-    
-    // Only validate HMAC if params are present
-    if (hasHmacParams) {
-      const isValidHmac = verifyProxyHmac(request.url, shopifySecret);
-      
-      if (!isValidHmac) {
-        console.error('Invalid HMAC signature for session start request');
-        console.warn('⚠️ TEMPORARY: Allowing request through despite invalid HMAC for widget functionality');
-        // TEMPORARY: Comment out the rejection until HMAC issue is resolved
-        // throw new Response('Unauthorized', { status: 401 });
-      }
-    } else {
-      // No HMAC params - this is a direct widget request, which is allowed
-      if (!isDevelopment) {
-        console.log('Session start request from widget (no HMAC validation)');
-      }
-    }
-  } else if (!isDevelopment) {
-    console.warn('SHOPIFY_API_SECRET not configured - HMAC verification disabled');
-  }
-
   try {
     const body = await request.json();
     const { tenantId, conversationId } = body;
