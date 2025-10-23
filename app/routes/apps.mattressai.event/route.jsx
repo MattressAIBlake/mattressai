@@ -5,6 +5,7 @@ import { trackEvent } from '~/lib/analytics/analytics.service.server';
 export const action = async ({ request }) => {
   // Verify App Proxy HMAC (optional for widget requests)
   const shopifySecret = process.env.SHOPIFY_API_SECRET;
+  const shopifySecretOld = process.env.SHOPIFY_API_SECRET_OLD; // Temporary: for testing after rotation
   const isDevelopment = process.env.NODE_ENV === 'development';
   
   // Try to verify HMAC if secret is available and params are present
@@ -14,7 +15,19 @@ export const action = async ({ request }) => {
     
     // Only validate HMAC if params are present
     if (hasHmacParams) {
-      const isValidHmac = verifyProxyHmac(request.url, shopifySecret);
+      let isValidHmac = verifyProxyHmac(request.url, shopifySecret);
+      
+      // TEMPORARY DEBUG: Test with old secret if provided
+      if (!isValidHmac && shopifySecretOld) {
+        console.log('🔄 Testing with OLD secret...');
+        const isValidWithOld = verifyProxyHmac(request.url, shopifySecretOld);
+        console.log('OLD secret result:', isValidWithOld ? '✅ VALID' : '❌ INVALID');
+        
+        if (isValidWithOld) {
+          console.warn('⚠️ OLD secret works! Shopify is still using the pre-rotation secret.');
+          isValidHmac = true; // Allow the request through
+        }
+      }
       
       if (!isValidHmac) {
         console.error('Invalid HMAC signature for event tracking request');
