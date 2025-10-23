@@ -675,7 +675,25 @@ function EditProductModal({ product, active, onClose, onSave }) {
  * Main component
  */
 export default function ProductInventory() {
-  const data = useLoaderData();
+  const rawData = useLoaderData();
+  
+  // Provide safe defaults for error cases
+  const data = {
+    products: rawData.products || [],
+    totalCount: rawData.totalCount || 0,
+    page: rawData.page || 1,
+    pageSize: rawData.pageSize || 20,
+    currentFilters: rawData.currentFilters || { search: '' },
+    currentJob: rawData.currentJob || null,
+    recentJobs: rawData.recentJobs || [],
+    isIndexing: rawData.isIndexing || false,
+    isIndexed: rawData.isIndexed || false,
+    productCount: rawData.productCount || 0,
+    shop: rawData.shop || '',
+    error: rawData.error || null,
+    message: rawData.message || null
+  };
+  
   const fetcher = useFetcher();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
