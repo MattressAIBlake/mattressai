@@ -794,7 +794,7 @@ export const loader = async ({ request }) => {
       let productUrl = product.url || '#';
       if (productUrl !== '#' && productUrl.includes('/products/')) {
         // Extract just the /products/handle part from the full URL
-        const match = productUrl.match(/\/products\/[^?#]+/);
+        const match = productUrl.match(/\\/products\\/[^?#]+/);
         if (match) {
           productUrl = match[0]; // Use relative URL like /products/product-handle
         }
