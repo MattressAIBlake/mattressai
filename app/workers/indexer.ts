@@ -608,8 +608,38 @@ export class ProductIndexer {
           
           console.log(`📊 Parsed ${allRows.length} rows (${parseErrors} parse errors)`);
           
-          // Filter for product rows only (no __parentId = top level products)
-          const products = allRows.filter(row => !row.__parentId && row.id && row.id.includes('Product'));
+          // Reconstruct nested structure from flat JSONL
+          const productMap = new Map();
+          
+          // First pass: collect all products
+          for (const row of allRows) {
+            if (!row.__parentId && row.id && row.id.includes('Product')) {
+              productMap.set(row.id, {
+                ...row,
+                variants: { edges: [] },
+                metafields: { edges: [] }
+              });
+            }
+          }
+          
+          // Second pass: attach child objects to their parents
+          for (const row of allRows) {
+            if (row.__parentId) {
+              const parent = productMap.get(row.__parentId);
+              if (parent) {
+                // Attach variants
+                if (row.id && row.id.includes('ProductVariant')) {
+                  parent.variants.edges.push({ node: row });
+                }
+                // Attach metafields
+                else if (row.id && row.id.includes('Metafield')) {
+                  parent.metafields.edges.push({ node: row });
+                }
+              }
+            }
+          }
+          
+          const products = Array.from(productMap.values());
           
           console.log(`✅ Fetched ${products.length} products from Shopify bulk operation`);
           console.log(`📊 Breakdown: ${allRows.length} total rows, ${products.length} products, ${allRows.length - products.length} child objects`);
@@ -617,7 +647,7 @@ export class ProductIndexer {
           if (products.length > 0) {
             console.log(`📋 Sample products (first 3):`);
             products.slice(0, 3).forEach((p, idx) => {
-              console.log(`  ${idx + 1}. "${p.title}" (ID: ${p.id}, Type: ${p.productType || 'N/A'}, Tags: ${Array.isArray(p.tags) ? p.tags.join(', ') : 'N/A'})`);
+              console.log(`  ${idx + 1}. "${p.title}" (ID: ${p.id}, URL: ${p.onlineStoreUrl || 'N/A'}, Variants: ${p.variants.edges.length})`);
             });
           } else {
             console.log(`⚠️ No products found in bulk operation results`);
