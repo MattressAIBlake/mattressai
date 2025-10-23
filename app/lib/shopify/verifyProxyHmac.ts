@@ -8,6 +8,9 @@ import crypto from 'crypto';
  */
 export function verifyProxyHmac(requestUrl: string, sharedSecret: string): boolean {
   try {
+    // Trim the secret to remove any whitespace/quotes that might have been added
+    const trimmedSecret = sharedSecret.trim().replace(/^["']|["']$/g, '');
+    
     // Extract the raw query string BEFORE creating URL object
     // This is critical because URL object may reorder parameters
     const queryStartIndex = requestUrl.indexOf('?');
@@ -46,6 +49,13 @@ export function verifyProxyHmac(requestUrl: string, sharedSecret: string): boole
       }
     });
 
+    // Try without sorting first (Shopify might sign in original order)
+    const unsortedQueryString = params.map(p => p.raw).join('&');
+    const unsortedSignature = crypto
+      .createHmac('sha256', trimmedSecret)
+      .update(unsortedQueryString)
+      .digest('hex');
+    
     // Sort parameters alphabetically by key
     params.sort((a, b) => a.key.localeCompare(b.key));
 
@@ -54,7 +64,7 @@ export function verifyProxyHmac(requestUrl: string, sharedSecret: string): boole
 
     // Calculate HMAC-SHA256
     const computedSignature = crypto
-      .createHmac('sha256', sharedSecret)
+      .createHmac('sha256', trimmedSecret)
       .update(sortedQueryString)
       .digest('hex');
 
@@ -65,17 +75,22 @@ export function verifyProxyHmac(requestUrl: string, sharedSecret: string): boole
       paramCount: params.length,
       sortedParams: params.map(p => p.key),
       sortedQueryString: sortedQueryString,
+      unsortedQueryString: unsortedQueryString,
       queryStringLength: sortedQueryString.length,
       secretLength: sharedSecret?.length,
-      secretPrefix: sharedSecret?.substring(0, 8) + '...'
+      trimmedSecretLength: trimmedSecret?.length,
+      secretPrefix: sharedSecret?.substring(0, 8) + '...',
+      trimmedPrefix: trimmedSecret?.substring(0, 8) + '...',
+      secretHasQuotes: sharedSecret !== trimmedSecret
     });
 
     console.log('🔐 Signature Comparison:', {
-      computedSignature: computedSignature.substring(0, 16) + '...' + computedSignature.substring(computedSignature.length - 16),
+      computedSorted: computedSignature.substring(0, 16) + '...' + computedSignature.substring(computedSignature.length - 16),
+      computedUnsorted: unsortedSignature.substring(0, 16) + '...' + unsortedSignature.substring(unsortedSignature.length - 16),
       receivedSignature: signature.substring(0, 16) + '...' + signature.substring(signature.length - 16),
       signatureLength: signature.length,
-      computedLength: computedSignature.length,
-      exactMatch: computedSignature === signature.toLowerCase()
+      sortedMatch: computedSignature === signature.toLowerCase(),
+      unsortedMatch: unsortedSignature === signature.toLowerCase()
     });
 
     // Validate format
@@ -85,13 +100,23 @@ export function verifyProxyHmac(requestUrl: string, sharedSecret: string): boole
       return false;
     }
 
-    // Constant-time comparison for security
-    const isValid = crypto.timingSafeEqual(
-      Buffer.from(computedSignature, 'hex'), 
-      Buffer.from(signatureLower, 'hex')
-    );
+    // Try both sorted and unsorted (Shopify docs say sorted, but let's verify)
+    let isValid = false;
     
-    console.log(isValid ? '✅ Signature Valid' : '❌ Signature Invalid');
+    // Check sorted version
+    if (computedSignature === signatureLower) {
+      isValid = true;
+      console.log('✅ Signature Valid (sorted parameters)');
+    }
+    // Check unsorted version
+    else if (unsortedSignature === signatureLower) {
+      isValid = true;
+      console.log('✅ Signature Valid (unsorted/original order parameters)');
+    }
+    else {
+      console.log('❌ Signature Invalid (tried both sorted and unsorted)');
+    }
+    
     return isValid;
   } catch (error) {
     console.error('❌ Error verifying proxy signature:', error);
