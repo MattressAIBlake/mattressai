@@ -1110,6 +1110,14 @@ export const loader = async ({ request }) => {
         --mattress-border: #374151;
         --mattress-shadow: 0 5px 40px rgba(0, 0, 0, 0.4);
       }
+      
+      .mattressai-widget {
+        background: rgba(31, 41, 55, 0.85);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 
+          0 20px 60px rgba(0, 0, 0, 0.3),
+          0 0 1px rgba(255, 255, 255, 0.1);
+      }
     }
     
     /* Chat Bubble */
@@ -1120,13 +1128,15 @@ export const loader = async ({ request }) => {
       background: var(--mattress-primary, #3B82F6);
       color: white;
       border: none;
-      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+      box-shadow: 
+        0 4px 14px rgba(0, 0, 0, 0.12),
+        0 2px 6px rgba(0, 0, 0, 0.08);
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 8px;
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       z-index: 9999;
       animation: slideUp 0.3s ease;
       font-size: 15px;
@@ -1169,8 +1179,10 @@ export const loader = async ({ request }) => {
     }
     
     .mattressai-chat-bubble:hover {
-      transform: scale(1.05);
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+      transform: translateY(-2px) scale(1.02);
+      box-shadow: 
+        0 6px 20px rgba(0, 0, 0, 0.15),
+        0 4px 10px rgba(0, 0, 0, 0.1);
     }
     
     /* Icon SVG sizing */
@@ -1214,9 +1226,14 @@ export const loader = async ({ request }) => {
       max-width: calc(100vw - 40px);
       height: 550px;
       max-height: calc(100vh - 100px);
-      background: var(--mattress-bg, white);
+      background: rgba(255, 255, 255, 0.90);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      border: 1px solid rgba(255, 255, 255, 0.5);
       border-radius: var(--mattress-radius, 12px);
-      box-shadow: var(--mattress-shadow, 0 5px 40px rgba(0, 0, 0, 0.16));
+      box-shadow: 
+        0 20px 60px rgba(0, 0, 0, 0.08),
+        0 0 1px rgba(0, 0, 0, 0.1);
       display: flex;
       flex-direction: column;
       z-index: 10000;
@@ -1407,6 +1424,18 @@ export const loader = async ({ request }) => {
       display: flex;
       gap: 12px;
       align-items: flex-start;
+      animation: messageSlideIn 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    @keyframes messageSlideIn {
+      from {
+        opacity: 0;
+        transform: translateY(12px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
     
     .mattressai-message--user {
@@ -1561,15 +1590,18 @@ export const loader = async ({ request }) => {
       background: white;
       border-radius: 12px;
       padding: 12px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
       display: flex;
       gap: 12px;
       align-items: center;
-      transition: box-shadow 0.2s ease;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
     
     .mattressai-product-card:hover {
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+      transform: translateY(-2px);
+      box-shadow: 
+        0 8px 20px rgba(0, 0, 0, 0.08),
+        0 2px 4px rgba(0, 0, 0, 0.04);
     }
     
     .mattressai-product-card__image {
@@ -1611,11 +1643,14 @@ export const loader = async ({ request }) => {
       border-radius: 6px;
       font-size: 12px;
       font-weight: 500;
-      transition: background 0.2s ease;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     }
     
     .mattressai-product-card__button:hover {
       background: var(--mattress-primary-hover, #2563EB);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
     }
     
     /* Recommendation Cards */
@@ -1624,15 +1659,19 @@ export const loader = async ({ request }) => {
       border: 1px solid var(--mattress-border, #e0e0e0);
       border-radius: 8px;
       overflow: hidden;
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       display: flex;
       flex-direction: column;
       height: 100%;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
     }
     
     .rec-card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+      transform: translateY(-6px);
+      box-shadow: 
+        0 12px 32px rgba(0, 0, 0, 0.08),
+        0 2px 8px rgba(0, 0, 0, 0.06),
+        0 0 0 1px rgba(0, 0, 0, 0.04);
     }
     
     .rec-card__image {
@@ -1665,7 +1704,7 @@ export const loader = async ({ request }) => {
       position: absolute;
       top: 12px;
       right: 12px;
-      background: var(--mattress-primary, #3B82F6);
+      background: linear-gradient(135deg, #10b981, #059669);
       color: white;
       padding: 6px 12px;
       border-radius: 20px;
@@ -1674,6 +1713,10 @@ export const loader = async ({ request }) => {
       display: flex;
       align-items: center;
       gap: 4px;
+      box-shadow: 
+        0 2px 8px rgba(16, 185, 129, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(10px);
     }
     
     .rec-card__badge-score {
@@ -1686,7 +1729,7 @@ export const loader = async ({ request }) => {
     }
     
     .rec-card__content {
-      padding: 20px;
+      padding: 24px;
       display: flex;
       flex-direction: column;
       gap: 12px;
@@ -1706,12 +1749,14 @@ export const loader = async ({ request }) => {
       color: #1a1a1a;
       margin: 0;
       line-height: 1.3;
+      letter-spacing: -0.01em;
     }
     
     .rec-card__price {
-      font-size: 24px;
+      font-size: 28px;
       font-weight: 700;
       color: var(--mattress-primary, #3B82F6);
+      letter-spacing: -0.02em;
     }
     
     .rec-card__firmness {
@@ -1814,11 +1859,13 @@ export const loader = async ({ request }) => {
     .rec-card__btn--primary {
       background: var(--mattress-primary, #3B82F6);
       color: white;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
     
     .rec-card__btn--primary:hover:not(:disabled) {
       background: var(--mattress-primary-hover, #2563EB);
       transform: translateY(-1px);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
     }
     
     .rec-card__btn--primary:disabled {
