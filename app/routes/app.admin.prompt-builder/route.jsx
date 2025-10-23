@@ -489,7 +489,7 @@ export default function PromptBuilder() {
       case 0: // Tone & Style
         return (
           <Card>
-            <Box padding="800">
+            <Box padding="500">
               <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                 {toneOptions.map(option => (
                   <div
@@ -654,7 +654,7 @@ export default function PromptBuilder() {
       case 2: // Lead Capture
         return (
           <Card>
-            <Box padding="800">
+            <Box padding="500">
               <div className={`lead-capture-container ${formData.leadCaptureEnabled ? 'lead-capture-container-enabled' : ''}`}>
                 <Checkbox
                   label={
@@ -670,11 +670,11 @@ export default function PromptBuilder() {
 
               {formData.leadCaptureEnabled && (
                 <>
-                  <Box paddingBlock="800">
+                  <Box paddingBlock="500">
                     <Divider />
                   </Box>
 
-                  <Box paddingBlockEnd="800">
+                  <Box paddingBlockEnd="500">
                     <Select
                       label={<span className="text-blue">When to capture leads</span>}
                       options={positionOptions}
@@ -685,7 +685,7 @@ export default function PromptBuilder() {
 
                   <Divider />
 
-                  <Box paddingBlockStart="800">
+                  <Box paddingBlockStart="500">
                     <Box paddingBlockEnd="400">
                       <Text variant="headingSm" as="h4" fontWeight="semibold">
                         <span className="text-blue">Information to collect</span>
@@ -697,7 +697,7 @@ export default function PromptBuilder() {
                       </Box>
                     </Box>
                     <Box paddingBlockStart="500">
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                         {fieldOptions.map(field => (
                           <div 
                             key={field.value}
@@ -758,12 +758,12 @@ export default function PromptBuilder() {
                 )}
 
                 <Card>
-                  <Box padding="800">
+                  <Box padding="500">
                     <Text variant="headingMd" as="h3" fontWeight="semibold">
                       <span className="text-blue">Configuration Summary</span>
                     </Text>
                     <Box paddingBlockStart="600">
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
                         <div className="summary-card-item">
                           <Text variant="headingSm" as="h4" fontWeight="semibold">
                             <span className="text-blue">Tone</span>
@@ -844,7 +844,7 @@ export default function PromptBuilder() {
                 </Card>
 
                 <Card>
-                  <Box padding="800">
+                  <Box padding="500">
                     <Text variant="headingMd" as="h3" fontWeight="semibold">
                       <span className="text-teal">Generated AI Prompt</span>
                     </Text>
@@ -1113,9 +1113,9 @@ export default function PromptBuilder() {
           {/* Step content */}
           {!showAdvancedEditor && (
             <Card>
-            <Box padding="800">
+            <Box padding="500">
               {/* Clean progress bar */}
-              <Box paddingBlockEnd="1000">
+              <Box paddingBlockEnd="600">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                   <Text variant="bodyMd" as="p">
                     <span className="text-blue" style={{ fontWeight: '600' }}>Step {currentStep + 1} of {steps.length}</span>
@@ -1132,7 +1132,7 @@ export default function PromptBuilder() {
                 </div>
               </Box>
 
-              <Box paddingBlockEnd="800">
+              <Box paddingBlockEnd="500">
                 <Text variant="headingLg" as="h2" fontWeight="semibold">
                   <span className="text-blue">{steps[currentStep].title}</span>
                 </Text>
@@ -1148,7 +1148,7 @@ export default function PromptBuilder() {
 
             {/* Navigation buttons */}
             {currentStep < steps.length - 1 && (
-              <Box padding="800" paddingBlockStart="0">
+              <Box padding="500" paddingBlockStart="0">
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: '16px' }}>
                   <Button
                     disabled={currentStep === 0}
