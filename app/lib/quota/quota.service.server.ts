@@ -32,10 +32,10 @@ export interface QuotaLimits {
  */
 const DEFAULT_QUOTAS: Record<string, QuotaLimits> = {
   'starter': {
-    maxIndexingJobsPerDay: -1,      // Unlimited daily (weekly limit controls this)
-    maxIndexingJobsPerWeek: 3,      // Primary limit: 3 jobs per week
+    maxIndexingJobsPerDay: -1,      // Unlimited
+    maxIndexingJobsPerWeek: -1,     // Unlimited
     maxProductsPerIndexingJob: 100,
-    maxIndexingJobsPerHour: -1,     // Unlimited hourly (weekly limit controls this)
+    maxIndexingJobsPerHour: -1,     // Unlimited
     maxTokensPerDay: 100000,
     maxTokensPerHour: 10000,
     maxCostPerDay: 10.0,
@@ -44,10 +44,10 @@ const DEFAULT_QUOTAS: Record<string, QuotaLimits> = {
     maxConcurrentJobs: 2
   },
   'professional': {
-    maxIndexingJobsPerDay: -1,      // Unlimited daily (weekly limit controls this)
-    maxIndexingJobsPerWeek: 3,      // Primary limit: 3 jobs per week
+    maxIndexingJobsPerDay: -1,      // Unlimited
+    maxIndexingJobsPerWeek: -1,     // Unlimited
     maxProductsPerIndexingJob: 1000,
-    maxIndexingJobsPerHour: -1,     // Unlimited hourly (weekly limit controls this)
+    maxIndexingJobsPerHour: -1,     // Unlimited
     maxTokensPerDay: 500000,
     maxTokensPerHour: 50000,
     maxCostPerDay: 50.0,
@@ -57,7 +57,7 @@ const DEFAULT_QUOTAS: Record<string, QuotaLimits> = {
   },
   'enterprise': {
     maxIndexingJobsPerDay: -1,      // Unlimited
-    maxIndexingJobsPerWeek: 3,      // Primary limit: 3 jobs per week
+    maxIndexingJobsPerWeek: -1,     // Unlimited
     maxProductsPerIndexingJob: 10000,
     maxIndexingJobsPerHour: -1,     // Unlimited
     maxTokensPerDay: 2000000,
