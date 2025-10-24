@@ -6,7 +6,7 @@ export const RuntimeRules = z.object({
   earlyExit: z.boolean(),
   leadCapture: z.object({
     enabled: z.boolean(),
-    position: z.enum(['start', 'end', 'auto']),
+    position: z.enum(['start', 'end']),
     fields: z.array(z.enum(['name', 'email', 'phone', 'zip'])),
     triggerAfterQuestions: z.number().optional().default(3)
   }),

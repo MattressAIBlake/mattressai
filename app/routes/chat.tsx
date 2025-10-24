@@ -198,6 +198,33 @@ async function handleChatSession({
       };
     });
 
+    // Check for "start" position lead capture BEFORE AI responds
+    const userMessageCount = conversationHistory.filter(msg => msg.role === 'user').length;
+    if (userMessageCount === 1) {
+      const promptVersion = await getActivePromptVersion(normalizedShopDomain);
+      if (promptVersion?.runtimeRules?.leadCapture?.enabled && 
+          promptVersion.runtimeRules.leadCapture.position === 'start') {
+        
+        console.log('[Lead Capture] Showing form at START position (before first AI response)');
+        const leadData = extractLeadFromConversation(conversationHistory);
+        const fields = getFormFields(leadData, promptVersion.runtimeRules.leadCapture.fields);
+        
+        stream.sendMessage({
+          type: 'show_lead_form',
+          prefill: leadData,
+          fields: fields,
+          position: 'start'
+        });
+        
+        // Send end_turn so widget knows streaming is done
+        stream.sendMessage({ type: 'end_turn' });
+        
+        console.log('[Lead Capture] Waiting for form submission before continuing');
+        // Stop here - conversation will continue after form submission
+        return;
+      }
+    }
+
     // Execute the conversation stream
     let finalMessage = { role: 'user', content: userMessage };
 
@@ -290,65 +317,48 @@ async function handleChatSession({
     // Signal end of turn
     stream.sendMessage({ type: 'end_turn' });
 
-    // Send product results if available
+    // Check for "end" position lead capture BEFORE sending products
     if (productsToDisplay.length > 0) {
+      try {
+        console.log('[Lead Capture] Products available, checking for END position lead capture');
+        const promptVersion = await getActivePromptVersion(normalizedShopDomain);
+        
+        if (promptVersion?.runtimeRules?.leadCapture?.enabled &&
+            promptVersion.runtimeRules.leadCapture.position === 'end') {
+          
+          const userMsgCount = conversationHistory.filter(msg => msg.role === 'user').length;
+          const triggerAfter = promptVersion.runtimeRules.leadCapture.triggerAfterQuestions || 3;
+          
+          if (userMsgCount >= triggerAfter) {
+            console.log('[Lead Capture] Showing form at END position (before products)');
+            const leadData = extractLeadFromConversation(conversationHistory);
+            const fields = getFormFields(leadData, promptVersion.runtimeRules.leadCapture.fields);
+            
+            stream.sendMessage({
+              type: 'show_lead_form',
+              prefill: leadData,
+              fields: fields,
+              position: 'end',
+              hasProducts: true // Signal that products will follow
+            });
+          } else {
+            console.log(`[Lead Capture] Not enough messages yet (${userMsgCount}/${triggerAfter})`);
+          }
+        } else {
+          console.log('[Lead Capture] Lead capture not enabled or position is not END');
+        }
+      } catch (error) {
+        console.error('[Lead Capture] Error checking for lead capture:', error);
+        // Don't throw - lead capture is optional
+      }
+      
+      // Send product results (will display after form is submitted if form was shown)
       stream.sendMessage({
         type: 'product_results',
         products: productsToDisplay
       });
-    }
-
-    // Check for lead capture opportunity
-    try {
-      console.log('[Lead Capture] Looking up prompt version for shop:', normalizedShopDomain);
-      const promptVersion = await getActivePromptVersion(normalizedShopDomain);
-      console.log('[Lead Capture] Prompt version found:', !!promptVersion);
-      
-      if (promptVersion && promptVersion.runtimeRules) {
-        const runtimeRules = promptVersion.runtimeRules;
-        console.log('[Lead Capture] Lead capture enabled:', runtimeRules.leadCapture?.enabled);
-        console.log('[Lead Capture] Lead capture position:', runtimeRules.leadCapture?.position);
-        console.log('[Lead Capture] Lead capture fields:', runtimeRules.leadCapture?.fields);
-        console.log('[Lead Capture] Trigger after questions:', runtimeRules.leadCapture?.triggerAfterQuestions);
-        
-        // Use the proper trigger function that respects all settings
-        // Note: We track if form was shown using session storage on client side
-        // Backend can't track this, so we send the event and let client decide
-        const shouldShow = shouldTriggerLeadForm(
-          conversationHistory,
-          runtimeRules,
-          false // Client tracks if form was shown via sessionStorage
-        );
-        console.log('[Lead Capture] Should show lead form:', shouldShow);
-        
-        if (shouldShow) {
-          const leadData = extractLeadFromConversation(conversationHistory);
-          console.log('[Lead Capture] Extracted lead data:', {
-            hasEmail: !!leadData.email,
-            hasPhone: !!leadData.phone,
-            hasName: !!leadData.name,
-            hasZip: !!leadData.zip,
-            hasConsent: leadData.hasConsent
-          });
-          
-          const fields = getFormFields(leadData, runtimeRules.leadCapture.fields);
-          console.log('[Lead Capture] Form fields to display:', fields);
-          
-          stream.sendMessage({
-            type: 'show_lead_form',
-            prefill: leadData,
-            fields: fields
-          });
-          console.log('[Lead Capture] Lead form SSE event sent to client');
-        }
-      } else if (promptVersion) {
-        console.log('[Lead Capture] Prompt version found but no runtime rules');
-      } else {
-        console.log('[Lead Capture] No active prompt version found for shop');
-      }
-    } catch (error) {
-      console.error('[Lead Capture] Error checking for lead capture:', error);
-      // Don't throw - lead capture is optional
+    } else {
+      console.log('[Lead Capture] No products to display, skipping lead form');
     }
   } catch (error) {
     // The streaming handler takes care of error handling

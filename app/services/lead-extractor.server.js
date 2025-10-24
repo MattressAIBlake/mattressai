@@ -121,9 +121,10 @@ export function extractLeadFromConversation(messages) {
  * @param {Array} messages - Conversation messages
  * @param {Object} runtimeRules - Runtime rules configuration
  * @param {Boolean} formAlreadyShown - Whether form was already shown in this session
+ * @param {Object} context - Context information (beforeFirstResponse, hasProducts)
  * @returns {Boolean} Whether to show the lead form
  */
-export function shouldTriggerLeadForm(messages, runtimeRules, formAlreadyShown) {
+export function shouldTriggerLeadForm(messages, runtimeRules, formAlreadyShown, context = {}) {
   // Don't show if lead capture is disabled
   if (!runtimeRules?.leadCapture?.enabled) {
     return false;
@@ -134,32 +135,19 @@ export function shouldTriggerLeadForm(messages, runtimeRules, formAlreadyShown) 
     return false;
   }
 
-  const leadData = extractLeadFromConversation(messages);
   const position = runtimeRules.leadCapture.position || 'end';
-  const triggerAfterQuestions = runtimeRules.leadCapture.triggerAfterQuestions || 3;
-
-  // Count user messages (questions answered)
   const userMessageCount = messages.filter(msg => msg.role === 'user').length;
 
   // Position-based logic
   if (position === 'start') {
-    // Show after first exchange
-    return userMessageCount >= 1;
+    // Show after FIRST user message, BEFORE AI response
+    return userMessageCount === 1 && context.beforeFirstResponse;
   }
 
   if (position === 'end') {
-    // Show after product recommendations or after sufficient conversation
-    const hasProducts = messages.some(msg => {
-      const content = typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content);
-      return content.includes('recommend') || content.includes('product') || content.includes('mattress');
-    });
-    return hasProducts && userMessageCount >= triggerAfterQuestions;
-  }
-
-  if (position === 'auto') {
-    // Show when we've extracted at least email OR (phone AND name)
-    const hasMinimumInfo = leadData.email || (leadData.phone && leadData.name);
-    return hasMinimumInfo && userMessageCount >= 2;
+    // Show when products are about to be displayed
+    const triggerAfterQuestions = runtimeRules.leadCapture.triggerAfterQuestions || 3;
+    return context.hasProducts && userMessageCount >= triggerAfterQuestions;
   }
 
   return false;

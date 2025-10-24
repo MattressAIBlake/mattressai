@@ -547,11 +547,33 @@ export const loader = async ({ request }) => {
                     this.scrollToBottom();
                   }
                 } else if (data.type === 'product_results') {
-                  // Display product recommendations
-                  this.displayProducts(data.products);
+                  console.log('[Widget] Received products, checking for pending lead form');
+                  
+                  // If we have a pending lead form (end position), show it BEFORE products
+                  if (this.pendingLeadForm) {
+                    console.log('[Widget] Showing pending lead form before products');
+                    this.displayLeadForm(
+                      this.pendingLeadForm.prefill,
+                      this.pendingLeadForm.fields,
+                      this.pendingLeadForm.position,
+                      false // Don't defer again
+                    );
+                    this.pendingLeadForm = null;
+                    
+                    // Store products to display after form submission
+                    this.pendingProducts = data.products;
+                  } else {
+                    // No lead form pending, display products immediately
+                    this.displayProducts(data.products);
+                  }
                 } else if (data.type === 'show_lead_form') {
                   // Display lead capture form
-                  this.displayLeadForm(data.prefill, data.fields);
+                  this.displayLeadForm(
+                    data.prefill, 
+                    data.fields, 
+                    data.position || 'end',
+                    data.hasProducts || false
+                  );
                 } else if (data.type === 'end_turn') {
                   this.setTyping(false);
                   currentMessage = '';
@@ -824,11 +846,20 @@ export const loader = async ({ request }) => {
       return mapping[firmness?.toLowerCase()] || 5;
     },
     
-    displayLeadForm: function(prefill = {}, fields = ['email', 'name', 'phone', 'zip']) {
+    displayLeadForm: function(prefill = {}, fields = ['email', 'name', 'phone', 'zip'], position = 'end', hasProducts = false) {
       // Check if form already shown
       const formShown = sessionStorage.getItem('mattressai_lead_form_shown');
       if (formShown === 'true') {
         return;
+      }
+      
+      console.log('[Widget] Displaying lead form at position:', position, 'hasProducts:', hasProducts);
+      
+      // If products are coming, store form data to show before products
+      if (hasProducts && position === 'end') {
+        console.log('[Widget] Deferring lead form display until products arrive');
+        this.pendingLeadForm = { prefill, fields, position };
+        return; // Don't show yet, will show when products arrive
       }
       
       // Mark as shown
@@ -838,6 +869,7 @@ export const loader = async ({ request }) => {
       const formDiv = document.createElement('div');
       formDiv.className = 'mattressai-lead-form';
       formDiv.id = 'mattressai-lead-form-container';
+      formDiv.dataset.position = position; // Store for later use
       
       // Build form fields HTML
       let fieldsHTML = '';
@@ -1016,13 +1048,31 @@ export const loader = async ({ request }) => {
         if (result.ok) {
           // Remove form
           const formContainer = document.querySelector('#mattressai-lead-form-container');
+          const formPosition = formContainer?.dataset?.position || 'end';
           if (formContainer) formContainer.remove();
-          
-          // Show success message
-          this.addMessage('assistant', 'Thank you! We\\'ll be in touch soon with personalized recommendations.');
           
           // Track event
           this.trackEvent('lead_captured', { leadId: result.leadId });
+          
+          // Continue conversation based on position
+          if (formPosition === 'start') {
+            // For START: Send a trigger message to get AI to start asking questions
+            console.log('[Widget] Lead captured at START, triggering AI questions');
+            this.addMessage('assistant', 'Thank you! Let me help you find the perfect mattress.');
+            // Send automated message to trigger AI response
+            setTimeout(() => {
+              this.sendMessage("I'm ready to answer your questions");
+            }, 500);
+          } else if (formPosition === 'end') {
+            // For END: Products were already sent, display them now
+            console.log('[Widget] Lead captured at END, displaying pending products');
+            this.addMessage('assistant', 'Thank you! Here are my recommendations for you:');
+            // Display pending products if available
+            if (this.pendingProducts) {
+              this.displayProducts(this.pendingProducts);
+              this.pendingProducts = null;
+            }
+          }
         } else {
           throw new Error(result.error || 'Failed to submit');
         }
@@ -1106,25 +1156,6 @@ export const loader = async ({ request }) => {
       --mattress-border: #e5e7eb;
       --mattress-radius: 12px;
       --mattress-shadow: 0 5px 40px rgba(0, 0, 0, 0.16);
-    }
-    
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --mattress-bg: #1f2937;
-        --mattress-surface: #111827;
-        --mattress-text: #f9fafb;
-        --mattress-text-light: #9ca3af;
-        --mattress-border: #374151;
-        --mattress-shadow: 0 5px 40px rgba(0, 0, 0, 0.4);
-      }
-      
-      .mattressai-widget {
-        background: rgba(31, 41, 55, 0.85);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        box-shadow: 
-          0 20px 60px rgba(0, 0, 0, 0.3),
-          0 0 1px rgba(255, 255, 255, 0.1);
-      }
     }
     
     /* Chat Bubble */
