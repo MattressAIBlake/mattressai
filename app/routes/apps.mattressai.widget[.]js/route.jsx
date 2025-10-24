@@ -41,6 +41,7 @@ export const loader = async ({ request }) => {
     isOpen: false,
     stickToBottom: true,
     lastDayLabel: null,
+    hasSeenFirstMessage: false,
     
     init: function() {
       if (this.initialized) return;
@@ -193,6 +194,11 @@ export const loader = async ({ request }) => {
           sessionStorage.setItem('mattressai_session_id', data.sessionId);
           if (data.variantId) {
             sessionStorage.setItem('mattressai_variant_id', data.variantId);
+          }
+          
+          // Sync with tracking module
+          if (window.MattressAITracking) {
+            window.MattressAITracking.setSessionId(data.sessionId);
           }
           
           console.log('Session started:', data);
@@ -472,6 +478,21 @@ export const loader = async ({ request }) => {
       // Add user message to UI
       this.addMessage('user', message);
       
+      // Track first message event
+      if (!this.hasSeenFirstMessage) {
+        this.hasSeenFirstMessage = true;
+        document.dispatchEvent(new CustomEvent('mattressai:first_message'));
+        // Also track data_point_captured for every user message after first
+        document.dispatchEvent(new CustomEvent('mattressai:data_point_captured', {
+          detail: { questionType: 'user_message' }
+        }));
+      } else {
+        // Track data_point_captured for subsequent messages
+        document.dispatchEvent(new CustomEvent('mattressai:data_point_captured', {
+          detail: { questionType: 'user_message' }
+        }));
+      }
+      
       // Show typing indicator
       this.setTyping(true);
       
@@ -682,6 +703,19 @@ export const loader = async ({ request }) => {
       
       messagesContainer.appendChild(productsDiv);
       this.scrollToBottom();
+      
+      // Track recommendation shown events
+      products.forEach(product => {
+        document.dispatchEvent(new CustomEvent('mattressai:recommendation_shown', {
+          detail: { 
+            products: [{
+              id: product.productId,
+              title: product.title,
+              price: product.price
+            }]
+          }
+        }));
+      });
     },
     
     createProductCard: function(product, index) {
@@ -827,6 +861,20 @@ export const loader = async ({ request }) => {
       viewBtn.rel = 'noopener noreferrer';
       viewBtn.setAttribute('aria-label', \`View \${product.title}\`);
       viewBtn.textContent = 'View Product';
+      
+      // Track recommendation clicked event
+      viewBtn.addEventListener('click', () => {
+        document.dispatchEvent(new CustomEvent('mattressai:recommendation_clicked', {
+          detail: { 
+            product: {
+              id: product.productId,
+              title: product.title,
+              price: product.price
+            }
+          }
+        }));
+      });
+      
       actions.appendChild(viewBtn);
       
       content.appendChild(actions);

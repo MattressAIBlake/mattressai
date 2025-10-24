@@ -33,7 +33,7 @@
      */
     setupListeners: function() {
       // Track when chat is opened
-      const chatBubble = document.querySelector('.shop-ai-chat-bubble');
+      const chatBubble = document.querySelector('.mattressai-chat-bubble');
       if (chatBubble) {
         chatBubble.addEventListener('click', () => {
           this.track('opened');
@@ -103,6 +103,33 @@
             }, clickId);
           }
         });
+      }
+
+      // Intercept Shopify cart/add.js calls
+      if (window.fetch) {
+        const originalFetch = window.fetch;
+        const self = this;
+        window.fetch = function(...args) {
+          const url = args[0];
+          if (typeof url === 'string' && (url.includes('/cart/add') || url.endsWith('add.js'))) {
+            return originalFetch.apply(this, args).then(response => {
+              if (response.ok) {
+                response.clone().json().then(data => {
+                  const productId = data.product_id || data.items?.[0]?.product_id;
+                  if (productId) {
+                    const clickId = sessionStorage.getItem(`mattressai_click_${productId}`);
+                    self.track('add_to_cart', {
+                      productId,
+                      variantId: data.variant_id || data.id
+                    }, clickId);
+                  }
+                }).catch(() => {});
+              }
+              return response;
+            });
+          }
+          return originalFetch.apply(this, args);
+        };
       }
     },
 
