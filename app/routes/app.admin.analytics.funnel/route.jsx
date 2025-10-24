@@ -1,10 +1,10 @@
 import { json } from '@remix-run/node';
 import { authenticateAdmin } from '~/lib/shopify/auth.server';
-import { getFunnelData, getSessionAnalytics, getLeadAnalytics } from '~/lib/analytics/analytics.service.server';
+import { getComparisonMetrics, getTimeSeriesData } from '~/lib/analytics/analytics.service.server';
 
 /**
  * GET /admin/analytics/funnel
- * Returns funnel analytics for a date range
+ * Returns analytics with period comparison and time series data
  */
 export const loader = async ({ request }) => {
   try {
@@ -12,31 +12,63 @@ export const loader = async ({ request }) => {
     const { shop } = auth;
 
     const url = new URL(request.url);
-    const fromParam = url.searchParams.get('from');
-    const toParam = url.searchParams.get('to');
+    const period = url.searchParams.get('period') || '7d';
 
-    // Default to last 7 days
-    const to = toParam ? new Date(toParam) : new Date();
-    const from = fromParam ? new Date(fromParam) : new Date(to.getTime() - 7 * 24 * 60 * 60 * 1000);
+    // Calculate date ranges for current and previous periods
+    const currentTo = new Date();
+    let currentFrom = new Date();
+    let periodDays = 7;
 
-    const [funnel, sessions, leads] = await Promise.all([
-      getFunnelData(shop, from, to),
-      getSessionAnalytics(shop, from, to),
-      getLeadAnalytics(shop, from, to)
+    if (period === '7d') {
+      periodDays = 7;
+      currentFrom.setDate(currentFrom.getDate() - 7);
+    } else if (period === '30d') {
+      periodDays = 30;
+      currentFrom.setDate(currentFrom.getDate() - 30);
+    } else if (period === '90d') {
+      periodDays = 90;
+      currentFrom.setDate(currentFrom.getDate() - 90);
+    }
+
+    // Calculate previous period dates (same length as current period)
+    const previousTo = new Date(currentFrom.getTime() - 1);
+    const previousFrom = new Date(previousTo);
+    previousFrom.setDate(previousFrom.getDate() - periodDays);
+
+    // Fetch comparison metrics and time series data
+    const [comparisonMetrics, timeSeries] = await Promise.all([
+      getComparisonMetrics(shop, currentFrom, currentTo, previousFrom, previousTo),
+      getTimeSeriesData(shop, currentFrom, currentTo, previousFrom, previousTo)
     ]);
+
+    // Format period labels for display
+    const formatDateLabel = (date) => {
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    };
+
+    const currentPeriodLabel = `${formatDateLabel(currentFrom)}–${formatDateLabel(currentTo)}`;
+    const previousPeriodLabel = `${formatDateLabel(previousFrom)}–${formatDateLabel(previousTo)}`;
 
     return json({
       success: true,
+      period,
+      currentPeriodLabel,
+      previousPeriodLabel,
       dateRange: {
-        from: from.toISOString(),
-        to: to.toISOString()
+        current: {
+          from: currentFrom.toISOString(),
+          to: currentTo.toISOString()
+        },
+        previous: {
+          from: previousFrom.toISOString(),
+          to: previousTo.toISOString()
+        }
       },
-      funnel,
-      sessions,
-      leads
+      metrics: comparisonMetrics,
+      timeSeries
     });
   } catch (error) {
-    console.error('Error fetching funnel analytics:', error);
+    console.error('Error fetching analytics:', error);
 
     if (error.status) {
       return error;

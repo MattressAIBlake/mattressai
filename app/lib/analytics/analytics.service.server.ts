@@ -431,3 +431,258 @@ export const trackAttribution = async (
   });
 };
 
+/**
+ * Get comparison metrics for current vs previous period
+ */
+export const getComparisonMetrics = async (
+  tenantId: string,
+  currentFrom: Date,
+  currentTo: Date,
+  previousFrom: Date,
+  previousTo: Date
+): Promise<{
+  current: {
+    sessions: number;
+    orders: number;
+    sales: number;
+    conversionRate: number;
+  };
+  previous: {
+    sessions: number;
+    orders: number;
+    sales: number;
+    conversionRate: number;
+  };
+  change: {
+    sessions: number;
+    orders: number;
+    sales: number;
+    conversionRate: number;
+  };
+}> => {
+  // Get current period data
+  const [currentSessions, currentOrders] = await Promise.all([
+    prisma.chatSession.count({
+      where: {
+        tenantId,
+        startedAt: {
+          gte: currentFrom,
+          lte: currentTo
+        }
+      }
+    }),
+    prisma.event.count({
+      where: {
+        tenantId,
+        type: 'order_placed',
+        timestamp: {
+          gte: currentFrom,
+          lte: currentTo
+        }
+      }
+    })
+  ]);
+
+  // Get previous period data
+  const [previousSessions, previousOrders] = await Promise.all([
+    prisma.chatSession.count({
+      where: {
+        tenantId,
+        startedAt: {
+          gte: previousFrom,
+          lte: previousTo
+        }
+      }
+    }),
+    prisma.event.count({
+      where: {
+        tenantId,
+        type: 'order_placed',
+        timestamp: {
+          gte: previousFrom,
+          lte: previousTo
+        }
+      }
+    })
+  ]);
+
+  // Calculate sales (for now, using order count as proxy)
+  // In future, can extract actual revenue from order metadata
+  const currentSales = currentOrders;
+  const previousSales = previousOrders;
+
+  // Calculate conversion rates
+  const currentConversionRate = currentSessions > 0 
+    ? parseFloat(((currentOrders / currentSessions) * 100).toFixed(2))
+    : 0;
+  const previousConversionRate = previousSessions > 0 
+    ? parseFloat(((previousOrders / previousSessions) * 100).toFixed(2))
+    : 0;
+
+  // Calculate percentage changes
+  const calculateChange = (current: number, previous: number): number => {
+    if (previous === 0) return current > 0 ? 100 : 0;
+    return parseFloat((((current - previous) / previous) * 100).toFixed(1));
+  };
+
+  return {
+    current: {
+      sessions: currentSessions,
+      orders: currentOrders,
+      sales: currentSales,
+      conversionRate: currentConversionRate
+    },
+    previous: {
+      sessions: previousSessions,
+      orders: previousOrders,
+      sales: previousSales,
+      conversionRate: previousConversionRate
+    },
+    change: {
+      sessions: calculateChange(currentSessions, previousSessions),
+      orders: calculateChange(currentOrders, previousOrders),
+      sales: calculateChange(currentSales, previousSales),
+      conversionRate: calculateChange(currentConversionRate, previousConversionRate)
+    }
+  };
+};
+
+/**
+ * Get time series data for charting
+ */
+export const getTimeSeriesData = async (
+  tenantId: string,
+  currentFrom: Date,
+  currentTo: Date,
+  previousFrom: Date,
+  previousTo: Date
+): Promise<Array<{
+  date: string;
+  current: {
+    sessions: number;
+    orders: number;
+    sales: number;
+    conversionRate: number;
+  };
+  previous: {
+    sessions: number;
+    orders: number;
+    sales: number;
+    conversionRate: number;
+  };
+}>> => {
+  // Calculate number of days in the period
+  const daysDiff = Math.ceil((currentTo.getTime() - currentFrom.getTime()) / (1000 * 60 * 60 * 24));
+  
+  // Generate date buckets for current period
+  const currentBuckets: Array<{ date: string; start: Date; end: Date }> = [];
+  const previousBuckets: Array<{ date: string; start: Date; end: Date }> = [];
+
+  for (let i = 0; i < daysDiff; i++) {
+    const currentDate = new Date(currentFrom);
+    currentDate.setDate(currentDate.getDate() + i);
+    const currentStart = new Date(currentDate);
+    const currentEnd = new Date(currentDate);
+    currentEnd.setDate(currentEnd.getDate() + 1);
+
+    const previousDate = new Date(previousFrom);
+    previousDate.setDate(previousDate.getDate() + i);
+    const previousStart = new Date(previousDate);
+    const previousEnd = new Date(previousDate);
+    previousEnd.setDate(previousEnd.getDate() + 1);
+
+    currentBuckets.push({
+      date: currentDate.toISOString().split('T')[0],
+      start: currentStart,
+      end: currentEnd
+    });
+
+    previousBuckets.push({
+      date: previousDate.toISOString().split('T')[0],
+      start: previousStart,
+      end: previousEnd
+    });
+  }
+
+  // Fetch data for all buckets
+  const timeSeriesData = await Promise.all(
+    currentBuckets.map(async (currentBucket, index) => {
+      const previousBucket = previousBuckets[index];
+
+      // Current period data
+      const [currentSessions, currentOrders] = await Promise.all([
+        prisma.chatSession.count({
+          where: {
+            tenantId,
+            startedAt: {
+              gte: currentBucket.start,
+              lt: currentBucket.end
+            }
+          }
+        }),
+        prisma.event.count({
+          where: {
+            tenantId,
+            type: 'order_placed',
+            timestamp: {
+              gte: currentBucket.start,
+              lt: currentBucket.end
+            }
+          }
+        })
+      ]);
+
+      // Previous period data
+      const [previousSessions, previousOrders] = await Promise.all([
+        prisma.chatSession.count({
+          where: {
+            tenantId,
+            startedAt: {
+              gte: previousBucket.start,
+              lt: previousBucket.end
+            }
+          }
+        }),
+        prisma.event.count({
+          where: {
+            tenantId,
+            type: 'order_placed',
+            timestamp: {
+              gte: previousBucket.start,
+              lt: previousBucket.end
+            }
+          }
+        })
+      ]);
+
+      const currentSales = currentOrders;
+      const previousSales = previousOrders;
+
+      const currentConversionRate = currentSessions > 0 
+        ? parseFloat(((currentOrders / currentSessions) * 100).toFixed(2))
+        : 0;
+      const previousConversionRate = previousSessions > 0 
+        ? parseFloat(((previousOrders / previousSessions) * 100).toFixed(2))
+        : 0;
+
+      return {
+        date: currentBucket.date,
+        current: {
+          sessions: currentSessions,
+          orders: currentOrders,
+          sales: currentSales,
+          conversionRate: currentConversionRate
+        },
+        previous: {
+          sessions: previousSessions,
+          orders: previousOrders,
+          sales: previousSales,
+          conversionRate: previousConversionRate
+        }
+      };
+    })
+  );
+
+  return timeSeriesData;
+};
+

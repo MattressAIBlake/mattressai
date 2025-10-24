@@ -3,17 +3,16 @@ import { json } from '@remix-run/node';
 import { useFetcher } from '@remix-run/react';
 import {
   Page,
-  Card,
   Layout,
-  Text,
-  Select,
-  DataTable,
-  BlockStack,
   InlineStack,
-  ProgressBar
+  BlockStack,
+  Button,
+  ButtonGroup
 } from '@shopify/polaris';
 import { TitleBar } from '@shopify/app-bridge-react';
 import { authenticate } from '~/shopify.server';
+import MetricCard from '~/components/analytics/MetricCard';
+import TimeSeriesChart from '~/components/analytics/TimeSeriesChart';
 
 export const loader = async ({ request }) => {
   await authenticate.admin(request);
@@ -21,219 +20,156 @@ export const loader = async ({ request }) => {
 };
 
 export default function AnalyticsDashboard() {
-  const funnelFetcher = useFetcher();
-  const productsFetcher = useFetcher();
-
-  const [dateRange, setDateRange] = useState('7d');
+  const fetcher = useFetcher();
+  const [period, setPeriod] = useState('30d');
 
   const loadAnalytics = useCallback(() => {
-    const to = new Date();
-    let from = new Date();
-    if (dateRange === '7d') from.setDate(from.getDate() - 7);
-    else if (dateRange === '30d') from.setDate(from.getDate() - 30);
-    else if (dateRange === '90d') from.setDate(from.getDate() - 90);
-
-    const params = new URLSearchParams({
-      from: from.toISOString(),
-      to: to.toISOString()
-    });
-
-    funnelFetcher.load(`/app/admin/analytics/funnel?${params.toString()}`);
-    productsFetcher.load(`/app/admin/analytics/products?${params.toString()}`);
-  }, [dateRange, funnelFetcher, productsFetcher]);
+    const params = new URLSearchParams({ period });
+    fetcher.load(`/app/admin/analytics/funnel?${params.toString()}`);
+  }, [period, fetcher]);
 
   useEffect(() => {
     loadAnalytics();
-  }, [dateRange]);
+  }, [period]);
 
-  const funnel = funnelFetcher.data?.funnel || null;
-  const sessions = funnelFetcher.data?.sessions || null;
-  const leads = funnelFetcher.data?.leads || null;
-  const products = productsFetcher.data?.products || [];
+  // Extract data from fetcher
+  const metrics = fetcher.data?.metrics || null;
+  const timeSeries = fetcher.data?.timeSeries || [];
+  const currentPeriodLabel = fetcher.data?.currentPeriodLabel || '';
+  const previousPeriodLabel = fetcher.data?.previousPeriodLabel || '';
+  const isLoading = fetcher.state === 'loading';
 
-  const funnelSteps = funnel ? [
-    { label: 'Widget Viewed', count: funnel.widget_viewed, rate: 100 },
-    { label: 'Chat Opened', count: funnel.opened, rate: funnel.conversionRates.viewToOpen },
-    { label: 'First Message', count: funnel.first_message, rate: funnel.conversionRates.openToMessage },
-    { label: 'Recommendations Shown', count: funnel.recommendation_shown, rate: funnel.conversionRates.dataToRecs },
-    { label: 'Recommendations Clicked', count: funnel.recommendation_clicked, rate: funnel.conversionRates.recsToClick },
-    { label: 'Added to Cart', count: funnel.add_to_cart, rate: funnel.conversionRates.clickToCart },
-    { label: 'Checkout', count: funnel.checkout_started, rate: funnel.conversionRates.cartToCheckout },
-    { label: 'Order Placed', count: funnel.order_placed, rate: funnel.conversionRates.checkoutToOrder }
-  ] : [];
+  // Period selector handler
+  const handlePeriodChange = (newPeriod) => {
+    setPeriod(newPeriod);
+  };
 
-  const productRows = products.map((product) => [
-    product.productTitle,
-    product.recommendedCount,
-    product.clickedCount,
-    product.addedToCartCount,
-    product.orderedCount,
-    `${product.conversionRate}%`
-  ]);
+  // Format numbers for display
+  const formatNumber = (num) => {
+    if (num === null || num === undefined) return '—';
+    return num.toLocaleString();
+  };
+
+  // Format currency
+  const formatCurrency = (num) => {
+    if (num === null || num === undefined) return '—';
+    return `$${num.toLocaleString()}`;
+  };
+
+  // Format percentage
+  const formatPercent = (num) => {
+    if (num === null || num === undefined) return '—';
+    return `${num}%`;
+  };
 
   return (
     <Page>
       <TitleBar title="Analytics Dashboard" />
       <Layout>
+        {/* Header with period selector */}
         <Layout.Section>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
-            <Select
-              label="Date Range"
-              labelHidden
-              options={[
-                { label: 'Last 7 days', value: '7d' },
-                { label: 'Last 30 days', value: '30d' },
-                { label: 'Last 90 days', value: '90d' }
-              ]}
-              value={dateRange}
-              onChange={setDateRange}
-            />
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+              <ButtonGroup variant="segmented">
+                <Button
+                  pressed={period === '7d'}
+                  onClick={() => handlePeriodChange('7d')}
+                >
+                  Last 7 days
+                </Button>
+                <Button
+                  pressed={period === '30d'}
+                  onClick={() => handlePeriodChange('30d')}
+                >
+                  Last 30 days
+                </Button>
+                <Button
+                  pressed={period === '90d'}
+                  onClick={() => handlePeriodChange('90d')}
+                >
+                  Last 90 days
+                </Button>
+              </ButtonGroup>
+            </div>
           </div>
         </Layout.Section>
 
-        {/* Session Stats */}
-        {sessions && (
+        {/* Metric Cards */}
+        {metrics && (
           <Layout.Section>
-            <InlineStack gap="400">
-              <Card>
-                <div style={{ padding: '16px', minWidth: '200px' }}>
-                  <Text variant="bodyMd" as="p" tone="subdued">Total Sessions</Text>
-                  <Text variant="heading2xl" as="h3">{sessions.totalSessions}</Text>
-                </div>
-              </Card>
-              <Card>
-                <div style={{ padding: '16px', minWidth: '200px' }}>
-                  <Text variant="bodyMd" as="p" tone="subdued">Active Sessions</Text>
-                  <Text variant="heading2xl" as="h3">{sessions.activeSessions}</Text>
-                </div>
-              </Card>
-              <Card>
-                <div style={{ padding: '16px', minWidth: '200px' }}>
-                  <Text variant="bodyMd" as="p" tone="subdued">Avg Intent Score</Text>
-                  <Text variant="heading2xl" as="h3">{sessions.avgIntentScore}</Text>
-                </div>
-              </Card>
+            <InlineStack gap="400" wrap={false}>
+              <div style={{ flex: 1, minWidth: '200px' }}>
+                <MetricCard
+                  label="Sessions"
+                  value={formatNumber(metrics.current.sessions)}
+                  changePercent={metrics.change.sessions}
+                  isPositive={metrics.change.sessions >= 0}
+                />
+              </div>
+              <div style={{ flex: 1, minWidth: '200px' }}>
+                <MetricCard
+                  label="Total sales"
+                  value={formatCurrency(metrics.current.sales)}
+                  changePercent={metrics.change.sales}
+                  isPositive={metrics.change.sales >= 0}
+                />
+              </div>
+              <div style={{ flex: 1, minWidth: '200px' }}>
+                <MetricCard
+                  label="Orders"
+                  value={formatNumber(metrics.current.orders)}
+                  changePercent={metrics.change.orders}
+                  isPositive={metrics.change.orders >= 0}
+                />
+              </div>
+              <div style={{ flex: 1, minWidth: '200px' }}>
+                <MetricCard
+                  label="Conversion rate"
+                  value={formatPercent(metrics.current.conversionRate)}
+                  changePercent={metrics.change.conversionRate}
+                  isPositive={metrics.change.conversionRate >= 0}
+                />
+              </div>
             </InlineStack>
           </Layout.Section>
         )}
 
-        {/* Lead Stats */}
-        {leads && (
+        {/* Loading State for Metrics */}
+        {isLoading && !metrics && (
           <Layout.Section>
-            <InlineStack gap="400">
-              <Card>
-                <div style={{ padding: '16px', minWidth: '200px' }}>
-                  <Text variant="bodyMd" as="p" tone="subdued">Total Leads</Text>
-                  <Text variant="heading2xl" as="h3">{leads.totalLeads}</Text>
-                </div>
-              </Card>
-              <Card>
-                <div style={{ padding: '16px', minWidth: '200px' }}>
-                  <Text variant="bodyMd" as="p" tone="subdued">Consent Rate</Text>
-                  <Text variant="heading2xl" as="h3">{leads.consentRate}%</Text>
-                </div>
-              </Card>
-              <Card>
-                <div style={{ padding: '16px', minWidth: '200px' }}>
-                  <Text variant="bodyMd" as="p" tone="subdued">Won Leads</Text>
-                  <Text variant="heading2xl" as="h3">{leads.statusBreakdown?.won || 0}</Text>
-                </div>
-              </Card>
-            </InlineStack>
+            <div style={{ padding: '40px', textAlign: 'center' }}>
+              <BlockStack gap="200">
+                <div>Loading analytics...</div>
+              </BlockStack>
+            </div>
           </Layout.Section>
         )}
 
-        {/* Funnel Chart */}
-        <Layout.Section>
-          <Card>
-            <div style={{ padding: '16px' }}>
-              <Text variant="headingMd" as="h2" fontWeight="semibold">Conversion Funnel</Text>
-              <div style={{ marginTop: '24px' }}>
-                {funnelSteps.length > 0 ? (
-                  <BlockStack gap="400">
-                    {funnelSteps.map((step, index) => (
-                      <div key={index} style={{ padding: '12px', border: '1px solid #e1e3e5', borderRadius: '8px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                          <Text variant="bodyMd" as="p" fontWeight="semibold">
-                            {step.label}
-                          </Text>
-                          <Text variant="bodyMd" as="p">
-                            {step.count} ({step.rate}%)
-                          </Text>
-                        </div>
-                        <ProgressBar progress={step.rate} size="small" />
-                      </div>
-                    ))}
-                  </BlockStack>
-                ) : (
-                  <div style={{ padding: '40px', textAlign: 'center' }}>
-                    <Text variant="bodyMd" as="p">Loading funnel data...</Text>
-                  </div>
-                )}
-              </div>
-            </div>
-          </Card>
-        </Layout.Section>
-
-        {/* Product Insights */}
-        <Layout.Section>
-          <Card>
-            <div style={{ padding: '16px' }}>
-              <Text variant="headingMd" as="h2" fontWeight="semibold">Top Products</Text>
-              <div style={{ marginTop: '16px' }}>
-                {productRows.length > 0 ? (
-                  <DataTable
-                    columnContentTypes={['text', 'numeric', 'numeric', 'numeric', 'numeric', 'text']}
-                    headings={[
-                      'Product',
-                      'Recommended',
-                      'Clicked',
-                      'Added to Cart',
-                      'Ordered',
-                      'Conv. Rate'
-                    ]}
-                    rows={productRows}
-                  />
-                ) : (
-                  <div style={{ padding: '40px', textAlign: 'center' }}>
-                    <Text variant="bodyMd" as="p">
-                      {productsFetcher.state === 'loading' 
-                        ? 'Loading product insights...' 
-                        : 'No product data available yet'}
-                    </Text>
-                  </div>
-                )}
-              </div>
-            </div>
-          </Card>
-        </Layout.Section>
-
-        {/* End Reasons Breakdown */}
-        {sessions?.endReasons && Object.keys(sessions.endReasons).length > 0 && (
+        {/* Time Series Chart */}
+        {timeSeries.length > 0 && (
           <Layout.Section>
-            <Card>
-              <div style={{ padding: '16px' }}>
-                <Text variant="headingMd" as="h2" fontWeight="semibold">Session End Reasons</Text>
-                <div style={{ marginTop: '16px' }}>
-                  <BlockStack gap="300">
-                    {Object.entries(sessions.endReasons).map(([reason, count]) => (
-                      <div key={reason} style={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <Text variant="bodyMd" as="p">
-                          {reason.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                        </Text>
-                        <Text variant="bodyMd" as="p" fontWeight="semibold">
-                          {count}
-                        </Text>
-                      </div>
-                    ))}
-                  </BlockStack>
+            <TimeSeriesChart
+              data={timeSeries}
+              currentPeriodLabel={currentPeriodLabel}
+              previousPeriodLabel={previousPeriodLabel}
+            />
+          </Layout.Section>
+        )}
+
+        {/* Empty State */}
+        {!isLoading && !metrics && (
+          <Layout.Section>
+            <div style={{ padding: '40px', textAlign: 'center' }}>
+              <BlockStack gap="200">
+                <div>No analytics data available yet.</div>
+                <div style={{ color: '#6d7175', fontSize: '14px' }}>
+                  Start tracking events to see your analytics here.
                 </div>
-              </div>
-            </Card>
+              </BlockStack>
+            </div>
           </Layout.Section>
         )}
       </Layout>
     </Page>
   );
 }
-
