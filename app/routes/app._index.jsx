@@ -12,10 +12,30 @@ import {
   List,
 } from "@shopify/polaris";
 import { TitleBar } from "@shopify/app-bridge-react";
-import { useNavigate } from "@remix-run/react";
+import { useNavigate, useLoaderData } from "@remix-run/react";
+import { json } from "@remix-run/node";
+import { authenticate } from "~/shopify.server";
+import { getPrisma } from "~/db.server";
+
+export async function loader({ request }) {
+  const { session } = await authenticate.admin(request);
+  const prisma = await getPrisma();
+  
+  const tenant = await prisma.tenant.findUnique({
+    where: { shop: session.shop },
+    select: { createdAt: true }
+  });
+  
+  const twoWeeksAgo = new Date();
+  twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
+  const showWelcome = !tenant || new Date(tenant.createdAt) > twoWeeksAgo;
+  
+  return json({ showWelcome });
+}
 
 export default function Index() {
   const navigate = useNavigate();
+  const { showWelcome } = useLoaderData();
   const [instructionsOpen, setInstructionsOpen] = useState(false);
 
   return (
@@ -23,24 +43,26 @@ export default function Index() {
       <TitleBar title="MattressAI Dashboard" />
       <BlockStack gap="600">
         <Layout>
-          <Layout.Section>
-            <Card>
-              <BlockStack gap="400">
-                <Text as="h1" variant="headingXl" fontWeight="bold">
-                  Welcome to MattressAI
-                </Text>
-                <Text variant="bodyLg" as="p" tone="subdued">
-                  Deploy AI assistants across sales channels to engage shoppers, match their needs, 
-                  and <strong style={{ color: '#449de7' }}>generate very warm leads</strong> that boost conversions beyond price-driven decisions.
-                </Text>
-              </BlockStack>
-            </Card>
-          </Layout.Section>
+          {showWelcome && (
+            <Layout.Section>
+              <Card>
+                <BlockStack gap="400">
+                  <Text as="h1" variant="headingXl" fontWeight="bold">
+                    Welcome to MattressAI
+                  </Text>
+                  <Text variant="bodyLg" as="p" tone="subdued">
+                    Deploy AI assistants across sales channels to engage shoppers, match their needs, 
+                    and <strong style={{ color: '#449de7' }}>generate very warm leads</strong> that boost conversions beyond price-driven decisions.
+                  </Text>
+                </BlockStack>
+              </Card>
+            </Layout.Section>
+          )}
 
           <Layout.Section>
             <BlockStack gap="500">
               <Text as="h2" variant="headingLg" fontWeight="semibold">
-                Quick Actions
+                Set Up
               </Text>
               
               <Layout>
@@ -82,7 +104,17 @@ export default function Index() {
                     </BlockStack>
                   </Card>
                 </Layout.Section>
+              </Layout>
+            </BlockStack>
+          </Layout.Section>
 
+          <Layout.Section>
+            <BlockStack gap="500">
+              <Text as="h2" variant="headingLg" fontWeight="semibold">
+                Monitor
+              </Text>
+              
+              <Layout>
                 <Layout.Section variant="oneThird">
                   <Card>
                     <BlockStack gap="300">
@@ -101,9 +133,7 @@ export default function Index() {
                     </BlockStack>
                   </Card>
                 </Layout.Section>
-              </Layout>
 
-              <Layout>
                 <Layout.Section variant="oneThird">
                   <Card>
                     <BlockStack gap="300">
@@ -127,6 +157,35 @@ export default function Index() {
                   <Card>
                     <BlockStack gap="300">
                       <Text as="h3" variant="headingMd" fontWeight="semibold">
+                        System Alerts
+                      </Text>
+                      <Text variant="bodyMd" tone="subdued">
+                        Monitor system health and notifications
+                      </Text>
+                      <Button 
+                        onClick={() => navigate("/app/admin/alerts-management")} 
+                        fullWidth
+                      >
+                        View Alerts
+                      </Button>
+                    </BlockStack>
+                  </Card>
+                </Layout.Section>
+              </Layout>
+            </BlockStack>
+          </Layout.Section>
+
+          <Layout.Section>
+            <BlockStack gap="500">
+              <Text as="h2" variant="headingLg" fontWeight="semibold">
+                Plans & Billing
+              </Text>
+              
+              <Layout>
+                <Layout.Section variant="oneThird">
+                  <Card>
+                    <BlockStack gap="300">
+                      <Text as="h3" variant="headingMd" fontWeight="semibold">
                         Plans & Billing
                       </Text>
                       <Text variant="bodyMd" tone="subdued">
@@ -146,46 +205,27 @@ export default function Index() {
           </Layout.Section>
 
           <Layout.Section variant="oneThird">
-            <BlockStack gap="500">
-              <Card>
-                <BlockStack gap="300">
-                  <Text as="h3" variant="headingMd" fontWeight="semibold">
-                    Getting Started
-                  </Text>
-                  <Divider />
-                  <BlockStack gap="200">
-                    <Text variant="bodyMd">1. Index your product catalog</Text>
-                    <Text variant="bodyMd">2. Customize your AI prompts</Text>
-                    <Text variant="bodyMd">3. Enable the theme extension</Text>
-                    <Text variant="bodyMd">4. Test on your storefront</Text>
-                  </BlockStack>
-                  <Button 
-                    onClick={() => setInstructionsOpen(true)}
-                    variant="primary"
-                    fullWidth
-                  >
-                    View Instructions
-                  </Button>
+            <Card>
+              <BlockStack gap="300">
+                <Text as="h3" variant="headingMd" fontWeight="semibold">
+                  Getting Started
+                </Text>
+                <Divider />
+                <BlockStack gap="200">
+                  <Text variant="bodyMd">1. Index your product catalog</Text>
+                  <Text variant="bodyMd">2. Customize your AI prompts</Text>
+                  <Text variant="bodyMd">3. Enable the theme extension</Text>
+                  <Text variant="bodyMd">4. Test on your storefront</Text>
                 </BlockStack>
-              </Card>
-
-              <Card>
-                <BlockStack gap="300">
-                  <Text as="h3" variant="headingMd" fontWeight="semibold">
-                    System Alerts
-                  </Text>
-                  <Text variant="bodyMd" tone="subdued">
-                    Monitor system health and notifications
-                  </Text>
-                  <Button 
-                    onClick={() => navigate("/app/admin/alerts-management")} 
-                    fullWidth
-                  >
-                    View Alerts
-                  </Button>
-                </BlockStack>
-              </Card>
-            </BlockStack>
+                <Button 
+                  onClick={() => setInstructionsOpen(true)}
+                  variant="primary"
+                  fullWidth
+                >
+                  View Instructions
+                </Button>
+              </BlockStack>
+            </Card>
           </Layout.Section>
         </Layout>
       </BlockStack>
