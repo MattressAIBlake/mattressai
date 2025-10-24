@@ -1,6 +1,6 @@
 import { createHash } from 'crypto';
 import { ProductProfile, ProductProfileSchema, createEmptyProductProfile, mergeProductProfiles } from './product-profile.schema';
-import { createDeterministicMappingService, ShopifyProduct } from './deterministic-mapping.service';
+import { createDeterministicMappingService, ShopifyProduct, normalizeMetafields } from './deterministic-mapping.service';
 import { createHeuristicExtractionService } from './heuristic-extraction.service';
 import { createLLMEnrichmentService } from './llm-enrichment.service';
 import { createWebSearchEnrichmentService } from './web-search-enrichment.service';
@@ -189,13 +189,14 @@ export class ProductEnrichmentService {
    * Create content hash for caching
    */
   private createContentHash(product: ShopifyProduct): string {
+    const normalizedMetafields = normalizeMetafields(product.metafields);
     const content = JSON.stringify({
       title: product.title,
       body: product.body,
       vendor: product.vendor,
       productType: product.productType,
       tags: product.tags,
-      metafields: product.metafields?.map(field => ({
+      metafields: normalizedMetafields.map(field => ({
         namespace: field.namespace,
         key: field.key,
         value: field.value
@@ -296,7 +297,8 @@ export class ProductEnrichmentService {
     const hasLowConfidence = confidence < 0.5;
     
     // 3. Check if product has no metafields
-    const hasNoMetafields = !product.metafields || product.metafields.length === 0;
+    const normalizedMetafields = normalizeMetafields(product.metafields);
+    const hasNoMetafields = normalizedMetafields.length === 0;
     
     // 4. Check if title is vague (doesn't contain material/firmness keywords)
     const titleLower = product.title.toLowerCase();

@@ -1,6 +1,37 @@
 import type { ProductProfile } from './product-profile.schema';
 
 /**
+ * Metafield type that can be either GraphQL edges format or flat array
+ */
+type MetafieldInput = Array<{ key: string; value: string; namespace: string }> 
+  | { edges: Array<{ node: { key: string; value: string; namespace: string } }> }
+  | null
+  | undefined;
+
+/**
+ * Normalize metafields from either GraphQL edges format or flat array format
+ * Handles both Shopify GraphQL bulk operation format and direct API format
+ */
+export const normalizeMetafields = (metafields: MetafieldInput): Array<{ key: string; value: string; namespace: string }> => {
+  if (!metafields) {
+    return [];
+  }
+
+  // Check if it's GraphQL edges format
+  if ('edges' in metafields && Array.isArray(metafields.edges)) {
+    return metafields.edges.map(edge => edge.node);
+  }
+
+  // It's already a flat array
+  if (Array.isArray(metafields)) {
+    return metafields;
+  }
+
+  // Fallback to empty array for unexpected formats
+  return [];
+};
+
+/**
  * Default metafield mapping configuration
  * Maps Shopify metafields to mattress attributes
  */
@@ -38,6 +69,7 @@ const TENANT_METAFIELD_MAPPINGS: Record<string, Record<string, string[]>> = {};
 
 /**
  * Shopify product data structure
+ * Note: metafields can be in either GraphQL edges format or flat array format
  */
 export interface ShopifyProduct {
   id: string;
@@ -50,7 +82,8 @@ export interface ShopifyProduct {
     key: string;
     value: string;
     namespace: string;
-  }>;
+  }> | { edges: Array<{ node: { key: string; value: string; namespace: string } }> };
+  body?: string; // Alias for description used by some services
 }
 
 /**
@@ -67,7 +100,7 @@ export class DeterministicMappingService {
    * Extract mattress attributes from Shopify product using metafield mappings
    */
   extractAttributes(product: ShopifyProduct): Partial<ProductProfile> {
-    const metafields = product.metafields || [];
+    const metafields = normalizeMetafields(product.metafields);
     const metafieldMap = this.createMetafieldMap(metafields);
 
     const profile: Partial<ProductProfile> = {
@@ -98,10 +131,10 @@ export class DeterministicMappingService {
   /**
    * Create a map of metafield keys to values for easy lookup
    */
-  private createMetafieldMap(metafields: ShopifyProduct['metafields']) {
+  private createMetafieldMap(metafields: Array<{ key: string; value: string; namespace: string }>) {
     const map = new Map<string, string>();
 
-    metafields?.forEach(field => {
+    metafields.forEach(field => {
       const key = `${field.namespace}.${field.key}`.toLowerCase();
       map.set(key, field.value);
     });

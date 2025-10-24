@@ -1,8 +1,10 @@
 import { OpenAI } from 'openai';
 import { ProductProfile, ProductProfileSchema } from './product-profile.schema';
+import { normalizeMetafields } from './deterministic-mapping.service';
 
 /**
  * Shopify product data for LLM enrichment
+ * Note: metafields can be in either GraphQL edges format or flat array format
  */
 export interface ProductForEnrichment {
   id: string;
@@ -15,7 +17,7 @@ export interface ProductForEnrichment {
     key: string;
     value: string;
     namespace: string;
-  }>;
+  }> | { edges: Array<{ node: { key: string; value: string; namespace: string } }> };
 }
 
 /**
@@ -176,14 +178,15 @@ IMPORTANT: Respond ONLY with valid JSON matching this exact schema. Do not inclu
    * Build the prompt for LLM enrichment
    */
   private buildPrompt(product: ProductForEnrichment): string {
+    const normalizedMetafields = normalizeMetafields(product.metafields);
     const sections = [
       `Product Title: ${product.title}`,
       product.description ? `Description: ${product.description}` : null,
       product.vendor ? `Vendor: ${product.vendor}` : null,
       product.productType ? `Product Type: ${product.productType}` : null,
       product.tags && product.tags.length > 0 ? `Tags: ${product.tags.join(', ')}` : null,
-      product.metafields && product.metafields.length > 0
-        ? `Metafields:\n${product.metafields.map(field => `${field.namespace}.${field.key}: ${field.value}`).join('\n')}`
+      normalizedMetafields.length > 0
+        ? `Metafields:\n${normalizedMetafields.map(field => `${field.namespace}.${field.key}: ${field.value}`).join('\n')}`
         : null
     ].filter(Boolean);
 
