@@ -15,11 +15,10 @@ import { TitleBar } from "@shopify/app-bridge-react";
 import { useNavigate, useLoaderData } from "@remix-run/react";
 import { json } from "@remix-run/node";
 import { authenticate } from "~/shopify.server";
-import { getPrisma } from "~/db.server";
+import { prisma } from "~/db.server";
 
 export async function loader({ request }) {
   const { session } = await authenticate.admin(request);
-  const prisma = await getPrisma();
   
   const tenant = await prisma.tenant.findUnique({
     where: { shop: session.shop },
