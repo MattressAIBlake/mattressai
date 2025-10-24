@@ -136,16 +136,3 @@ export const runAlertWorker = async (): Promise<void> => {
   }
 };
 
-// If run directly (e.g., node alert-worker.js)
-if (require.main === module) {
-  runAlertWorker()
-    .then(() => {
-      console.log('Worker finished');
-      process.exit(0);
-    })
-    .catch((error) => {
-      console.error('Worker failed:', error);
-      process.exit(1);
-    });
-}
-
