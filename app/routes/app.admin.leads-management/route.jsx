@@ -196,27 +196,6 @@ export default function LeadsManagement() {
             </div>
           </Card>
         </Layout.Section>
-
-        <Layout.Section variant="oneThird">
-          <Card>
-            <div style={{ padding: '16px' }}>
-              <Text variant="headingMd" as="h2" fontWeight="semibold">About Leads</Text>
-              <div style={{ marginTop: '12px' }}>
-                <Text variant="bodyMd" as="p">
-                  Leads are captured when customers submit their contact information through the chat widget.
-                </Text>
-                <br />
-                <Text variant="bodyMd" as="p">
-                  <strong>Consent:</strong> Only leads with consent can be contacted and synced to Shopify Customers.
-                </Text>
-                <br />
-                <Text variant="bodyMd" as="p">
-                  <strong>Intent Score:</strong> Measures engagement level (0-100). Higher scores indicate stronger purchase intent.
-                </Text>
-              </div>
-            </div>
-          </Card>
-        </Layout.Section>
       </Layout>
     </Page>
   );
