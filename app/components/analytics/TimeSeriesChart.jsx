@@ -20,6 +20,7 @@ const TimeSeriesChart = ({ data, currentPeriodLabel, previousPeriodLabel }) => {
 
   const metricOptions = [
     { label: 'Sessions', value: 'sessions' },
+    { label: 'Leads Generated', value: 'leads' },
     { label: 'Orders', value: 'orders' },
     { label: 'Total Sales', value: 'sales' },
     { label: 'Conversion Rate', value: 'conversionRate' }

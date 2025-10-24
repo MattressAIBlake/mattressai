@@ -443,29 +443,41 @@ export const getComparisonMetrics = async (
 ): Promise<{
   current: {
     sessions: number;
+    leads: number;
     orders: number;
     sales: number;
     conversionRate: number;
   };
   previous: {
     sessions: number;
+    leads: number;
     orders: number;
     sales: number;
     conversionRate: number;
   };
   change: {
     sessions: number;
+    leads: number;
     orders: number;
     sales: number;
     conversionRate: number;
   };
 }> => {
   // Get current period data
-  const [currentSessions, currentOrders] = await Promise.all([
+  const [currentSessions, currentLeads, currentOrders] = await Promise.all([
     prisma.chatSession.count({
       where: {
         tenantId,
         startedAt: {
+          gte: currentFrom,
+          lte: currentTo
+        }
+      }
+    }),
+    prisma.lead.count({
+      where: {
+        tenantId,
+        createdAt: {
           gte: currentFrom,
           lte: currentTo
         }
@@ -484,11 +496,20 @@ export const getComparisonMetrics = async (
   ]);
 
   // Get previous period data
-  const [previousSessions, previousOrders] = await Promise.all([
+  const [previousSessions, previousLeads, previousOrders] = await Promise.all([
     prisma.chatSession.count({
       where: {
         tenantId,
         startedAt: {
+          gte: previousFrom,
+          lte: previousTo
+        }
+      }
+    }),
+    prisma.lead.count({
+      where: {
+        tenantId,
+        createdAt: {
           gte: previousFrom,
           lte: previousTo
         }
@@ -528,18 +549,21 @@ export const getComparisonMetrics = async (
   return {
     current: {
       sessions: currentSessions,
+      leads: currentLeads,
       orders: currentOrders,
       sales: currentSales,
       conversionRate: currentConversionRate
     },
     previous: {
       sessions: previousSessions,
+      leads: previousLeads,
       orders: previousOrders,
       sales: previousSales,
       conversionRate: previousConversionRate
     },
     change: {
       sessions: calculateChange(currentSessions, previousSessions),
+      leads: calculateChange(currentLeads, previousLeads),
       orders: calculateChange(currentOrders, previousOrders),
       sales: calculateChange(currentSales, previousSales),
       conversionRate: calculateChange(currentConversionRate, previousConversionRate)
@@ -560,12 +584,14 @@ export const getTimeSeriesData = async (
   date: string;
   current: {
     sessions: number;
+    leads: number;
     orders: number;
     sales: number;
     conversionRate: number;
   };
   previous: {
     sessions: number;
+    leads: number;
     orders: number;
     sales: number;
     conversionRate: number;
@@ -610,11 +636,20 @@ export const getTimeSeriesData = async (
       const previousBucket = previousBuckets[index];
 
       // Current period data
-      const [currentSessions, currentOrders] = await Promise.all([
+      const [currentSessions, currentLeads, currentOrders] = await Promise.all([
         prisma.chatSession.count({
           where: {
             tenantId,
             startedAt: {
+              gte: currentBucket.start,
+              lt: currentBucket.end
+            }
+          }
+        }),
+        prisma.lead.count({
+          where: {
+            tenantId,
+            createdAt: {
               gte: currentBucket.start,
               lt: currentBucket.end
             }
@@ -633,11 +668,20 @@ export const getTimeSeriesData = async (
       ]);
 
       // Previous period data
-      const [previousSessions, previousOrders] = await Promise.all([
+      const [previousSessions, previousLeads, previousOrders] = await Promise.all([
         prisma.chatSession.count({
           where: {
             tenantId,
             startedAt: {
+              gte: previousBucket.start,
+              lt: previousBucket.end
+            }
+          }
+        }),
+        prisma.lead.count({
+          where: {
+            tenantId,
+            createdAt: {
               gte: previousBucket.start,
               lt: previousBucket.end
             }
@@ -669,12 +713,14 @@ export const getTimeSeriesData = async (
         date: currentBucket.date,
         current: {
           sessions: currentSessions,
+          leads: currentLeads,
           orders: currentOrders,
           sales: currentSales,
           conversionRate: currentConversionRate
         },
         previous: {
           sessions: previousSessions,
+          leads: previousLeads,
           orders: previousOrders,
           sales: previousSales,
           conversionRate: previousConversionRate
