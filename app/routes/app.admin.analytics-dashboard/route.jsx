@@ -55,9 +55,8 @@ export default function AnalyticsDashboard() {
     { label: 'Widget Viewed', count: funnel.widget_viewed, rate: 100 },
     { label: 'Chat Opened', count: funnel.opened, rate: funnel.conversionRates.viewToOpen },
     { label: 'First Message', count: funnel.first_message, rate: funnel.conversionRates.openToMessage },
-    { label: 'Data Captured', count: funnel.data_point_captured, rate: funnel.conversionRates.messageToData },
-    { label: 'Recs Shown', count: funnel.recommendation_shown, rate: funnel.conversionRates.dataToRecs },
-    { label: 'Recs Clicked', count: funnel.recommendation_clicked, rate: funnel.conversionRates.recsToClick },
+    { label: 'Recommendations Shown', count: funnel.recommendation_shown, rate: funnel.conversionRates.dataToRecs },
+    { label: 'Recommendations Clicked', count: funnel.recommendation_clicked, rate: funnel.conversionRates.recsToClick },
     { label: 'Added to Cart', count: funnel.add_to_cart, rate: funnel.conversionRates.clickToCart },
     { label: 'Checkout', count: funnel.checkout_started, rate: funnel.conversionRates.cartToCheckout },
     { label: 'Order Placed', count: funnel.order_placed, rate: funnel.conversionRates.checkoutToOrder }
