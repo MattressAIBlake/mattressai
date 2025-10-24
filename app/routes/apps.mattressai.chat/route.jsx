@@ -13,8 +13,6 @@ import { createSseStream } from '~/services/streaming.server';
 import { createOpenAIService } from '~/services/openai.server';
 import { createToolService } from '~/services/tool.server';
 import { unauthenticated } from '~/shopify.server';
-import { extractLeadFromConversation, shouldTriggerLeadForm, getFormFields } from '~/services/lead-extractor.server';
-import { getActivePromptVersion } from '~/lib/domain/promptVersion.server';
 
 export const action = async ({ request }) => {
   return handleChatRequest(request);
@@ -146,6 +144,10 @@ async function handleChatSession({
     // Check for "start" position lead capture BEFORE AI responds
     const userMessageCount = conversationHistory.filter(msg => msg.role === 'user').length;
     if (userMessageCount === 1) {
+      // Import server-only functions here to avoid client bundling
+      const { getActivePromptVersion } = await import('~/lib/domain/promptVersion.server');
+      const { extractLeadFromConversation, getFormFields } = await import('~/services/lead-extractor.server');
+      
       const promptVersion = await getActivePromptVersion(normalizedShopDomain);
       if (promptVersion?.runtimeRules?.leadCapture?.enabled && 
           promptVersion.runtimeRules.leadCapture.position === 'start') {
@@ -266,6 +268,10 @@ async function handleChatSession({
     if (productsToDisplay.length > 0) {
       try {
         console.log('[Lead Capture] Products available, checking for END position lead capture');
+        // Import server-only functions here to avoid client bundling
+        const { getActivePromptVersion } = await import('~/lib/domain/promptVersion.server');
+        const { extractLeadFromConversation, getFormFields } = await import('~/services/lead-extractor.server');
+        
         const promptVersion = await getActivePromptVersion(normalizedShopDomain);
         
         if (promptVersion?.runtimeRules?.leadCapture?.enabled &&
