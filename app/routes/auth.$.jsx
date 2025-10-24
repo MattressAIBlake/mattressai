@@ -37,6 +37,40 @@ export const loader = async ({ request }) => {
         }
       });
       
+      // Create default AlertSettings if they don't exist
+      const existingAlertSettings = await prisma.alertSettings.findUnique({
+        where: { tenantId: session.shop }
+      });
+      
+      if (!existingAlertSettings) {
+        await prisma.alertSettings.create({
+          data: {
+            tenantId: session.shop,
+            triggers: JSON.stringify({
+              all: false,
+              lead_captured: true,
+              high_intent: false,
+              abandoned: false,
+              post_conversion: false,
+              chat_end: false
+            }),
+            channels: JSON.stringify({
+              email: {},
+              sms: {},
+              slack: {},
+              webhook: {},
+              podium: {},
+              birdeye: {}
+            }),
+            throttles: JSON.stringify({
+              high_intent: { maxPerHour: 10 },
+              abandoned: { maxPerHour: 5 }
+            })
+          }
+        });
+        console.log(`Default alert settings created for ${session.shop}`);
+      }
+      
       // Check if this is a reinstall with a previous paid plan
       if (tenant.planName !== 'starter' && !tenant.billingId) {
         console.log(`Reinstall detected for ${session.shop} with previous plan: ${tenant.planName}`);

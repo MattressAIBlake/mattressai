@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { json } from '@remix-run/node';
 import { useLoaderData, useFetcher } from '@remix-run/react';
 import {
@@ -60,6 +60,11 @@ export default function LeadsManagement() {
       { method: 'post', action: '/app/admin/leads', encType: 'application/json' }
     );
   }, [fetcher]);
+
+  // Auto-load leads on mount
+  useEffect(() => {
+    handleSearch();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const leads = fetcher.data?.leads || [];
   const total = fetcher.data?.total || 0;
@@ -185,7 +190,7 @@ export default function LeadsManagement() {
                 />
               ) : (
                 <div style={{ padding: '40px', textAlign: 'center' }}>
-                  <Text variant="bodyMd" as="p">No leads found. Click Search to load leads.</Text>
+                  <Text variant="bodyMd" as="p">No leads found for the selected filters.</Text>
                 </div>
               )}
             </div>
