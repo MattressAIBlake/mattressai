@@ -95,6 +95,14 @@ export const loader = async ({ request }) => {
       // Initialize session
       this.startSession();
       
+      // Initialize tracking module
+      if (window.MattressAITracking) {
+        window.MattressAITracking.init(this.config.tenant, '/apps/mattressai');
+        console.log('MattressAI Tracking initialized');
+      } else {
+        console.warn('MattressAI Tracking module not found');
+      }
+      
       // Create chat bubble
       this.createChatBubble();
       
