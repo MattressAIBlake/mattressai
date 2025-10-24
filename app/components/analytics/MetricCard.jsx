@@ -1,5 +1,5 @@
 import { Card, Text, InlineStack, BlockStack, Icon } from '@shopify/polaris';
-import { ArrowUpMinor, ArrowDownMinor } from '@shopify/polaris-icons';
+import { ArrowUpIcon, ArrowDownIcon } from '@shopify/polaris-icons';
 
 /**
  * MetricCard Component
@@ -33,7 +33,7 @@ const MetricCard = ({ label, value, changePercent, isPositive }) => {
             {hasChange && (
               <InlineStack gap="100" blockAlign="center">
                 <Icon
-                  source={isPositive ? ArrowUpMinor : ArrowDownMinor}
+                  source={isPositive ? ArrowUpIcon : ArrowDownIcon}
                   tone={changeColor}
                 />
                 <Text 
