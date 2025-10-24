@@ -9,7 +9,7 @@ datasource db {
   directUrl = env("DIRECT_DATABASE_URL")
 }
 
-model Session {
+model session {
   id            String    @id
   shop          String
   state         String
@@ -25,8 +25,6 @@ model Session {
   locale        String?
   collaborator  Boolean?  @default(false)
   emailVerified Boolean?  @default(false)
-
-  @@map("Session")
 }
 
 model CustomerToken {
