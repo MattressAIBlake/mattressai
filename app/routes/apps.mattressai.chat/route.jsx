@@ -13,6 +13,8 @@ import { createSseStream } from '~/services/streaming.server';
 import { createOpenAIService } from '~/services/openai.server';
 import { createToolService } from '~/services/tool.server';
 import { unauthenticated } from '~/shopify.server';
+import { extractLeadFromConversation, shouldTriggerLeadForm, getFormFields } from '~/services/lead-extractor.server';
+import { getActivePromptVersion } from '~/lib/domain/promptVersion.server';
 
 export const action = async ({ request }) => {
   return handleChatRequest(request);
@@ -75,6 +77,19 @@ async function handleChatSession({
   // Initialize MCP client first to get shop domain
   const url = new URL(request.url);
   const shopDomain = url.searchParams.get('shop') || request.headers.get('Origin');
+  
+  // Normalize shop domain for database lookups (remove protocol if present)
+  let normalizedShopDomain = shopDomain;
+  if (shopDomain && shopDomain.startsWith('http')) {
+    try {
+      const parsedUrl = new URL(shopDomain);
+      normalizedShopDomain = parsedUrl.hostname;
+    } catch (e) {
+      console.warn('[Lead Capture] Failed to parse shop domain:', e);
+    }
+  }
+  console.log('[Lead Capture] Original shop domain:', shopDomain);
+  console.log('[Lead Capture] Normalized shop domain:', normalizedShopDomain);
   
   // Initialize services with shop domain for custom prompts
   const openaiService = createOpenAIService(undefined, shopDomain);
@@ -226,6 +241,59 @@ async function handleChatSession({
         type: 'product_results',
         products: productsToDisplay
       });
+    }
+
+    // Check for lead capture opportunity
+    try {
+      console.log('[Lead Capture] Looking up prompt version for shop:', normalizedShopDomain);
+      const promptVersion = await getActivePromptVersion(normalizedShopDomain);
+      console.log('[Lead Capture] Prompt version found:', !!promptVersion);
+      
+      if (promptVersion && promptVersion.runtimeRules) {
+        const runtimeRules = promptVersion.runtimeRules;
+        console.log('[Lead Capture] Lead capture enabled:', runtimeRules.leadCapture?.enabled);
+        console.log('[Lead Capture] Lead capture position:', runtimeRules.leadCapture?.position);
+        console.log('[Lead Capture] Lead capture fields:', runtimeRules.leadCapture?.fields);
+        console.log('[Lead Capture] Trigger after questions:', runtimeRules.leadCapture?.triggerAfterQuestions);
+        
+        // Use the proper trigger function that respects all settings
+        // Note: We track if form was shown using session storage on client side
+        // Backend can't track this, so we send the event and let client decide
+        const shouldShow = shouldTriggerLeadForm(
+          conversationHistory,
+          runtimeRules,
+          false // Client tracks if form was shown via sessionStorage
+        );
+        console.log('[Lead Capture] Should show lead form:', shouldShow);
+        
+        if (shouldShow) {
+          const leadData = extractLeadFromConversation(conversationHistory);
+          console.log('[Lead Capture] Extracted lead data:', {
+            hasEmail: !!leadData.email,
+            hasPhone: !!leadData.phone,
+            hasName: !!leadData.name,
+            hasZip: !!leadData.zip,
+            hasConsent: leadData.hasConsent
+          });
+          
+          const fields = getFormFields(leadData, runtimeRules.leadCapture.fields);
+          console.log('[Lead Capture] Form fields to display:', fields);
+          
+          stream.sendMessage({
+            type: 'show_lead_form',
+            prefill: leadData,
+            fields: fields
+          });
+          console.log('[Lead Capture] Lead form SSE event sent to client');
+        }
+      } else if (promptVersion) {
+        console.log('[Lead Capture] Prompt version found but no runtime rules');
+      } else {
+        console.log('[Lead Capture] No active prompt version found for shop');
+      }
+    } catch (error) {
+      console.error('[Lead Capture] Error checking for lead capture:', error);
+      // Don't throw - lead capture is optional
     }
   } catch (error) {
     // The streaming handler takes care of error handling

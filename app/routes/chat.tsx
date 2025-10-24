@@ -131,7 +131,20 @@ async function handleChatSession({
 }) {
   // Get shop info first
   const shopId = request.headers.get("X-Shopify-Shop-Id");
-  const shopDomain = request.headers.get("Origin");
+  
+  // Extract and normalize shop domain (remove protocol for database lookups)
+  let shopDomain = request.headers.get("Origin");
+  let normalizedShopDomain = shopDomain;
+  if (shopDomain) {
+    try {
+      const url = new URL(shopDomain);
+      normalizedShopDomain = url.hostname; // Extract just the domain (e.g., shop.myshopify.com)
+    } catch (e) {
+      console.warn('[Lead Capture] Failed to parse shop domain from Origin header:', e);
+    }
+  }
+  console.log('[Lead Capture] Original shop domain:', shopDomain);
+  console.log('[Lead Capture] Normalized shop domain:', normalizedShopDomain);
   
   // Initialize services with shop domain for custom prompts
   const openaiService = createOpenAIService(undefined, shopDomain);
@@ -287,9 +300,16 @@ async function handleChatSession({
 
     // Check for lead capture opportunity
     try {
-      const promptVersion = await getActivePromptVersion(shopDomain);
+      console.log('[Lead Capture] Looking up prompt version for shop:', normalizedShopDomain);
+      const promptVersion = await getActivePromptVersion(normalizedShopDomain);
+      console.log('[Lead Capture] Prompt version found:', !!promptVersion);
+      
       if (promptVersion && promptVersion.runtimeRules) {
         const runtimeRules = promptVersion.runtimeRules;
+        console.log('[Lead Capture] Lead capture enabled:', runtimeRules.leadCapture?.enabled);
+        console.log('[Lead Capture] Lead capture position:', runtimeRules.leadCapture?.position);
+        console.log('[Lead Capture] Lead capture fields:', runtimeRules.leadCapture?.fields);
+        console.log('[Lead Capture] Trigger after questions:', runtimeRules.leadCapture?.triggerAfterQuestions);
         
         // Use the proper trigger function that respects all settings
         // Note: We track if form was shown using session storage on client side
@@ -299,20 +319,35 @@ async function handleChatSession({
           runtimeRules,
           false // Client tracks if form was shown via sessionStorage
         );
+        console.log('[Lead Capture] Should show lead form:', shouldShow);
         
         if (shouldShow) {
           const leadData = extractLeadFromConversation(conversationHistory);
+          console.log('[Lead Capture] Extracted lead data:', {
+            hasEmail: !!leadData.email,
+            hasPhone: !!leadData.phone,
+            hasName: !!leadData.name,
+            hasZip: !!leadData.zip,
+            hasConsent: leadData.hasConsent
+          });
+          
           const fields = getFormFields(leadData, runtimeRules.leadCapture.fields);
+          console.log('[Lead Capture] Form fields to display:', fields);
           
           stream.sendMessage({
             type: 'show_lead_form',
             prefill: leadData,
             fields: fields
           });
+          console.log('[Lead Capture] Lead form SSE event sent to client');
         }
+      } else if (promptVersion) {
+        console.log('[Lead Capture] Prompt version found but no runtime rules');
+      } else {
+        console.log('[Lead Capture] No active prompt version found for shop');
       }
     } catch (error) {
-      console.error('Error checking for lead capture:', error);
+      console.error('[Lead Capture] Error checking for lead capture:', error);
       // Don't throw - lead capture is optional
     }
   } catch (error) {

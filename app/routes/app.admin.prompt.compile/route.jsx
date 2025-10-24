@@ -30,7 +30,8 @@ export async function action({ request }) {
       leadCapture: {
         enabled: formData.get('leadCaptureEnabled') === 'true',
         position: formData.get('leadCapturePosition'),
-        fields: formData.getAll('leadCaptureFields')
+        fields: formData.getAll('leadCaptureFields'),
+        triggerAfterQuestions: parseInt(formData.get('triggerAfterQuestions')) || 3
       },
       maxRecommendations: parseInt(formData.get('maxRecommendations'))
     };
