@@ -12,7 +12,7 @@ const prisma = new PrismaClient();
 const PLAN_CONFIGS = {
   starter: {
     name: 'starter',
-    price: 0,
+    price: 29,
     features: {
       tokens: 100000,
       alertsPerDay: 2,

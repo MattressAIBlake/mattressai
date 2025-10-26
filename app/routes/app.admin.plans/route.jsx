@@ -135,6 +135,7 @@ export const action = async ({ request }) => {
     
     // Get plan config
     const planConfigs = {
+      starter: { price: 29, name: 'Starter Plan' },
       pro: { price: 49, name: 'Pro Plan' },
       enterprise: { price: 199, name: 'Enterprise Plan' }
     };
@@ -213,7 +214,8 @@ export const action = async ({ request }) => {
                 plan: {
                   appRecurringPricingDetails: {
                     price: { amount: planConfig.price, currencyCode: 'USD' },
-                    interval: 'EVERY_30_DAYS'
+                    interval: 'EVERY_30_DAYS',
+                    trialDays: 14
                   }
                 }
               }

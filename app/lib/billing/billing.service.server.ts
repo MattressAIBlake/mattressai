@@ -26,7 +26,7 @@ export interface PlanConfig {
 export const PLAN_CONFIGS: Record<string, PlanConfig> = {
   starter: {
     name: 'starter',
-    price: 0,
+    price: 29,
     features: {
       tokens: 100000,
       alertsPerDay: 2,
@@ -404,10 +404,11 @@ export async function cancelSubscription(shop: string, admin: any, subscriptionI
 export async function requestBillingApproval(
   shop: string,
   admin: any,
-  planName: 'pro' | 'enterprise',
+  planName: 'starter' | 'pro' | 'enterprise',
   returnUrl: string
 ) {
   const planConfigs = {
+    starter: { price: 29, name: 'Starter Plan' },
     pro: { price: 49, name: 'Pro Plan' },
     enterprise: { price: 199, name: 'Enterprise Plan' }
   };
@@ -448,7 +449,8 @@ export async function requestBillingApproval(
             plan: {
               appRecurringPricingDetails: {
                 price: { amount: planConfig.price, currencyCode: 'USD' },
-                interval: 'EVERY_30_DAYS'
+                interval: 'EVERY_30_DAYS',
+                trialDays: 14
               }
             }
           }
