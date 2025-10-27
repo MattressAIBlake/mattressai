@@ -502,9 +502,11 @@ export class ProductIndexer {
                         }
                       }
                     }
-                    variants(first: 1) {
+                    variants(first: 10) {
                       edges {
                         node {
+                          id
+                          title
                           price
                           compareAtPrice
                           availableForSale
@@ -623,6 +625,9 @@ export class ProductIndexer {
           }
           
           // Second pass: attach child objects to their parents
+          let variantCount = 0;
+          let metafieldCount = 0;
+          
           for (const row of allRows) {
             if (row.__parentId) {
               const parent = productMap.get(row.__parentId);
@@ -630,14 +635,18 @@ export class ProductIndexer {
                 // Attach variants
                 if (row.id && row.id.includes('ProductVariant')) {
                   parent.variants.edges.push({ node: row });
+                  variantCount++;
                 }
                 // Attach metafields
                 else if (row.id && row.id.includes('Metafield')) {
                   parent.metafields.edges.push({ node: row });
+                  metafieldCount++;
                 }
               }
             }
           }
+          
+          console.log(`📊 Reconstructed: ${variantCount} variants, ${metafieldCount} metafields attached to products`);
           
           const products = Array.from(productMap.values());
           
@@ -707,9 +716,13 @@ export class ProductIndexer {
       try {
         console.log(`  🔄 Processing product: "${product.title}" (${product.id})`);
         
-        // Extract price and availability from first variant
-        const firstVariant = product.variants?.edges?.[0]?.node;
-        const price = firstVariant?.price ? parseFloat(firstVariant.price) : null;
+        // Extract price - prefer Queen size, fallback to first variant
+        const price = this.extractQueenPrice(product);
+        if (price) {
+          console.log(`    💰 Price found: $${price}`);
+        } else {
+          console.log(`    ⚠️  No price available`);
+        }
         
         // Enrich product profile with retry logic
         console.log(`    📝 Enriching product profile...`);
@@ -898,6 +911,42 @@ export class ProductIndexer {
       }
     }
     return [];
+  }
+
+  /**
+   * Extract price from Queen variant, fallback to first available variant
+   */
+  private extractQueenPrice(product: any): number | null {
+    const variants = product.variants?.edges || [];
+    
+    if (variants.length === 0) {
+      return null;
+    }
+    
+    // Common Queen size identifiers in variant titles
+    const queenKeywords = ['queen', 'q ', ' q', 'queen size', 'qn'];
+    
+    // Try to find Queen variant
+    const queenVariant = variants.find((edge: any) => {
+      const title = edge.node?.title?.toLowerCase() || '';
+      return queenKeywords.some(keyword => title.includes(keyword));
+    });
+    
+    if (queenVariant?.node?.price) {
+      const price = parseFloat(queenVariant.node.price);
+      console.log(`    👑 Using Queen variant price: $${price} (from "${queenVariant.node.title}")`);
+      return price;
+    }
+    
+    // Fallback to first variant
+    const firstVariant = variants[0]?.node;
+    if (firstVariant?.price) {
+      const price = parseFloat(firstVariant.price);
+      console.log(`    📦 Using first variant price: $${price} (from "${firstVariant.title || 'default'}")`);
+      return price;
+    }
+    
+    return null;
   }
 
   /**

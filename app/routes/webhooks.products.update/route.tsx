@@ -103,9 +103,8 @@ async function processProductUpdate(shopifyProductId: string, tenant: string) {
     const embeddings = await embeddingProvider.generateEmbeddings([contentForEmbedding]);
     const embedding = embeddings[0];
 
-    // Extract price from first variant
-    const firstVariant = productData.variants?.edges?.[0]?.node;
-    const price = firstVariant?.price ? parseFloat(firstVariant.price) : null;
+    // Extract price - prefer Queen size, fallback to first variant
+    const price = extractQueenPrice(productData);
 
     // Update ProductProfile in database
     const { prisma } = await import('~/db.server');
@@ -221,9 +220,11 @@ async function fetchProductFromShopify(productId: string, accessToken: string, s
             }
           }
         }
-        variants(first: 1) {
+        variants(first: 10) {
           edges {
             node {
+              id
+              title
               price
               compareAtPrice
               availableForSale
@@ -253,6 +254,42 @@ async function fetchProductFromShopify(productId: string, accessToken: string, s
   }
 
   return result.data.product;
+}
+
+/**
+ * Extract price from Queen variant, fallback to first available variant
+ */
+function extractQueenPrice(product: any): number | null {
+  const variants = product.variants?.edges || [];
+  
+  if (variants.length === 0) {
+    return null;
+  }
+  
+  // Common Queen size identifiers in variant titles
+  const queenKeywords = ['queen', 'q ', ' q', 'queen size', 'qn'];
+  
+  // Try to find Queen variant
+  const queenVariant = variants.find((edge: any) => {
+    const title = edge.node?.title?.toLowerCase() || '';
+    return queenKeywords.some(keyword => title.includes(keyword));
+  });
+  
+  if (queenVariant?.node?.price) {
+    const price = parseFloat(queenVariant.node.price);
+    console.log(`👑 Using Queen variant price: $${price} (from "${queenVariant.node.title}")`);
+    return price;
+  }
+  
+  // Fallback to first variant
+  const firstVariant = variants[0]?.node;
+  if (firstVariant?.price) {
+    const price = parseFloat(firstVariant.price);
+    console.log(`📦 Using first variant price: $${price} (from "${firstVariant.title || 'default'}")`);
+    return price;
+  }
+  
+  return null;
 }
 
 /**
