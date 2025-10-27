@@ -260,6 +260,78 @@ export const endSession = async (options: SessionEndOptions): Promise<void> => {
 };
 
 /**
+ * Check if alert should be skipped due to low quality lead
+ * Prevents spam alerts for sessions with no value
+ */
+const shouldSkipLowQualityAlert = async (
+  sessionId: string,
+  tenantId: string,
+  intentScore: number,
+  endReason: string
+): Promise<boolean> => {
+  // Always allow converted/post_conversion alerts (actual lead captures)
+  if (endReason === 'converted' || endReason === 'post_conversion') {
+    // But still check if there's actual lead data
+    const lead = await prisma.lead.findFirst({
+      where: { sessionId, tenantId },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    if (!lead) {
+      return true; // Skip: no lead record
+    }
+
+    // Skip if lead has no contact information
+    const hasContact = lead.email || lead.phone;
+    if (!hasContact) {
+      return true; // Skip: no email or phone
+    }
+
+    // Skip if lead is anonymous with no real info
+    const isAnonymous = !lead.name || 
+                        lead.name.toLowerCase() === 'anonymous' || 
+                        lead.name.trim() === '';
+    if (isAnonymous && !lead.email && !lead.phone) {
+      return true; // Skip: anonymous with no contact
+    }
+
+    return false; // Don't skip: valid lead capture
+  }
+
+  // For non-converted sessions, apply stricter filtering
+  
+  // Skip if intent score is 0 or extremely low
+  if (intentScore < 10) {
+    return true; // Skip: no meaningful engagement
+  }
+
+  // Check if there's any lead information at all
+  const lead = await prisma.lead.findFirst({
+    where: { sessionId, tenantId },
+    orderBy: { createdAt: 'desc' }
+  });
+
+  // If no lead exists and low intent, skip
+  if (!lead && intentScore < 40) {
+    return true; // Skip: no lead and low intent
+  }
+
+  // If lead exists but is anonymous/empty with no contact
+  if (lead) {
+    const hasContact = lead.email || lead.phone;
+    const isAnonymous = !lead.name || 
+                        lead.name.toLowerCase() === 'anonymous' || 
+                        lead.name.trim() === '';
+    
+    if (isAnonymous && !hasContact) {
+      return true; // Skip: anonymous with no contact info
+    }
+  }
+
+  return false; // Don't skip: potentially valuable alert
+};
+
+/**
  * Enqueue alert for session end
  */
 const enqueueAlert = async (
@@ -297,6 +369,13 @@ const enqueueAlert = async (
 
   // Check if this trigger is enabled
   if (!triggers.all && !triggers[alertType]) {
+    return;
+  }
+
+  // Filter out low-quality leads to prevent spam
+  const shouldSkipAlert = await shouldSkipLowQualityAlert(sessionId, tenantId, intentScore, endReason);
+  if (shouldSkipAlert) {
+    console.log(`Skipping alert for session ${sessionId}: low quality lead (intent: ${intentScore})`);
     return;
   }
 
