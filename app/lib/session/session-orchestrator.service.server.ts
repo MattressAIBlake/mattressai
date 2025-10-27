@@ -105,8 +105,8 @@ export const updateSessionActivity = async (sessionId: string): Promise<void> =>
 
 /**
  * Compute intent score based on session signals
- * Simple heuristic: completed answers (+30), recs viewed (+20), clicked card (+20), 
- * added to cart (+20), dwell >3m (+10); cap 100
+ * Improved scoring: deep conversations (+40), product clicks (+25-30), 
+ * cart actions (+20), checkout (+15), engagement time (+5-15); cap 100
  */
 export const computeIntentScore = async (sessionId: string, signals?: IntentSignals): Promise<number> => {
   let score = 0;
@@ -116,12 +116,15 @@ export const computeIntentScore = async (sessionId: string, signals?: IntentSign
     const completionRate = signals.totalQuestions 
       ? (signals.completedAnswers || 0) / signals.totalQuestions 
       : 0;
-    score += Math.floor(completionRate * 30);
+    score += Math.floor(completionRate * 40); // Increased from 30
     
-    if (signals.recsViewed) score += 20;
-    if (signals.recsClicked && signals.recsClicked > 0) score += 20;
+    if (signals.recsViewed) score += 15; // Slightly reduced
+    if (signals.recsClicked && signals.recsClicked >= 2) score += 30; // Higher for multiple clicks
+    else if (signals.recsClicked && signals.recsClicked > 0) score += 25; // Increased from 20
     if (signals.addedToCart) score += 20;
-    if (signals.dwellMinutes && signals.dwellMinutes > 3) score += 10;
+    if (signals.dwellMinutes && signals.dwellMinutes >= 5) score += 15; // Higher for longer dwell
+    else if (signals.dwellMinutes && signals.dwellMinutes >= 3) score += 10;
+    else if (signals.dwellMinutes && signals.dwellMinutes >= 1) score += 5;
     
     return Math.min(score, 100);
   }
@@ -136,27 +139,31 @@ export const computeIntentScore = async (sessionId: string, signals?: IntentSign
 
   const eventTypes = new Set(events.map(e => e.type));
   
-  // Check for completed data points
+  // Conversation engagement (max 40 points - increased from 30)
   const dataPointsCaptured = events.filter(e => e.type === 'data_point_captured').length;
-  if (dataPointsCaptured >= 3) score += 30;
+  if (dataPointsCaptured >= 5) score += 40; // Deep conversation
+  else if (dataPointsCaptured >= 3) score += 30; // Good engagement
   else if (dataPointsCaptured >= 2) score += 20;
   else if (dataPointsCaptured >= 1) score += 10;
 
-  // Recommendations engagement
-  if (eventTypes.has('recommendation_shown')) score += 20;
+  // Product recommendations engagement (higher weight for clicks)
+  if (eventTypes.has('recommendation_shown')) score += 15; // Reduced from 20
   
   const recsClicked = events.filter(e => e.type === 'recommendation_clicked').length;
-  if (recsClicked > 0) score += 20;
+  if (recsClicked >= 2) score += 30; // Clicked multiple products = high intent
+  else if (recsClicked === 1) score += 25; // Increased from 20
 
-  // Cart and checkout
+  // Cart and checkout (strong intent signals)
   if (eventTypes.has('add_to_cart')) score += 20;
-  if (eventTypes.has('checkout_started')) score += 10;
+  if (eventTypes.has('checkout_started')) score += 15; // Increased from 10
 
-  // Dwell time
+  // Dwell time (engagement indicator)
   const firstEvent = events[0];
   const lastEvent = events[events.length - 1];
   const dwellMinutes = (lastEvent.timestamp.getTime() - firstEvent.timestamp.getTime()) / 60000;
-  if (dwellMinutes > 3) score += 10;
+  if (dwellMinutes >= 5) score += 15; // Spent significant time
+  else if (dwellMinutes >= 3) score += 10;
+  else if (dwellMinutes >= 1) score += 5;
 
   return Math.min(score, 100);
 };
