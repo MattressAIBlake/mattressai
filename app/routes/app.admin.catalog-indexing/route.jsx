@@ -1,5 +1,5 @@
 import { json } from '@remix-run/node';
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useLoaderData, useFetcher, useNavigate, useSearchParams, useRevalidator } from '@remix-run/react';
 import {
   Page,
@@ -519,7 +519,7 @@ function EditProductModal({ product, active, onClose, onSave }) {
     }
   }, []);
   
-  const handleSave = () => {
+  const handleSave = useCallback(() => {
     // Check if critical fields changed
     const criticalFields = ['firmness', 'material', 'features', 'supportFeatures', 'height'];
     const criticalFieldChanged = criticalFields.some(field => 
@@ -532,7 +532,18 @@ function EditProductModal({ product, active, onClose, onSave }) {
       shopifyProductId: product.shopifyProductId,
       criticalFieldChanged
     });
-  };
+  }, [formData, originalData, onSave, product]);
+  
+  // Memoize primaryAction to prevent infinite re-renders
+  const modalPrimaryAction = useMemo(() => ({
+    content: 'Save Changes',
+    onAction: handleSave
+  }), [handleSave]);
+
+  const modalSecondaryActions = useMemo(() => [{
+    content: 'Cancel',
+    onAction: onClose
+  }], [onClose]);
   
   if (!product) return null;
 
@@ -541,14 +552,8 @@ function EditProductModal({ product, active, onClose, onSave }) {
       open={active}
       onClose={onClose}
       title="Edit Product"
-      primaryAction={{
-        content: 'Save Changes',
-        onAction: handleSave
-      }}
-      secondaryActions={[{
-        content: 'Cancel',
-        onAction: onClose
-      }]}
+      primaryAction={modalPrimaryAction}
+      secondaryActions={modalSecondaryActions}
     >
       <Modal.Section>
         <BlockStack gap="400">
@@ -992,6 +997,24 @@ export default function ProductInventory() {
     ? Math.ceil((120 * (100 - estimatedProgress)) / 100)
     : null;
 
+  // Memoize modal primaryActions to prevent infinite re-renders
+  const deleteModalPrimaryAction = useMemo(() => ({
+    content: 'Delete',
+    destructive: true,
+    onAction: handleConfirmDelete
+  }), [handleConfirmDelete]);
+
+  const bulkDeleteModalPrimaryAction = useMemo(() => ({
+    content: `Delete ${selectedProducts.length} Product${selectedProducts.length > 1 ? 's' : ''}`,
+    destructive: true,
+    onAction: handleConfirmBulkDelete
+  }), [selectedProducts.length, handleConfirmBulkDelete]);
+
+  const indexingWarningModalPrimaryAction = useMemo(() => ({
+    content: 'Accept and Run',
+    onAction: confirmAndStartIndexing
+  }), [confirmAndStartIndexing]);
+
   return (
     <Page>
       <TitleBar title="Product Inventory" />
@@ -1293,11 +1316,7 @@ export default function ProductInventory() {
         open={showDeleteConfirm}
         onClose={() => setShowDeleteConfirm(false)}
         title="Delete Product"
-        primaryAction={{
-          content: 'Delete',
-          destructive: true,
-          onAction: handleConfirmDelete
-        }}
+        primaryAction={deleteModalPrimaryAction}
         secondaryActions={[{
           content: 'Cancel',
           onAction: () => setShowDeleteConfirm(false)
@@ -1316,11 +1335,7 @@ export default function ProductInventory() {
         open={showBulkDeleteConfirm}
         onClose={() => setShowBulkDeleteConfirm(false)}
         title="Delete Multiple Products"
-        primaryAction={{
-          content: `Delete ${selectedProducts.length} Product${selectedProducts.length > 1 ? 's' : ''}`,
-          destructive: true,
-          onAction: handleConfirmBulkDelete
-        }}
+        primaryAction={bulkDeleteModalPrimaryAction}
         secondaryActions={[{
           content: 'Cancel',
           onAction: () => setShowBulkDeleteConfirm(false)
@@ -1365,10 +1380,7 @@ export default function ProductInventory() {
         open={showIndexingWarning}
         onClose={() => setShowIndexingWarning(false)}
         title="⚠️ AI Indexing Limitations"
-        primaryAction={{
-          content: 'Accept and Run',
-          onAction: confirmAndStartIndexing
-        }}
+        primaryAction={indexingWarningModalPrimaryAction}
         secondaryActions={[{
           content: 'Cancel',
           onAction: () => setShowIndexingWarning(false)

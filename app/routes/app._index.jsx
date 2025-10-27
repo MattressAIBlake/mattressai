@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   Page,
   Layout,
@@ -36,6 +36,12 @@ export default function Index() {
   const navigate = useNavigate();
   const { showWelcome } = useLoaderData();
   const [instructionsOpen, setInstructionsOpen] = useState(false);
+
+  // Memoize modal primaryAction to prevent infinite re-renders
+  const modalPrimaryAction = useMemo(() => ({
+    content: 'Close',
+    onAction: () => setInstructionsOpen(false),
+  }), []);
 
   return (
     <Page>
@@ -233,10 +239,7 @@ export default function Index() {
         open={instructionsOpen}
         onClose={() => setInstructionsOpen(false)}
         title="Getting Started with MattressAI"
-        primaryAction={{
-          content: 'Close',
-          onAction: () => setInstructionsOpen(false),
-        }}
+        primaryAction={modalPrimaryAction}
         large
       >
         <Modal.Section>

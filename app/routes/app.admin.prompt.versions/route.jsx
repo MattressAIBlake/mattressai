@@ -1,5 +1,5 @@
 import { json } from '@remix-run/node';
-import { useState } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useLoaderData, useFetcher, useNavigate } from '@remix-run/react';
 import {
   Page,
@@ -222,14 +222,38 @@ export default function PromptVersionsPage() {
     versions.find(v => v.id === id)
   ).filter(Boolean);
 
+  // Memoize primaryAction objects to prevent infinite re-renders
+  const titleBarPrimaryAction = useMemo(() => ({
+    content: 'Back to Builder',
+    onAction: () => navigate('/app/admin/prompt-builder')
+  }), [navigate]);
+
+  const comparisonModalPrimaryAction = useMemo(() => ({
+    content: 'Close',
+    onAction: () => {
+      setShowComparison(false);
+      setCompareMode(false);
+      setSelectedVersions([]);
+    }
+  }), []);
+
+  const deleteModalPrimaryAction = useMemo(() => ({
+    content: 'Delete',
+    destructive: true,
+    onAction: handleConfirmDelete,
+  }), [handleConfirmDelete, deleteConfirmation]);
+
+  const activateModalPrimaryAction = useMemo(() => ({
+    content: 'Activate',
+    onAction: handleConfirmActivate,
+    loading: fetcher.state === 'submitting'
+  }), [handleConfirmActivate, fetcher.state]);
+
   return (
     <Page>
       <TitleBar 
         title="Prompt Versions"
-        primaryAction={{
-          content: 'Back to Builder',
-          onAction: () => navigate('/app/admin/prompt-builder')
-        }}
+        primaryAction={titleBarPrimaryAction}
       />
       
       <Layout>
@@ -546,14 +570,7 @@ export default function PromptVersionsPage() {
         }}
         title="Compare Versions"
         large
-        primaryAction={{
-          content: 'Close',
-          onAction: () => {
-            setShowComparison(false);
-            setCompareMode(false);
-            setSelectedVersions([]);
-          }
-        }}
+        primaryAction={comparisonModalPrimaryAction}
       >
         <Modal.Section>
           {comparisonVersions.length === 2 && (
@@ -657,12 +674,7 @@ export default function PromptVersionsPage() {
         open={!!deleteConfirmation}
         onClose={() => setDeleteConfirmation(null)}
         title="Delete Version"
-        primaryAction={{
-          content: 'Delete',
-          destructive: true,
-          onAction: handleConfirmDelete,
-          loading: fetcher.state === 'submitting'
-        }}
+        primaryAction={deleteModalPrimaryAction}
         secondaryActions={[
           {
             content: 'Cancel',
@@ -687,11 +699,7 @@ export default function PromptVersionsPage() {
         open={!!activateConfirmation}
         onClose={() => setActivateConfirmation(null)}
         title="Activate Version"
-        primaryAction={{
-          content: 'Activate',
-          onAction: handleConfirmActivate,
-          loading: fetcher.state === 'submitting'
-        }}
+        primaryAction={activateModalPrimaryAction}
         secondaryActions={[
           {
             content: 'Cancel',

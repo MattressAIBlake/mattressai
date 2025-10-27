@@ -1,6 +1,6 @@
 import { json } from '@remix-run/node';
 import { useLoaderData, useFetcher } from '@remix-run/react';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   Page,
   Layout,
@@ -124,14 +124,17 @@ export default function IntegrationsTest() {
     setTestResults(fetcher.data);
   }
 
+  // Memoize primaryAction to prevent infinite re-renders
+  const titleBarPrimaryAction = useMemo(() => ({
+    content: 'Back to Settings',
+    onAction: () => window.location.href = '/app/admin/alerts/settings'
+  }), []);
+
   return (
     <Page>
       <TitleBar
         title="Test Integrations"
-        primaryAction={{
-          content: 'Back to Settings',
-          onAction: () => window.location.href = '/app/admin/alerts/settings'
-        }}
+        primaryAction={titleBarPrimaryAction}
       />
       <Layout>
         <Layout.Section>
