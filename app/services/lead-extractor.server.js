@@ -80,23 +80,7 @@ export function extractLeadFromConversation(messages) {
     }
   }
 
-  // Extract name (context-aware)
-  // Look for patterns like "I'm [Name]", "My name is [Name]", "This is [Name]"
-  const namePatterns = [
-    /(?:my name is|i'm|i am|this is|call me)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)/i,
-    /^([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\s*(?:here|speaking)/i,
-  ];
-
-  for (const message of userMessages) {
-    for (const pattern of namePatterns) {
-      const nameMatch = message.match(pattern);
-      if (nameMatch && nameMatch[1]) {
-        leadData.name = nameMatch[1].trim();
-        break;
-      }
-    }
-    if (leadData.name) break;
-  }
+  // Note: Name extraction removed - name field will be left blank for users to fill manually
 
   // Detect consent indicators
   const consentKeywords = [
