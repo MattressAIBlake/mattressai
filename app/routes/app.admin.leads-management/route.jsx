@@ -23,7 +23,8 @@ export const loader = async ({ request }) => {
 };
 
 export default function LeadsManagement() {
-  const fetcher = useFetcher();
+  const loadFetcher = useFetcher(); // For loading leads
+  const updateFetcher = useFetcher(); // For updating status
   const [searchValue, setSearchValue] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [dateRange, setDateRange] = useState('7d');
@@ -43,8 +44,8 @@ export default function LeadsManagement() {
     params.append('from', from.toISOString());
     params.append('to', to.toISOString());
 
-    fetcher.load(`/app/admin/leads?${params.toString()}`);
-  }, [searchValue, statusFilter, dateRange, fetcher]);
+    loadFetcher.load(`/app/admin/leads?${params.toString()}`);
+  }, [searchValue, statusFilter, dateRange, loadFetcher]);
 
   const handleExport = useCallback(() => {
     const params = new URLSearchParams();
@@ -55,19 +56,26 @@ export default function LeadsManagement() {
   }, [statusFilter]);
 
   const handleStatusChange = useCallback((leadId, newStatus) => {
-    fetcher.submit(
+    updateFetcher.submit(
       { leadId, status: newStatus },
       { method: 'post', action: '/app/admin/leads', encType: 'application/json' }
     );
-  }, [fetcher]);
+  }, [updateFetcher]);
+
+  // Reload leads after successful status update
+  useEffect(() => {
+    if (updateFetcher.state === 'idle' && updateFetcher.data?.success) {
+      handleSearch();
+    }
+  }, [updateFetcher.state, updateFetcher.data, handleSearch]);
 
   // Auto-load leads on mount
   useEffect(() => {
     handleSearch();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const leads = fetcher.data?.leads || [];
-  const total = fetcher.data?.total || 0;
+  const leads = loadFetcher.data?.leads || [];
+  const total = loadFetcher.data?.total || 0;
 
   const rows = leads.map((lead) => {
     const statusBadge = {
@@ -160,7 +168,7 @@ export default function LeadsManagement() {
                 </Button>
               </div>
 
-              {fetcher.state === 'loading' ? (
+              {loadFetcher.state === 'loading' ? (
                 <div style={{ padding: '40px', textAlign: 'center' }}>
                   <Text variant="bodyMd" as="p">Loading leads...</Text>
                 </div>
