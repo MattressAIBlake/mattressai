@@ -45,7 +45,7 @@ export default function LeadsManagement() {
     params.append('to', to.toISOString());
 
     loadFetcher.load(`/app/admin/leads?${params.toString()}`);
-  }, [searchValue, statusFilter, dateRange, loadFetcher]);
+  }, [searchValue, statusFilter, dateRange]); // loadFetcher is stable, excluded from deps
 
   const handleExport = useCallback(() => {
     const params = new URLSearchParams();
@@ -60,7 +60,7 @@ export default function LeadsManagement() {
       { leadId, status: newStatus },
       { method: 'post', action: '/app/admin/leads', encType: 'application/json' }
     );
-  }, [updateFetcher]);
+  }, []); // updateFetcher is stable, excluded from deps
 
   // Reload leads after successful status update
   useEffect(() => {
