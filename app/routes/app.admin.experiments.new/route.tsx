@@ -14,7 +14,7 @@ import {
   Banner
 } from '@shopify/polaris';
 import { TitleBar } from '@shopify/app-bridge-react';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { authenticate } from '~/shopify.server';
 import { createExperiment } from '~/lib/experiments/ab-testing.service.server';
 
@@ -151,14 +151,17 @@ export default function NewExperimentPage() {
 
   const totalSplit = variants.reduce((sum, v) => sum + v.splitPercent, 0);
 
+  // Memoize primaryAction to prevent infinite re-renders
+  const titleBarPrimaryAction = useMemo(() => ({
+    content: 'Create Experiment',
+    onAction: handleSubmit
+  }), [handleSubmit]);
+
   return (
     <Page>
       <TitleBar 
         title="Create A/B Test"
-        primaryAction={{
-          content: 'Create Experiment',
-          onAction: handleSubmit
-        }}
+        primaryAction={titleBarPrimaryAction}
       />
       <Layout>
         <Layout.Section>

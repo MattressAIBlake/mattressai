@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { json } from '@remix-run/node';
 import { useLoaderData, useFetcher } from '@remix-run/react';
 import {
@@ -77,6 +77,12 @@ export default function LeadsManagement() {
   const leads = loadFetcher.data?.leads || [];
   const total = loadFetcher.data?.total || 0;
 
+  // Memoize primaryAction to prevent infinite re-renders
+  const titleBarPrimaryAction = useMemo(() => ({
+    content: 'Export CSV',
+    onAction: handleExport
+  }), [handleExport]);
+
   const rows = leads.map((lead) => {
     const statusBadge = {
       new: <Badge>New</Badge>,
@@ -119,10 +125,7 @@ export default function LeadsManagement() {
     <Page>
       <TitleBar 
         title="Lead Management"
-        primaryAction={{
-          content: 'Export CSV',
-          onAction: handleExport
-        }}
+        primaryAction={titleBarPrimaryAction}
       />
       <Layout>
         <Layout.Section>

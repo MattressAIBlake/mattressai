@@ -1,5 +1,6 @@
 import { json } from '@remix-run/node';
 import { useLoaderData, useNavigate } from '@remix-run/react';
+import { useMemo } from 'react';
 import {
   Page,
   Layout,
@@ -78,14 +79,17 @@ export default function ExperimentsPage() {
     </Button>
   ]);
 
+  // Memoize primaryAction to prevent infinite re-renders
+  const titleBarPrimaryAction = useMemo(() => ({
+    content: 'Create Experiment',
+    onAction: handleCreateExperiment
+  }), [handleCreateExperiment]);
+
   return (
     <Page>
       <TitleBar 
         title="A/B Testing"
-        primaryAction={{
-          content: 'Create Experiment',
-          onAction: handleCreateExperiment
-        }}
+        primaryAction={titleBarPrimaryAction}
       />
       <Layout>
         <Layout.Section>
