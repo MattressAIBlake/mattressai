@@ -153,7 +153,7 @@ export const loader = async ({ request }) => {
     },
     
     addToSaved: function(product) {
-      const exists = this.savedRecommendations.find(p => p.productId === product.productId);
+      const exists = this.savedRecommendations.find(p => p.id === product.id);
       if (!exists) {
         this.savedRecommendations.push(product);
         this.saveSavedRecommendations();
@@ -163,7 +163,7 @@ export const loader = async ({ request }) => {
     },
     
     removeFromSaved: function(productId) {
-      this.savedRecommendations = this.savedRecommendations.filter(p => p.productId !== productId);
+      this.savedRecommendations = this.savedRecommendations.filter(p => p.id !== productId);
       this.saveSavedRecommendations();
     },
     
@@ -774,7 +774,7 @@ export const loader = async ({ request }) => {
         document.dispatchEvent(new CustomEvent('mattressai:recommendation_shown', {
           detail: { 
             products: [{
-              id: product.productId,
+              id: product.id,
               title: product.title,
               price: product.price
             }]
@@ -874,7 +874,7 @@ export const loader = async ({ request }) => {
             <a href="\${product.url || '#'}" class="mattressai-saved-card__btn mattressai-saved-card__btn--primary" target="_blank" rel="noopener noreferrer">
               View Product
             </a>
-            <button class="mattressai-saved-card__btn mattressai-saved-card__btn--remove" data-product-id="\${product.productId}">
+            <button class="mattressai-saved-card__btn mattressai-saved-card__btn--remove" data-product-id="\${product.id}">
               Remove
             </button>
           </div>
@@ -884,7 +884,7 @@ export const loader = async ({ request }) => {
       // Add remove button handler
       const removeBtn = card.querySelector('.mattressai-saved-card__btn--remove');
       removeBtn.addEventListener('click', () => {
-        this.removeFromSaved(product.productId);
+        this.removeFromSaved(product.id);
         this.renderSavedPanel();
         this.updateSavedBadge();
       });
@@ -1050,7 +1050,7 @@ export const loader = async ({ request }) => {
       });
       
       // Check if already saved
-      const isSaved = this.savedRecommendations.find(p => p.productId === product.productId);
+      const isSaved = this.savedRecommendations.find(p => p.id === product.id);
       if (isSaved) {
         saveBtn.textContent = '✓ Saved';
         saveBtn.disabled = true;
@@ -1083,7 +1083,7 @@ export const loader = async ({ request }) => {
         document.dispatchEvent(new CustomEvent('mattressai:recommendation_clicked', {
           detail: { 
             product: {
-              id: product.productId,
+              id: product.id,
               title: product.title,
               price: product.price
             }
@@ -1379,11 +1379,11 @@ export const loader = async ({ request }) => {
       }
       
       this.compareList.push(product);
-      this.trackEvent('comparison_added', { productId: product.productId });
+      this.trackEvent('comparison_added', { productId: product.id });
     },
     
     removeFromCompare: function(productId) {
-      this.compareList = this.compareList.filter(p => p.productId !== productId);
+      this.compareList = this.compareList.filter(p => p.id !== productId);
       this.trackEvent('comparison_removed', { productId });
     },
     
