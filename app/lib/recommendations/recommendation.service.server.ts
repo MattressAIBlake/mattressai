@@ -2,6 +2,13 @@ import { getEmbeddingProvider, getVectorStoreProvider } from '../ports/provider-
 import { prisma } from '~/db.server';
 
 /**
+ * Price threshold constants for premium mattress prioritization
+ */
+const PREMIUM_THRESHOLD = 2500;
+const UPPER_MID_THRESHOLD = 1500;
+const MID_THRESHOLD = 500;
+
+/**
  * Shopper intent data collected from conversation
  */
 export interface ShopperIntent {
@@ -100,9 +107,39 @@ export class RecommendationService {
       // Step 5: Apply business logic boosts and filters
       const boostedResults = this.applyBoosts(searchResults, intent);
       
-      // Step 6: Convert to recommended products with explanations
+      // Step 6: Handle budget-based result selection
+      let finalResults: any[];
+      
+      if (intent.budget?.max) {
+        // When budget is specified, show best within budget + one above budget
+        const withinBudget = boostedResults.filter(r => 
+          (r.metadata?.price || 0) <= intent.budget.max!
+        );
+        
+        const aboveBudget = boostedResults.find(r => 
+          (r.metadata?.price || 0) > intent.budget.max!
+        );
+        
+        if (aboveBudget && withinBudget.length >= topK) {
+          // Replace last result with above-budget option
+          finalResults = [...withinBudget.slice(0, topK - 1), aboveBudget];
+        } else if (aboveBudget && withinBudget.length < topK) {
+          // Add above-budget at the end
+          finalResults = [...withinBudget, aboveBudget];
+        } else {
+          // No above-budget product found, use what we have
+          finalResults = withinBudget.slice(0, topK);
+        }
+        
+        console.log(`💰 Budget filtering: ${withinBudget.length} within budget, ${aboveBudget ? '1' : '0'} above budget`);
+      } else {
+        // No budget specified, use top results (premium already boosted)
+        finalResults = boostedResults.slice(0, topK);
+      }
+      
+      // Step 7: Convert to recommended products with explanations
       const recommendations = await Promise.all(
-        boostedResults.slice(0, topK).map(result => 
+        finalResults.map(result => 
           this.createRecommendation(result, intent)
         )
       );
@@ -169,6 +206,11 @@ export class RecommendationService {
       parts.push(intent.certifications.join(' '));
     }
     
+    // Prioritize premium mattresses when no budget specified or very high budget
+    if (!intent.budget || (intent.budget.max && intent.budget.max > 4000)) {
+      parts.push('luxury premium high-quality high-end');
+    }
+    
     return parts.join(' | ');
   }
   
@@ -221,6 +263,22 @@ export class RecommendationService {
         
         try {
           const enrichedProfile = JSON.parse(metadata.enriched_profile || '{}');
+          
+          // Price-based boost: Prioritize premium mattresses
+          const price = metadata.price || 0;
+          let priceBoost = 1.0;
+          
+          if (price >= PREMIUM_THRESHOLD) {
+            priceBoost = 1.4; // Premium products get highest boost
+          } else if (price >= UPPER_MID_THRESHOLD) {
+            priceBoost = 1.2; // Upper-mid range
+          } else if (price >= MID_THRESHOLD) {
+            priceBoost = 1.0; // Mid range (no change)
+          } else if (price > 0) {
+            priceBoost = 0.8; // Budget range (slight de-prioritization)
+          }
+          
+          boostMultiplier *= priceBoost;
           
           // Boost for firmness match
           if (intent.firmness && enrichedProfile.firmness === intent.firmness) {

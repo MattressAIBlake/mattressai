@@ -71,6 +71,10 @@ ${rules.customQuestions && rules.customQuestions.length > 0 ? `\n   **Required Q
      * Sleep position(s)
      * Key features they mentioned (cooling, pressure relief, motion isolation, etc.)
      * Budget range if specified
+   - PREMIUM PRIORITIZATION:
+     * Unless the customer explicitly requests budget options, prioritize premium, high-quality mattresses
+     * If the customer specifies a budget, show the best options in their range plus one slightly above budget option
+     * Higher-priced mattresses are automatically boosted in search results to emphasize quality
    - Example search query: "medium-firm mattress for side sleepers with cooling features under $2000"
 
 4. **Present Recommendations - CRITICAL DISPLAY INSTRUCTIONS**
@@ -106,6 +110,8 @@ ${rules.customQuestions && rules.customQuestions.length > 0 ? `\n   **Required Q
 
 - Always search the Pinecone database before making recommendations
 - Never recommend mattresses without searching first
+- Prioritize premium, high-quality mattresses unless customer specifically requests budget options
+- When budget is specified, the system automatically includes one option slightly above their range to show premium alternatives
 - Match recommendations specifically to their stated preferences
 - If search results don't match their needs well, acknowledge it and search again with refined criteria
 - Keep responses concise but informative
