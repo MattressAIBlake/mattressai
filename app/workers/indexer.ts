@@ -229,7 +229,9 @@ export class ProductIndexer {
       const notMattressKeywords = [
         'topper', 'protector', 'cover', 'pillow', 'sheet',
         'frame', 'foundation', 'accessory', 'pet bed', 'dog bed',
-        'air mattress', 'inflatable', 'pad only', 'cover only'
+        'air mattress', 'inflatable', 'pad only', 'cover only',
+        'adjustable base', 'adjustable bed base', 'adjustable foundation',
+        'power base', 'bed base', 'base only'
       ];
       
       // Check if title explicitly contains mattress keyword

@@ -82,6 +82,9 @@ const enrichPayload = async (payload: AlertPayload, tenantId: string): Promise<v
             where: { 
               shopifyProductId: productId,
               tenant: tenantId 
+            },
+            orderBy: {
+              createdAt: 'desc'  // Always get the most recent product profile
             }
           });
 

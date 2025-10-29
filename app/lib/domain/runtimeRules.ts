@@ -91,13 +91,7 @@ ${rules.customQuestions && rules.customQuestions.length > 0 ? `\n   **Required Q
    - Address any concerns or hesitations
    - Provide additional details as needed
 
-${rules.leadCapture.enabled ? `6. **Capture Contact Information** (${rules.leadCapture.position === 'start' ? 'at the beginning' : 'at the end'})
-   - ${rules.leadCapture.position === 'start' ? 'After the welcome, before asking questions' : 'After presenting recommendations'}
-   - Ask for: ${rules.leadCapture.fields.join(', ')}
-   - Explain that this helps provide follow-up assistance and special offers
-   - Be respectful if they prefer not to share
-
-` : ''}# BEST PRACTICES
+# BEST PRACTICES
 
 - **ONE QUESTION AT A TIME**: This is the #1 rule - never ask multiple questions in one response
 - **Be Consultative, Not Pushy**: Focus on helping, not selling
