@@ -38,6 +38,8 @@ export const loader = async ({ request }) => {
     variantId: null,
     compareList: [],
     savedRecommendations: [],
+    pendingLeadForm: null,
+    pendingProducts: null,
     unreadCount: 0,
     isOpen: false,
     stickToBottom: true,
@@ -109,6 +111,9 @@ export const loader = async ({ request }) => {
       
       // Create chat bubble
       this.createChatBubble();
+      
+      // Create saved recommendations panel (only once on init)
+      this.createSavedPanel();
       
       this.initialized = true;
       console.log('MattressAI Widget initialized', this.config);
@@ -407,9 +412,6 @@ export const loader = async ({ request }) => {
       // Focus input
       const input = widget.querySelector('#mattressai-input');
       if (input) input.focus();
-      
-      // Create saved recommendations panel
-      this.createSavedPanel();
     },
     
     setupWidgetListeners: function(widget) {
@@ -782,6 +784,11 @@ export const loader = async ({ request }) => {
     },
     
     createSavedPanel: function() {
+      // Check if panel already exists to prevent duplicates
+      if (document.getElementById('mattressai-saved-panel')) {
+        return;
+      }
+      
       const panel = document.createElement('div');
       panel.id = 'mattressai-saved-panel';
       panel.className = 'mattressai-saved-panel';
