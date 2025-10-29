@@ -1046,6 +1046,7 @@ export const loader = async ({ request }) => {
           saveBtn.textContent = '✓ Saved';
           saveBtn.disabled = true;
           this.updateSavedBadge();
+          this.renderSavedPanel();
         }
       });
       
