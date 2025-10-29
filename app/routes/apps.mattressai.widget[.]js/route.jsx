@@ -37,6 +37,7 @@ export const loader = async ({ request }) => {
     conversationId: null,
     variantId: null,
     compareList: [],
+    savedRecommendations: [],
     unreadCount: 0,
     isOpen: false,
     stickToBottom: true,
@@ -95,6 +96,9 @@ export const loader = async ({ request }) => {
       // Initialize session
       this.startSession();
       
+      // Load saved recommendations from localStorage
+      this.loadSavedRecommendations();
+      
       // Initialize tracking module
       if (window.MattressAITracking) {
         window.MattressAITracking.init(this.config.tenant, '/apps/mattressai');
@@ -108,6 +112,9 @@ export const loader = async ({ request }) => {
       
       this.initialized = true;
       console.log('MattressAI Widget initialized', this.config);
+      
+      // Update saved badge count
+      this.updateSavedBadge();
     },
     
     restoreState: function() {
@@ -120,6 +127,39 @@ export const loader = async ({ request }) => {
     saveState: function() {
       sessionStorage.setItem('mattressai_widget_open', String(this.isOpen));
       sessionStorage.setItem('mattressai_unread', String(this.unreadCount));
+    },
+    
+    loadSavedRecommendations: function() {
+      try {
+        const saved = localStorage.getItem('mattressai_saved_recommendations');
+        this.savedRecommendations = saved ? JSON.parse(saved) : [];
+      } catch (e) {
+        console.error('Failed to load saved recommendations:', e);
+        this.savedRecommendations = [];
+      }
+    },
+    
+    saveSavedRecommendations: function() {
+      try {
+        localStorage.setItem('mattressai_saved_recommendations', JSON.stringify(this.savedRecommendations));
+      } catch (e) {
+        console.error('Failed to save recommendations:', e);
+      }
+    },
+    
+    addToSaved: function(product) {
+      const exists = this.savedRecommendations.find(p => p.productId === product.productId);
+      if (!exists) {
+        this.savedRecommendations.push(product);
+        this.saveSavedRecommendations();
+        return true;
+      }
+      return false;
+    },
+    
+    removeFromSaved: function(productId) {
+      this.savedRecommendations = this.savedRecommendations.filter(p => p.productId !== productId);
+      this.saveSavedRecommendations();
     },
     
     formatDay: function(date = new Date()) {
@@ -312,6 +352,12 @@ export const loader = async ({ request }) => {
           <button class="mattressai-newchip" id="mattressai-newchip" style="display: none;">
             New messages ↓
           </button>
+          <button class="mattressai-widget__saved-btn" id="mattressai-saved-btn" aria-label="My Recommendations" title="My Recommendations">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span class="mattressai-saved-badge" id="mattressai-saved-badge" style="display: none;">0</span>
+          </button>
           <button class="mattressai-widget__close" aria-label="Close chat">
             <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M12 4L4 12M4 4l8 8" stroke-linecap="round"/>
@@ -361,6 +407,9 @@ export const loader = async ({ request }) => {
       // Focus input
       const input = widget.querySelector('#mattressai-input');
       if (input) input.focus();
+      
+      // Create saved recommendations panel
+      this.createSavedPanel();
     },
     
     setupWidgetListeners: function(widget) {
@@ -372,6 +421,12 @@ export const loader = async ({ request }) => {
       
       // Close button
       closeBtn.addEventListener('click', () => this.closeChat());
+      
+      // Saved recommendations button
+      const savedBtn = document.getElementById('mattressai-saved-btn');
+      if (savedBtn) {
+        savedBtn.addEventListener('click', () => this.toggleSavedPanel());
+      }
       
       // Quick replies
       const quickReplies = widget.querySelectorAll('.mattressai-quick-reply');
@@ -726,6 +781,123 @@ export const loader = async ({ request }) => {
       });
     },
     
+    createSavedPanel: function() {
+      const panel = document.createElement('div');
+      panel.id = 'mattressai-saved-panel';
+      panel.className = 'mattressai-saved-panel';
+      panel.style.display = 'none';
+      
+      panel.innerHTML = \`
+        <div class="mattressai-saved-panel__header">
+          <h3>My Saved Recommendations</h3>
+          <button class="mattressai-saved-panel__close" aria-label="Close panel">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 4L4 12M4 4l8 8" stroke-linecap="round"/>
+            </svg>
+          </button>
+        </div>
+        <div class="mattressai-saved-panel__content" id="mattressai-saved-panel-content">
+          <p class="mattressai-saved-panel__empty">No saved recommendations yet. Click "Save for Later" on any recommendation to save it here!</p>
+        </div>
+      \`;
+      
+      document.body.appendChild(panel);
+      
+      // Setup event listeners
+      const closeBtn = panel.querySelector('.mattressai-saved-panel__close');
+      closeBtn.addEventListener('click', () => this.toggleSavedPanel(false));
+      
+      // Initial render
+      this.renderSavedPanel();
+    },
+    
+    toggleSavedPanel: function(show) {
+      const panel = document.getElementById('mattressai-saved-panel');
+      if (!panel) return;
+      
+      if (show === undefined) {
+        show = panel.style.display === 'none';
+      }
+      
+      panel.style.display = show ? 'flex' : 'none';
+      if (show) {
+        this.renderSavedPanel();
+      }
+    },
+    
+    renderSavedPanel: function() {
+      const content = document.getElementById('mattressai-saved-panel-content');
+      if (!content) return;
+      
+      if (this.savedRecommendations.length === 0) {
+        content.innerHTML = '<p class="mattressai-saved-panel__empty">No saved recommendations yet. Click "Save for Later" on any recommendation to save it here!</p>';
+        return;
+      }
+      
+      content.innerHTML = '';
+      
+      this.savedRecommendations.forEach((product) => {
+        const card = this.createSavedProductCard(product);
+        content.appendChild(card);
+      });
+    },
+    
+    createSavedProductCard: function(product) {
+      const card = document.createElement('div');
+      card.className = 'mattressai-saved-card';
+      
+      // Build card HTML
+      const imageHtml = product.imageUrl 
+        ? \`<img src="\${product.imageUrl}" alt="\${product.title}" loading="lazy">\`
+        : '<div class="mattressai-saved-card__placeholder">No image</div>';
+      
+      const fitScoreHtml = product.fitScore 
+        ? \`<div class="mattressai-saved-card__badge">\${Math.round(product.fitScore)}% match</div>\`
+        : '';
+      
+      card.innerHTML = \`
+        <div class="mattressai-saved-card__image">
+          \${imageHtml}
+          \${fitScoreHtml}
+        </div>
+        <div class="mattressai-saved-card__content">
+          <h4 class="mattressai-saved-card__title">\${product.title}</h4>
+          \${product.vendor ? \`<p class="mattressai-saved-card__vendor">\${product.vendor}</p>\` : ''}
+          <div class="mattressai-saved-card__actions">
+            <a href="\${product.url || '#'}" class="mattressai-saved-card__btn mattressai-saved-card__btn--primary" target="_blank" rel="noopener noreferrer">
+              View Product
+            </a>
+            <button class="mattressai-saved-card__btn mattressai-saved-card__btn--remove" data-product-id="\${product.productId}">
+              Remove
+            </button>
+          </div>
+        </div>
+      \`;
+      
+      // Add remove button handler
+      const removeBtn = card.querySelector('.mattressai-saved-card__btn--remove');
+      removeBtn.addEventListener('click', () => {
+        this.removeFromSaved(product.productId);
+        this.renderSavedPanel();
+        this.updateSavedBadge();
+      });
+      
+      return card;
+    },
+    
+    updateSavedBadge: function() {
+      const badge = document.getElementById('mattressai-saved-badge');
+      if (!badge) return;
+      
+      const count = this.savedRecommendations.length;
+      if (count > 0) {
+        badge.textContent = count;
+        badge.style.display = 'flex';
+      } else {
+        badge.style.display = 'none';
+      }
+    },
+    
     createProductCard: function(product, index) {
       const card = document.createElement('div');
       card.className = 'rec-card';
@@ -780,13 +952,13 @@ export const loader = async ({ request }) => {
       title.textContent = product.title;
       content.appendChild(title);
       
-      // Price
-      if (product.price) {
-        const price = document.createElement('div');
-        price.className = 'rec-card__price';
-        price.textContent = \`$\${product.price.toFixed(2)}\`;
-        content.appendChild(price);
-      }
+      // Price - REMOVED: Not showing price to customers
+      // if (product.price) {
+      //   const price = document.createElement('div');
+      //   price.className = 'rec-card__price';
+      //   price.textContent = \`$\${product.price.toFixed(2)}\`;
+      //   content.appendChild(price);
+      // }
       
       // Firmness indicator
       if (product.firmness) {
@@ -849,6 +1021,35 @@ export const loader = async ({ request }) => {
       // Actions
       const actions = document.createElement('div');
       actions.className = 'rec-card__actions';
+      
+      // Save button
+      const saveBtn = document.createElement('button');
+      saveBtn.className = 'rec-card__btn rec-card__btn--save';
+      saveBtn.setAttribute('aria-label', \`Save \${product.title}\`);
+      saveBtn.innerHTML = \`
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px; margin-right: 6px;">
+          <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Save for Later
+      \`;
+      saveBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const added = this.addToSaved(product);
+        if (added) {
+          saveBtn.textContent = '✓ Saved';
+          saveBtn.disabled = true;
+          this.updateSavedBadge();
+        }
+      });
+      
+      // Check if already saved
+      const isSaved = this.savedRecommendations.find(p => p.productId === product.productId);
+      if (isSaved) {
+        saveBtn.textContent = '✓ Saved';
+        saveBtn.disabled = true;
+      }
+      
+      actions.appendChild(saveBtn);
       
       // View Product button
       const viewBtn = document.createElement('a');
@@ -1846,12 +2047,13 @@ export const loader = async ({ request }) => {
       letter-spacing: -0.01em;
     }
     
-    .rec-card__price {
+    /* REMOVED: Price display hidden from customers */
+    /* .rec-card__price {
       font-size: 28px;
       font-weight: 700;
       color: var(--mattress-primary, #3B82F6);
       letter-spacing: -0.02em;
-    }
+    } */
     
     .rec-card__firmness {
       display: flex;
@@ -2252,6 +2454,273 @@ export const loader = async ({ request }) => {
       .mattressai-quick-reply {
         font-size: 12px;
         padding: 6px 12px;
+      }
+    }
+    
+    /* Saved Recommendations Button in Header */
+    .mattressai-widget__saved-btn {
+      position: relative;
+      background: transparent;
+      border: none;
+      padding: 8px;
+      cursor: pointer;
+      color: var(--mattress-header-text, #FFFFFF);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.2s ease;
+      margin-right: 8px;
+    }
+    
+    .mattressai-widget__saved-btn:hover {
+      opacity: 0.8;
+    }
+    
+    .mattressai-widget__saved-btn svg {
+      width: 20px;
+      height: 20px;
+    }
+    
+    .mattressai-saved-badge {
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      background: #EF4444;
+      color: white;
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 5px;
+      border-radius: 10px;
+      min-width: 18px;
+      height: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    /* Saved Recommendations Panel */
+    .mattressai-saved-panel {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: 400px;
+      max-width: 90vw;
+      height: 100vh;
+      background: white;
+      box-shadow: -4px 0 24px rgba(0, 0, 0, 0.15);
+      z-index: 2147483646;
+      display: flex;
+      flex-direction: column;
+      animation: slideInRight 0.3s ease-out;
+    }
+    
+    @keyframes slideInRight {
+      from {
+        transform: translateX(100%);
+      }
+      to {
+        transform: translateX(0);
+      }
+    }
+    
+    .mattressai-saved-panel__header {
+      padding: 20px;
+      background: var(--mattress-primary, #3B82F6);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    
+    .mattressai-saved-panel__header h3 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 600;
+    }
+    
+    .mattressai-saved-panel__close {
+      background: transparent;
+      border: none;
+      padding: 8px;
+      cursor: pointer;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.2s ease;
+    }
+    
+    .mattressai-saved-panel__close:hover {
+      opacity: 0.8;
+    }
+    
+    .mattressai-saved-panel__close svg {
+      width: 20px;
+      height: 20px;
+    }
+    
+    .mattressai-saved-panel__content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    
+    .mattressai-saved-panel__empty {
+      text-align: center;
+      color: #6B7280;
+      padding: 40px 20px;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    
+    /* Saved Product Cards (Compact Style) */
+    .mattressai-saved-card {
+      background: white;
+      border: 1px solid #E5E7EB;
+      border-radius: 12px;
+      overflow: hidden;
+      display: flex;
+      gap: 12px;
+      transition: box-shadow 0.2s ease;
+    }
+    
+    .mattressai-saved-card:hover {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    
+    .mattressai-saved-card__image {
+      position: relative;
+      width: 100px;
+      height: 100px;
+      flex-shrink: 0;
+      background: #F3F4F6;
+    }
+    
+    .mattressai-saved-card__image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    
+    .mattressai-saved-card__placeholder {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 100%;
+      color: #9CA3AF;
+      font-size: 12px;
+    }
+    
+    .mattressai-saved-card__badge {
+      position: absolute;
+      top: 6px;
+      left: 6px;
+      background: var(--mattress-primary, #3B82F6);
+      color: white;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    
+    .mattressai-saved-card__content {
+      flex: 1;
+      padding: 12px 12px 12px 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-width: 0;
+    }
+    
+    .mattressai-saved-card__title {
+      margin: 0 0 4px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #111827;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+    }
+    
+    .mattressai-saved-card__vendor {
+      margin: 0 0 8px;
+      font-size: 12px;
+      color: #6B7280;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    
+    .mattressai-saved-card__actions {
+      display: flex;
+      gap: 8px;
+    }
+    
+    .mattressai-saved-card__btn {
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      border: none;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+    
+    .mattressai-saved-card__btn--primary {
+      background: var(--mattress-primary, #3B82F6);
+      color: white;
+      flex: 1;
+    }
+    
+    .mattressai-saved-card__btn--primary:hover {
+      background: var(--mattress-primary-hover, #2563EB);
+    }
+    
+    .mattressai-saved-card__btn--remove {
+      background: transparent;
+      color: #EF4444;
+      border: 1px solid #FEE2E2;
+    }
+    
+    .mattressai-saved-card__btn--remove:hover {
+      background: #FEF2F2;
+    }
+    
+    /* Save Button in Rec Cards */
+    .rec-card__btn--save {
+      background: transparent;
+      color: var(--mattress-primary, #3B82F6);
+      border: 2px solid var(--mattress-primary, #3B82F6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .rec-card__btn--save:hover:not(:disabled) {
+      background: var(--mattress-primary, #3B82F6);
+      color: white;
+    }
+    
+    .rec-card__btn--save:disabled {
+      opacity: 0.6;
+      cursor: default;
+      border-color: #10B981;
+      color: #10B981;
+    }
+    
+    /* Mobile Responsive */
+    @media (max-width: 768px) {
+      .mattressai-saved-panel {
+        width: 100vw;
       }
     }
   \`;
