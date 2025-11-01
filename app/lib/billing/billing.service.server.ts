@@ -96,9 +96,9 @@ export async function getOrCreateTenant(shop: string) {
   });
 
   if (!tenant) {
-    // Create new tenant with starter plan and 14-day trial
+    // Create new tenant with starter plan and 90-day trial
     const trialEndsAt = new Date();
-    trialEndsAt.setDate(trialEndsAt.getDate() + 14);
+    trialEndsAt.setDate(trialEndsAt.getDate() + 90);
 
     tenant = await prisma.tenant.create({
       data: {
@@ -450,7 +450,7 @@ export async function requestBillingApproval(
               appRecurringPricingDetails: {
                 price: { amount: planConfig.price, currencyCode: 'USD' },
                 interval: 'EVERY_30_DAYS',
-                trialDays: 14
+                trialDays: 90
               }
             }
           }

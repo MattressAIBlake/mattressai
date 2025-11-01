@@ -215,7 +215,7 @@ export const action = async ({ request }) => {
                   appRecurringPricingDetails: {
                     price: { amount: planConfig.price, currencyCode: 'USD' },
                     interval: 'EVERY_30_DAYS',
-                    trialDays: 14
+                    trialDays: 90
                   }
                 }
               }
