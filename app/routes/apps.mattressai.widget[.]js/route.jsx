@@ -2408,15 +2408,15 @@ export const loader = async ({ request }) => {
     /* Mobile Responsive */
     @media (max-width: 768px) {
       .mattressai-chat-bubble {
-        bottom: calc(16px + env(safe-area-inset-bottom));
+        bottom: calc(var(--mattress-position-bottom, 16px) + env(safe-area-inset-bottom));
       }
       
       .mattressai-position-left .mattressai-chat-bubble {
-        left: 16px;
+        left: var(--mattress-position-side, 16px);
       }
       
       .mattressai-position-right .mattressai-chat-bubble {
-        right: 16px;
+        right: var(--mattress-position-side, 16px);
       }
       
       .mattressai-bubble-icon {
