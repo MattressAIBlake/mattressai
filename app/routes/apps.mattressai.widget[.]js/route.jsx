@@ -2435,6 +2435,7 @@ export const loader = async ({ request }) => {
         max-height: 100dvh;
         border-radius: 0;
         padding-bottom: env(safe-area-inset-bottom);
+        z-index: 2147483647;
       }
       
       .mattressai-widget__header {
