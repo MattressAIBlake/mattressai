@@ -182,7 +182,7 @@ SENDGRID_FROM_EMAIL=alerts@mattressai.app
 
 # Lifecycle Email Specific
 LIFECYCLE_EMAILS_FROM_NAME=MattressAI Team
-LIFECYCLE_EMAILS_REPLY_TO=support@mattressai.com
+LIFECYCLE_EMAILS_REPLY_TO=system@themattressai.com
 LIFECYCLE_EMAILS_TEAM_DEFAULT=team@mattressai.com
 ```
 

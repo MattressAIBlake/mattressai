@@ -72,7 +72,7 @@ async function seedTemplates() {
         data: {
           tenantId: null,
           teamEmails: JSON.stringify(['team@mattressai.com']),
-          replyToEmail: 'support@mattressai.com',
+          replyToEmail: 'system@themattressai.com',
           enabled: true
         }
       });

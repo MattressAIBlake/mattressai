@@ -144,7 +144,7 @@ export const loader = async ({ request }) => {
           planName: tenant.planName || 'starter',
           trialEndsAt: trialEndsAt.toLocaleDateString(),
           loginUrl: `https://${session.shop}/admin/apps/${process.env.SHOPIFY_APP_KEY || 'mattressai'}`,
-          supportEmail: process.env.LIFECYCLE_EMAILS_REPLY_TO || 'support@mattressai.com'
+          supportEmail: process.env.LIFECYCLE_EMAILS_REPLY_TO || 'system@themattressai.com'
         });
         
         console.log(`Lifecycle email sent for app installation: ${session.shop}`);

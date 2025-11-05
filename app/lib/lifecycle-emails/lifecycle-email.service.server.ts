@@ -83,7 +83,7 @@ export async function sendLifecycleEmail(
     // Prepare common template data
     const templateData = {
       ...eventData,
-      supportEmail: globalSettings.replyToEmail || process.env.LIFECYCLE_EMAILS_REPLY_TO || 'support@mattressai.com',
+      supportEmail: globalSettings.replyToEmail || process.env.LIFECYCLE_EMAILS_REPLY_TO || 'system@themattressai.com',
       loginUrl: eventData.loginUrl || `https://${shop}/admin/apps/mattressai`,
       upgradeUrl: eventData.upgradeUrl || `https://${shop}/admin/apps/mattressai/plans`,
       reactivateUrl: eventData.reactivateUrl || `https://${shop}/admin/apps/mattressai/plans`,
@@ -283,7 +283,7 @@ async function getGlobalSettings(): Promise<{
         data: {
           tenantId: null,
           teamEmails: JSON.stringify([defaultTeamEmail]),
-          replyToEmail: process.env.LIFECYCLE_EMAILS_REPLY_TO || 'support@mattressai.com',
+          replyToEmail: process.env.LIFECYCLE_EMAILS_REPLY_TO || 'system@themattressai.com',
           enabled: true
         }
       });
@@ -300,7 +300,7 @@ async function getGlobalSettings(): Promise<{
     return {
       enabled: true,
       teamEmails: ['team@mattressai.com'],
-      replyToEmail: 'support@mattressai.com'
+      replyToEmail: 'system@themattressai.com'
     };
   }
 }
@@ -333,7 +333,7 @@ export async function updateGlobalSettings(settings: {
         data: {
           tenantId: null,
           teamEmails: JSON.stringify(settings.teamEmails || ['team@mattressai.com']),
-          replyToEmail: settings.replyToEmail || 'support@mattressai.com',
+          replyToEmail: settings.replyToEmail || 'system@themattressai.com',
           enabled: settings.enabled !== undefined ? settings.enabled : true
         }
       });

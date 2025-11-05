@@ -32,7 +32,7 @@ export const loader = async ({ request }) => {
         data: {
           tenantId: null,
           teamEmails: JSON.stringify(['team@mattressai.com']),
-          replyToEmail: 'support@mattressai.com',
+          replyToEmail: 'system@themattressai.com',
           enabled: true
         }
       });
@@ -98,7 +98,7 @@ export const action = async ({ request }) => {
           planName: 'Pro',
           trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toLocaleDateString(),
           loginUrl: `https://${shop}/admin/apps/mattressai`,
-          supportEmail: formData.get('replyToEmail') || 'support@mattressai.com'
+          supportEmail: formData.get('replyToEmail') || 'system@themattressai.com'
         });
         
         if (result.success) {
@@ -226,7 +226,7 @@ export default function LifecycleEmailSettingsPage() {
                 value={replyToEmail}
                 onChange={setReplyToEmail}
                 helpText="Email address that merchants can reply to"
-                placeholder="support@mattressai.com"
+                placeholder="system@themattressai.com"
                 type="email"
                 autoComplete="off"
               />
