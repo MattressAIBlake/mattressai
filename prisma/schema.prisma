@@ -311,3 +311,49 @@ model Plan {
 
   @@index([name])
 }
+
+model LifecycleEmailTemplate {
+  id              String   @id @default(cuid())
+  eventType       String   @unique
+  merchantSubject String
+  merchantBody    String
+  teamSubject     String?
+  teamBody        String?
+  enabled         Boolean  @default(true)
+  sendToMerchant  Boolean  @default(true)
+  sendToTeam      Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([eventType])
+  @@index([enabled])
+}
+
+model LifecycleEmailLog {
+  id            String   @id @default(cuid())
+  tenantId      String
+  eventType     String
+  recipient     String
+  recipientType String
+  subject       String
+  status        String
+  error         String?
+  sentAt        DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([eventType])
+  @@index([status])
+  @@index([sentAt])
+}
+
+model LifecycleEmailSettings {
+  id           String   @id @default(cuid())
+  tenantId     String?  @unique
+  teamEmails   String
+  replyToEmail String?
+  enabled      Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([tenantId])
+}

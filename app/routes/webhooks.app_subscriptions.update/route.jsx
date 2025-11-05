@@ -40,9 +40,59 @@ export const action = async ({ request }) => {
     // Note: ACTIVE status is handled by the billing callback route, not here
     // This webhook only processes cancellations and expirations
     if (app_subscription.status === 'CANCELLED' || app_subscription.status === 'EXPIRED') {
+      // Get tenant info before downgrading
+      const { PrismaClient } = await import('@prisma/client');
+      const prisma = new PrismaClient();
+      const tenant = await prisma.tenant.findUnique({
+        where: { shop: shopDomain }
+      });
+      const previousPlan = tenant?.planName || 'unknown';
+      await prisma.$disconnect();
+      
       // Subscription cancelled or expired - downgrade to starter
       await downgradePlan(shopDomain);
       console.log(`Downgraded ${shopDomain} to starter plan due to ${app_subscription.status}`);
+      
+      // Send lifecycle email
+      try {
+        const { sendLifecycleEmail } = await import('~/lib/lifecycle-emails/lifecycle-email.service.server');
+        const eventType = app_subscription.status === 'CANCELLED' ? 'subscription_cancelled' : 'subscription_expired';
+        
+        await sendLifecycleEmail(eventType, shopDomain, {
+          shopDomain,
+          planName: previousPlan,
+          subscriptionEndsAt: app_subscription.current_period_end || 'now',
+          reactivateUrl: `https://${shopDomain}/admin/apps/mattressai/plans`
+        });
+        
+        console.log(`Lifecycle email sent for ${eventType}: ${shopDomain}`);
+      } catch (error) {
+        console.error('Error sending lifecycle email:', error);
+        // Don't block webhook processing
+      }
+    } else if (app_subscription.status === 'DECLINED') {
+      // Payment failed
+      try {
+        const { sendLifecycleEmail } = await import('~/lib/lifecycle-emails/lifecycle-email.service.server');
+        const { PrismaClient } = await import('@prisma/client');
+        const prisma = new PrismaClient();
+        const tenant = await prisma.tenant.findUnique({
+          where: { shop: shopDomain }
+        });
+        await prisma.$disconnect();
+        
+        await sendLifecycleEmail('payment_failed', shopDomain, {
+          shopDomain,
+          planName: tenant?.planName || 'unknown',
+          amount: app_subscription.pricing_details?.price?.amount || '0',
+          updatePaymentUrl: `https://${shopDomain}/admin/settings/billing`
+        });
+        
+        console.log(`Lifecycle email sent for payment_failed: ${shopDomain}`);
+      } catch (error) {
+        console.error('Error sending lifecycle email:', error);
+        // Don't block webhook processing
+      }
     } else if (app_subscription.status === 'ACTIVE') {
       // Log for monitoring, but don't process - callback handles activation
       console.log(`ACTIVE subscription webhook received for ${shopDomain} - skipping (handled by callback)`);

@@ -109,10 +109,43 @@ export const loader = async ({ request }) => {
 
     // Check if subscription is active
     if (subscription?.status === 'ACTIVE') {
+      // Get current plan before upgrading
+      const { PrismaClient } = await import('@prisma/client');
+      const prisma = new PrismaClient();
+      const tenant = await prisma.tenant.findUnique({
+        where: { shop }
+      });
+      const previousPlan = tenant?.planName || 'starter';
+      const { PLAN_CONFIGS } = await import('~/lib/billing/billing.service.server');
+      const planConfig = PLAN_CONFIGS[planName] || {};
+      await prisma.$disconnect();
+      
       // Upgrade the tenant plan
       await upgradePlan(shop, planName, chargeId);
       
       console.log(`Successfully upgraded ${shop} to ${planName} plan`);
+      
+      // Send lifecycle email for plan upgrade
+      try {
+        const { sendLifecycleEmail } = await import('~/lib/lifecycle-emails/lifecycle-email.service.server');
+        
+        await sendLifecycleEmail('plan_upgraded', shop, {
+          shopDomain: shop,
+          planName: planName,
+          previousPlan: previousPlan,
+          tokensPerMonth: planConfig.quotas?.maxTokensPerDay || 0,
+          alertsPerHour: planConfig.quotas?.maxAlertsPerHour || 0,
+          vectorQueries: planConfig.quotas?.maxVectorQueries || 0,
+          indexJobs: planConfig.quotas?.maxIndexJobs || 0,
+          smsEnabled: planName !== 'starter',
+          prioritySupport: planName === 'enterprise'
+        });
+        
+        console.log(`Lifecycle email sent for plan_upgraded: ${shop}`);
+      } catch (error) {
+        console.error('Error sending lifecycle email:', error);
+        // Don't block the upgrade flow
+      }
       
       const message = isReinstall 
         ? 'Welcome back! Your plan has been restored.'

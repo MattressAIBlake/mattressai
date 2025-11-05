@@ -129,6 +129,29 @@ export const loader = async ({ request }) => {
         
         console.log(`Automatic indexing initiated for ${session.shop}`);
       }
+      
+      // Send lifecycle email for app installation
+      try {
+        const { sendLifecycleEmail } = await import('~/lib/lifecycle-emails/lifecycle-email.service.server');
+        
+        // Calculate trial end date (14 days from now)
+        const trialEndsAt = new Date();
+        trialEndsAt.setDate(trialEndsAt.getDate() + 14);
+        
+        await sendLifecycleEmail('app_installed', session.shop, {
+          merchantName: session.firstName || 'there',
+          shopDomain: session.shop,
+          planName: tenant.planName || 'starter',
+          trialEndsAt: trialEndsAt.toLocaleDateString(),
+          loginUrl: `https://${session.shop}/admin/apps/${process.env.SHOPIFY_APP_KEY || 'mattressai'}`,
+          supportEmail: process.env.LIFECYCLE_EMAILS_REPLY_TO || 'support@mattressai.com'
+        });
+        
+        console.log(`Lifecycle email sent for app installation: ${session.shop}`);
+      } catch (error) {
+        console.error('Error sending lifecycle email:', error);
+        // Don't block auth flow on email errors
+      }
     } catch (error) {
       console.error('Error checking/triggering automatic indexing:', error);
       // Don't block auth flow on indexing errors
