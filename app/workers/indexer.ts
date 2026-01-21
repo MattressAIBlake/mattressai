@@ -216,7 +216,20 @@ export class ProductIndexer {
     // Stage 1: Quick keyword filtering with multilingual support
     for (const product of products) {
       const titleLower = (product.title || '').toLowerCase();
+      const productType = (product.productType || '').toLowerCase();
       const text = `${product.title} ${product.description} ${product.productType} ${product.tags?.join(' ')}`.toLowerCase();
+      
+      // Early rejection: Furniture product types (check Shopify's productType field)
+      const furnitureProductTypes = [
+        'bedroom furniture', 'furniture', 'bed frame', 'bedroom set',
+        'headboard', 'nightstand', 'dresser', 'panel bed', 'platform bed',
+        'bunk bed', 'daybed', 'sleigh bed', 'canopy bed', 'storage bed'
+      ];
+      
+      if (furnitureProductTypes.some(ft => productType.includes(ft))) {
+        console.log(`  ❌ REJECTED (furniture product type "${productType}"): "${product.title}"`);
+        continue; // Skip to next product
+      }
       
       // Strong positive signals (mattress keywords in multiple languages)
       const strongMattressKeywords = [
@@ -225,13 +238,47 @@ export class ProductIndexer {
         'マットレス', '床垫', '床墊', '매트리스', 'مرتبة'
       ];
       
-      // Strong negative signals (accessories, not actual mattresses)
+      // Strong negative signals (accessories AND furniture - NOT actual mattresses)
       const notMattressKeywords = [
-        'topper', 'protector', 'cover', 'pillow', 'sheet',
-        'frame', 'foundation', 'accessory', 'pet bed', 'dog bed',
-        'air mattress', 'inflatable', 'pad only', 'cover only',
+        // ===== ACCESSORIES =====
+        'topper', 'mattress topper',
+        'protector', 'mattress protector', 'mattress pad',
+        'cover', 'mattress cover', 'mattress encasement',
+        'pillow', 'pillows',
+        'sheet', 'sheets', 'bedding', 'comforter', 'duvet',
+        'pad only', 'cover only',
+        'encasement',
+        
+        // ===== BED FRAMES & BEDROOM FURNITURE =====
+        'bedroom set', 'bedroom furniture', 'furniture set',
+        'panel bed', 'platform bed', 'bed frame', 'bedframe',
+        'headboard', 'footboard', 'bed rails', 'side rails',
+        'nightstand', 'night stand', 'bedside table',
+        'dresser', 'chest of drawers', 'armoire', 'wardrobe',
+        'bunk bed', 'bunkbed', 'loft bed',
+        'daybed frame', 'day bed frame',
+        'trundle', 'trundle bed',
+        'canopy bed', 'canopy frame',
+        'sleigh bed', 'poster bed', 'four poster',
+        'storage bed', 'captain bed', 'captains bed',
+        'upholstered bed', 'upholstered frame',
+        'metal bed', 'metal frame', 'wood bed', 'wooden bed', 'wood frame',
+        'bookcase bed', 'bookcase headboard',
+        'bedroom collection',
+        
+        // ===== BASES & FOUNDATIONS (not mattresses) =====
+        'foundation', 'box spring', 'boxspring', 'box-spring',
         'adjustable base', 'adjustable bed base', 'adjustable foundation',
-        'power base', 'bed base', 'base only'
+        'power base', 'bed base', 'base only',
+        'bunkie board', 'bunky board', 'slat', 'slats',
+        'frame only',
+        
+        // ===== OTHER NON-MATTRESSES =====
+        'air mattress', 'inflatable', 'blow up',
+        'pet bed', 'dog bed', 'cat bed', 'pet mattress',
+        'futon frame', 'sofa bed frame', 'sleeper sofa frame',
+        'crib', 'bassinet', 'cradle',
+        'accessory', 'accessories'
       ];
       
       // Check if title explicitly contains mattress keyword
@@ -259,36 +306,38 @@ export class ProductIndexer {
         uncertainProducts.push(product);
       } else if (!hasStrongNegative && text.length > 10) {
         // Uncertain - could be a mattress with unusual naming
-        // Only include products that might be beds/sleep products
-        const mightBeMattress = 
-          text.includes('bed') || 
-          text.includes('sleep') || 
-          text.includes('comfort') ||
-          text.includes('rest') ||
-          text.includes('foam') ||
-          text.includes('spring') ||
-          // Common mattress model names/descriptors
-          text.includes('luxe') ||
-          text.includes('elite') ||
-          text.includes('core') ||
-          text.includes('plus') ||
-          text.includes('reserve') ||
-          text.includes('signature') ||
-          text.includes('premier') ||
-          text.includes('collection') ||
-          text.includes('classic') ||
-          text.includes('deluxe') ||
-          text.includes('supreme') ||
-          text.includes('ultra') ||
-          // Top mattress brand names (major manufacturers)
+        // STRICT CHECK: Only include if there are strong mattress construction indicators
+        // DO NOT include just because it has "bed" - that catches furniture!
+        
+        // Strong mattress construction/material indicators
+        const hasMattressConstruction = 
+          text.includes('memory foam') ||
+          text.includes('gel foam') ||
+          text.includes('latex foam') ||
+          text.includes('innerspring') ||
+          text.includes('pocketed coil') ||
+          text.includes('pocket coil') ||
+          text.includes('coil mattress') ||
+          text.includes('hybrid mattress') ||
+          text.includes('foam mattress') ||
+          text.includes('bed in a box') ||
+          text.includes('bed-in-a-box') ||
+          text.includes('cooling gel') ||
+          text.includes('pressure relief') ||
+          text.includes('sleep surface');
+        
+        // Known mattress-only brand names (these brands ONLY make mattresses)
+        const hasMattressBrand = 
+          // Major traditional mattress manufacturers
           text.includes('sealy') ||
           text.includes('tempur-pedic') ||
           text.includes('tempurpedic') ||
           text.includes('tempur pedic') ||
           text.includes('simmons') ||
           text.includes('serta') ||
-          text.includes('sleep number') ||
-          text.includes('sleepnumber') ||
+          text.includes('beautyrest') ||
+          text.includes('posturepedic') ||
+          text.includes('stearns & foster') ||
           text.includes('therapedic') ||
           text.includes('corsicana') ||
           text.includes('restonic') ||
@@ -297,22 +346,12 @@ export class ProductIndexer {
           text.includes('king koil') ||
           text.includes('spring air') ||
           text.includes('southerland') ||
-          text.includes('paramount') ||
-          text.includes('beautyrest') ||
-          text.includes('posturepedic') ||
-          // Popular DTC/online mattress brands
-          text.includes('helix') ||
-          text.includes('leesa') ||
+          // Popular DTC/online mattress brands (mattress-focused)
           text.includes('casper') ||
           text.includes('tuft & needle') ||
           text.includes('tuft and needle') ||
-          text.includes('tuftandneedle') ||
-          text.includes('purple') ||
           text.includes('novaform') ||
           text.includes('plushbeds') ||
-          text.includes('cocoon') ||
-          text.includes('birch') ||
-          text.includes('avocado') ||
           text.includes('dreamcloud') ||
           text.includes('brooklyn bedding') ||
           text.includes('saatva') ||
@@ -324,17 +363,20 @@ export class ProductIndexer {
           text.includes('loom & leaf') ||
           text.includes('zenhaven') ||
           text.includes('winkbed') ||
-          text.includes('nolah') ||
-          text.includes('sapira');
+          text.includes('nolah');
+        
+        // Only classify as uncertain if it has mattress construction terms OR a known mattress brand
+        // Removed: generic terms like "bed", "sleep", "comfort", "foam", "spring" which are too broad
+        const mightBeMattress = hasMattressConstruction || hasMattressBrand;
         
         if (mightBeMattress) {
-          console.log(`  ⚠️  UNCERTAIN (might be mattress, will AI classify): "${product.title}"`);
+          console.log(`  ⚠️  UNCERTAIN (has mattress indicators, will AI classify): "${product.title}"`);
           uncertainProducts.push(product);
         } else {
-          console.log(`  ❌ REJECTED (no mattress keywords): "${product.title}"`);
+          console.log(`  ❌ REJECTED (no mattress indicators): "${product.title}"`);
         }
       } else {
-        console.log(`  ❌ REJECTED (negative keywords, no mattress): "${product.title}"`);
+        console.log(`  ❌ REJECTED (has negative keywords): "${product.title}"`);
       }
     }
     
