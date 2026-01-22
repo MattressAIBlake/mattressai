@@ -1543,6 +1543,8 @@ export const loader = async ({ request }) => {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
+      -webkit-text-size-adjust: 100%;
+      touch-action: manipulation;
       transform: translateY(calc(100% + 40px));
       opacity: 0;
       transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
@@ -1775,7 +1777,8 @@ export const loader = async ({ request }) => {
       display: flex;
       flex-direction: column;
       gap: 4px;
-      max-width: 240px;
+      max-width: 75%;
+      min-width: 60px;
     }
     
     .mattressai-message__content {
@@ -2343,7 +2346,8 @@ export const loader = async ({ request }) => {
       border: 1px solid var(--mattress-border, #d1d5db);
       border-radius: 12px;
       padding: 10px 14px;
-      font-size: 14px;
+      font-size: 16px;
+      -webkit-text-size-adjust: 100%;
       font-family: inherit;
       resize: none;
       max-height: 120px;
@@ -2453,11 +2457,14 @@ export const loader = async ({ request }) => {
       
       .mattressai-message__wrapper {
         max-width: 80%;
+        min-width: 50px;
       }
       
       .mattressai-message__content {
-        word-break: normal;
+        word-break: break-word;
         overflow-wrap: break-word;
+        hyphens: auto;
+        -webkit-hyphens: auto;
       }
       
       .mattressai-quick-reply {
