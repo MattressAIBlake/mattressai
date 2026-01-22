@@ -132,43 +132,48 @@ export const loader = async ({ request }) => {
       this.isOpen = wasOpen;
     },
     
-    setupViewportHandler: function() {
+    updateViewportHeight: function() {
       // Handle iOS keyboard by tracking visual viewport height
       // Sets height directly on widget element for reliable mobile behavior
-      const updateViewport = () => {
-        const vh = window.visualViewport 
-          ? window.visualViewport.height 
-          : window.innerHeight;
-        const widget = document.getElementById('mattressai-chat-widget');
-        
-        // Only apply on mobile (under 768px)
-        if (window.innerWidth <= 768 && widget) {
-          widget.style.height = vh + 'px';
-          widget.style.maxHeight = vh + 'px';
-        }
-      };
+      const vh = window.visualViewport 
+        ? window.visualViewport.height 
+        : window.innerHeight;
+      const widget = document.getElementById('mattressai-chat-widget');
+      
+      // Only apply on mobile (under 768px)
+      if (window.innerWidth <= 768 && widget) {
+        // Use setProperty with 'important' to override CSS !important
+        widget.style.setProperty('height', vh + 'px', 'important');
+        widget.style.setProperty('max-height', vh + 'px', 'important');
+      }
+    },
+    
+    setupViewportHandler: function() {
+      const self = this;
       
       const handleViewportScroll = () => {
         // Handle iOS scroll offset when keyboard opens
         const widget = document.getElementById('mattressai-chat-widget');
         if (window.innerWidth <= 768 && widget && window.visualViewport) {
           if (window.visualViewport.offsetTop > 0) {
-            widget.style.top = window.visualViewport.offsetTop + 'px';
+            widget.style.setProperty('top', window.visualViewport.offsetTop + 'px', 'important');
           } else {
-            widget.style.top = '0';
+            widget.style.setProperty('top', '0', 'important');
           }
+          // Also update height when scrolling (keyboard interaction)
+          self.updateViewportHeight();
         }
       };
       
       // Listen for viewport changes (keyboard open/close)
       if (window.visualViewport) {
-        window.visualViewport.addEventListener('resize', updateViewport);
+        window.visualViewport.addEventListener('resize', () => self.updateViewportHeight());
         window.visualViewport.addEventListener('scroll', handleViewportScroll);
       }
       
       // Fallback for browsers without visualViewport
-      window.addEventListener('resize', updateViewport);
-      window.addEventListener('orientationchange', updateViewport);
+      window.addEventListener('resize', () => self.updateViewportHeight());
+      window.addEventListener('orientationchange', () => self.updateViewportHeight());
     },
     
     saveState: function() {
@@ -381,6 +386,10 @@ export const loader = async ({ request }) => {
       // Check if widget already exists
       if (document.getElementById('mattressai-chat-widget')) {
         document.getElementById('mattressai-chat-widget').classList.add('mattressai-widget--open');
+        // Apply viewport height for mobile
+        requestAnimationFrame(() => {
+          this.updateViewportHeight();
+        });
         const input = document.querySelector('#mattressai-input');
         if (input) input.focus();
         return;
@@ -458,6 +467,12 @@ export const loader = async ({ request }) => {
       // Setup event listeners
       this.setupWidgetListeners(widget);
       
+      // CRITICAL: Apply viewport height immediately for mobile
+      // Use requestAnimationFrame to ensure DOM is ready
+      requestAnimationFrame(() => {
+        this.updateViewportHeight();
+      });
+      
       // Focus input
       const input = widget.querySelector('#mattressai-input');
       if (input) input.focus();
@@ -524,6 +539,22 @@ export const loader = async ({ request }) => {
           e.preventDefault();
           sendMessage();
         }
+      });
+      
+      // Handle keyboard open/close on mobile
+      input.addEventListener('focus', () => {
+        // Small delay to let keyboard animation start
+        setTimeout(() => {
+          this.updateViewportHeight();
+          this.scrollToBottom();
+        }, 100);
+      });
+      
+      input.addEventListener('blur', () => {
+        // Reset viewport height when keyboard closes
+        setTimeout(() => {
+          this.updateViewportHeight();
+        }, 100);
       });
       
       // Autoscroll guard
