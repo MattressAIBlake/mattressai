@@ -92,6 +92,9 @@ export const loader = async ({ request }) => {
       // Set position classes
       document.body.classList.add('mattressai-position-' + this.config.positionHorizontal);
       
+      // Handle iOS keyboard - set viewport height CSS variable
+      this.setupViewportHandler();
+      
       // Restore widget state
       this.restoreState();
       
@@ -127,6 +130,26 @@ export const loader = async ({ request }) => {
       const unread = parseInt(sessionStorage.getItem('mattressai_unread') || '0', 10);
       this.unreadCount = unread;
       this.isOpen = wasOpen;
+    },
+    
+    setupViewportHandler: function() {
+      // Handle iOS keyboard by tracking visual viewport height
+      const updateViewportHeight = () => {
+        const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+        document.documentElement.style.setProperty('--mattressai-viewport-height', vh + 'px');
+      };
+      
+      // Set initial value
+      updateViewportHeight();
+      
+      // Listen for viewport changes (keyboard open/close)
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', updateViewportHeight);
+        window.visualViewport.addEventListener('scroll', updateViewportHeight);
+      }
+      
+      // Fallback for browsers without visualViewport
+      window.addEventListener('resize', updateViewportHeight);
     },
     
     saveState: function() {
@@ -2429,30 +2452,36 @@ export const loader = async ({ request }) => {
       }
       
       .mattressai-widget {
+        position: fixed;
         bottom: 0 !important;
         right: 0 !important;
         left: 0 !important;
-        top: 0;
+        top: 0 !important;
         width: 100%;
         max-width: 100%;
-        height: 100dvh;
-        max-height: 100dvh;
+        height: calc(var(--mattressai-viewport-height, 100vh));
+        max-height: calc(var(--mattressai-viewport-height, 100vh));
         border-radius: 0;
-        padding-bottom: env(safe-area-inset-bottom);
         z-index: 2147483647;
+        overflow: hidden;
       }
       
       .mattressai-widget__header {
         border-radius: 0;
         padding: calc(14px + env(safe-area-inset-top)) 16px 14px;
+        flex-shrink: 0;
       }
       
       .mattressai-widget__messages {
         padding: 12px;
+        flex: 1;
+        min-height: 0;
+        overflow-y: auto;
       }
       
       .mattressai-widget__input-container {
         padding: 16px 16px calc(16px + env(safe-area-inset-bottom));
+        flex-shrink: 0;
       }
       
       .mattressai-message__wrapper {
