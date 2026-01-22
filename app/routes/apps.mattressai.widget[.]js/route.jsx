@@ -781,11 +781,9 @@ export const loader = async ({ request }) => {
       } else {
         messageDiv.innerHTML = \`
           <div class="mattressai-message__wrapper">
-            <div class="mattressai-message__content">\${content}</div>
-            <div class="mattressai-message__meta">
-              <span class="mattressai-message__status">
-                \${deliveryState === 'sending' ? '⏱' : deliveryState === 'sent' ? '✓' : deliveryState === 'failed' ? '✗' : ''}
-              </span>
+            <div class="mattressai-message__content">
+              <span class="mattressai-message__text">\${content}</span>
+              <span class="mattressai-message__status">\${deliveryState === 'sending' ? '⏱' : deliveryState === 'sent' ? '✓' : deliveryState === 'failed' ? '✗' : ''}</span>
             </div>
           </div>
         \`;
@@ -1882,24 +1880,23 @@ export const loader = async ({ request }) => {
       background: var(--mattress-primary, #3B82F6);
       color: white;
       word-break: normal;
+      display: inline-flex;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      gap: 6px;
     }
     
-    .mattressai-message__meta {
-      font-size: 11px;
-      color: var(--mattress-text-light, #9ca3af);
-      padding: 0 4px;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-    
-    .mattressai-message--user .mattressai-message__meta {
-      align-self: flex-end;
+    .mattressai-message__text {
+      flex: 0 1 auto;
     }
     
     .mattressai-message__status {
       font-size: 10px;
-      opacity: 0.8;
+      opacity: 0.7;
+      flex-shrink: 0;
+      margin-left: auto;
+      align-self: flex-end;
+      line-height: 1;
     }
     
     /* Quick Replies */
