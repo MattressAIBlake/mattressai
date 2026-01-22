@@ -134,22 +134,41 @@ export const loader = async ({ request }) => {
     
     setupViewportHandler: function() {
       // Handle iOS keyboard by tracking visual viewport height
-      const updateViewportHeight = () => {
-        const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
-        document.documentElement.style.setProperty('--mattressai-viewport-height', vh + 'px');
+      // Sets height directly on widget element for reliable mobile behavior
+      const updateViewport = () => {
+        const vh = window.visualViewport 
+          ? window.visualViewport.height 
+          : window.innerHeight;
+        const widget = document.getElementById('mattressai-chat-widget');
+        
+        // Only apply on mobile (under 768px)
+        if (window.innerWidth <= 768 && widget) {
+          widget.style.height = vh + 'px';
+          widget.style.maxHeight = vh + 'px';
+        }
       };
       
-      // Set initial value
-      updateViewportHeight();
+      const handleViewportScroll = () => {
+        // Handle iOS scroll offset when keyboard opens
+        const widget = document.getElementById('mattressai-chat-widget');
+        if (window.innerWidth <= 768 && widget && window.visualViewport) {
+          if (window.visualViewport.offsetTop > 0) {
+            widget.style.top = window.visualViewport.offsetTop + 'px';
+          } else {
+            widget.style.top = '0';
+          }
+        }
+      };
       
       // Listen for viewport changes (keyboard open/close)
       if (window.visualViewport) {
-        window.visualViewport.addEventListener('resize', updateViewportHeight);
-        window.visualViewport.addEventListener('scroll', updateViewportHeight);
+        window.visualViewport.addEventListener('resize', updateViewport);
+        window.visualViewport.addEventListener('scroll', handleViewportScroll);
       }
       
       // Fallback for browsers without visualViewport
-      window.addEventListener('resize', updateViewportHeight);
+      window.addEventListener('resize', updateViewport);
+      window.addEventListener('orientationchange', updateViewport);
     },
     
     saveState: function() {
@@ -335,6 +354,9 @@ export const loader = async ({ request }) => {
       this.clearUnread();
       this.saveState();
       
+      // Add body class to lock scroll and hide bubble on mobile
+      document.body.classList.add('mattressai-chat-open');
+      
       // Track event
       this.trackEvent('opened');
       
@@ -345,6 +367,10 @@ export const loader = async ({ request }) => {
     closeChat: function() {
       this.isOpen = false;
       this.saveState();
+      
+      // Remove body class to unlock scroll and show bubble
+      document.body.classList.remove('mattressai-chat-open');
+      
       const widget = document.getElementById('mattressai-chat-widget');
       if (widget) {
         widget.classList.remove('mattressai-widget--open');
@@ -2434,6 +2460,23 @@ export const loader = async ({ request }) => {
     
     /* Mobile Responsive */
     @media (max-width: 768px) {
+      /* Hide chat bubble when widget is open */
+      body.mattressai-chat-open .mattressai-chat-bubble {
+        display: none !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
+      }
+      
+      /* Lock body scroll when chat is open */
+      body.mattressai-chat-open {
+        overflow: hidden !important;
+        position: fixed !important;
+        width: 100% !important;
+        height: 100% !important;
+        top: 0 !important;
+        left: 0 !important;
+      }
+      
       .mattressai-chat-bubble {
         bottom: calc(var(--mattress-position-bottom, 16px) + env(safe-area-inset-bottom));
       }
@@ -2451,37 +2494,61 @@ export const loader = async ({ request }) => {
         height: 22px;
       }
       
+      /* CRITICAL: Full mobile widget fix */
       .mattressai-widget {
-        position: fixed;
-        bottom: 0 !important;
-        right: 0 !important;
-        left: 0 !important;
+        position: fixed !important;
         top: 0 !important;
-        width: 100%;
-        max-width: 100%;
-        height: calc(var(--mattressai-viewport-height, 100vh));
-        max-height: calc(var(--mattressai-viewport-height, 100vh));
-        border-radius: 0;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        height: 100% !important;
+        max-height: 100% !important;
+        /* Solid background - no transparency on mobile */
+        background: #ffffff !important;
+        border-radius: 0 !important;
+        border: none !important;
+        /* Explicit flex layout */
+        display: flex !important;
+        flex-direction: column !important;
         z-index: 2147483647;
-        overflow: hidden;
+        overflow: hidden !important;
+        /* Remove any transforms that might interfere */
+        transform: none;
+      }
+      
+      .mattressai-widget--open {
+        transform: none !important;
+        opacity: 1 !important;
       }
       
       .mattressai-widget__header {
+        flex-shrink: 0 !important;
+        flex-grow: 0 !important;
+        order: 1;
         border-radius: 0;
         padding: calc(14px + env(safe-area-inset-top)) 16px 14px;
-        flex-shrink: 0;
+        background: var(--mattress-primary, #3B82F6) !important;
       }
       
       .mattressai-widget__messages {
+        flex: 1 1 auto !important;
+        order: 2;
+        min-height: 0 !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch;
         padding: 12px;
-        flex: 1;
-        min-height: 0;
-        overflow-y: auto;
+        background: var(--mattress-surface, #f9fafb) !important;
       }
       
       .mattressai-widget__input-container {
+        flex-shrink: 0 !important;
+        flex-grow: 0 !important;
+        order: 3;
         padding: 16px 16px calc(16px + env(safe-area-inset-bottom));
-        flex-shrink: 0;
+        background: #ffffff !important;
+        border-top: 1px solid var(--mattress-border, #e5e7eb);
       }
       
       .mattressai-message__wrapper {
@@ -2497,8 +2564,11 @@ export const loader = async ({ request }) => {
       }
       
       .mattressai-quick-reply {
-        font-size: 12px;
-        padding: 6px 12px;
+        font-size: 13px;
+        padding: 8px 14px;
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
       }
     }
     
