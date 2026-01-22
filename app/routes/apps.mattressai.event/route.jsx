@@ -1,6 +1,17 @@
 import { json } from '@remix-run/node';
 import { trackEvent } from '~/lib/analytics/analytics.service.server';
 
+// Handle GET requests (browser prefetch, crawlers, direct access)
+export const loader = async () => {
+  return json(
+    { error: 'Method not allowed. Use POST to track events.' },
+    { 
+      status: 405,
+      headers: { 'Allow': 'POST' }
+    }
+  );
+};
+
 export const action = async ({ request }) => {
   try {
     const body = await request.json();
