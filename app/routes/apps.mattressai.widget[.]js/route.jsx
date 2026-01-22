@@ -620,6 +620,11 @@ export const loader = async ({ request }) => {
       input.style.height = 'auto';
       if (sendBtn) sendBtn.disabled = true;
       
+      // Re-focus input to keep keyboard open on mobile
+      if (input) {
+        input.focus();
+      }
+      
       // Add user message to UI
       this.addMessage('user', message);
       
