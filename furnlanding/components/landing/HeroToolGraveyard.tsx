@@ -9,7 +9,7 @@ import { HERO_TOOLS } from "@/config/tools";
 import { TOOL_STACK_COST } from "@/config/pricing";
 
 // Generate random positions for tool cards in a circular-ish layout
-// Returns both initial positions and spread (exit) positions
+// Returns both initial positions and fallen pile positions
 const generatePositions = () => {
   const positions: { 
     x: number; 
@@ -17,24 +17,31 @@ const generatePositions = () => {
     rotation: number;
     exitX: number;
     exitY: number;
+    exitRotation: number;
   }[] = [];
   const initialRadius = 280;
-  const spreadRadius = 480;
   const centerOffset = 0;
+  
+  // Ground level for the pile (bottom of the animation area)
+  const groundY = 180;
 
   HERO_TOOLS.forEach((_, i) => {
     const angle = (i / HERO_TOOLS.length) * 2 * Math.PI - Math.PI / 2;
     const variance = 0.3;
     const r = initialRadius * (0.7 + Math.random() * variance);
     
-    // Initial position
+    // Initial position - circular layout
     const x = Math.cos(angle) * r + centerOffset + (Math.random() - 0.5) * 60;
     const y = Math.sin(angle) * r * 0.6 + (Math.random() - 0.5) * 40;
     
-    // Spread (exit) position - larger radius, more uniform distribution
-    const spreadR = spreadRadius * (0.85 + Math.random() * 0.15);
-    const exitX = Math.cos(angle) * spreadR + centerOffset;
-    const exitY = Math.sin(angle) * spreadR * 0.55;
+    // Fallen pile position - cards fall to the bottom and pile up
+    // Spread horizontally with some randomness for natural pile look
+    const pileSpread = 250; // How wide the pile spreads
+    const exitX = (Math.random() - 0.5) * pileSpread;
+    // Stack slightly with some Y variation for depth
+    const exitY = groundY + (Math.random() - 0.5) * 30;
+    // Random rotation for fallen cards look
+    const exitRotation = (Math.random() - 0.5) * 40;
 
     positions.push({
       x,
@@ -42,6 +49,7 @@ const generatePositions = () => {
       rotation: (Math.random() - 0.5) * 15,
       exitX,
       exitY,
+      exitRotation,
     });
   });
 
@@ -136,6 +144,7 @@ export const HeroToolGraveyard = () => {
                 initialRotation={positions[index].rotation}
                 exitX={positions[index].exitX}
                 exitY={positions[index].exitY}
+                exitRotation={positions[index].exitRotation}
               />
             ))}
           </div>

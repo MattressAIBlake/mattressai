@@ -13,6 +13,7 @@ interface ToolCardProps {
   initialRotation: number;
   exitX: number;
   exitY: number;
+  exitRotation: number;
 }
 
 export const ToolCard = ({
@@ -25,6 +26,7 @@ export const ToolCard = ({
   initialRotation,
   exitX,
   exitY,
+  exitRotation,
 }: ToolCardProps) => {
   return (
     <motion.div
@@ -43,12 +45,12 @@ export const ToolCard = ({
       animate={
         isExiting
           ? {
-              opacity: 0.1,
-              scale: 0.85,
+              opacity: 0.12,
+              scale: 0.9,
               filter: "grayscale(1)",
               x: exitX,
               y: exitY,
-              rotate: 0,
+              rotate: exitRotation,
               backgroundColor: "transparent",
               borderColor: "rgba(39, 39, 42, 0.3)",
               boxShadow: "none",
@@ -66,13 +68,23 @@ export const ToolCard = ({
               boxShadow: "0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)",
             }
       }
-      transition={{
-        type: "spring",
-        stiffness: 80,
-        damping: 18,
-        delay: isExiting ? index * 0.08 : index * 0.08,
-        duration: isExiting ? 0.8 : 0.6,
-      }}
+      transition={
+        isExiting
+          ? {
+              // Gravity-like fall with bounce
+              type: "spring",
+              stiffness: 120,
+              damping: 14,
+              mass: 1,
+              delay: index * 0.06,
+            }
+          : {
+              type: "spring",
+              stiffness: 100,
+              damping: 15,
+              delay: index * 0.08,
+            }
+      }
       whileHover={
         !isExiting
           ? {
