@@ -419,82 +419,83 @@ const AnalyzeDemo = () => {
   );
 };
 
-// Video Demo Component
+// Video Demo Component - Beautiful Photo → Engaging Lifestyle Video
 const VideoDemo = () => {
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-text-primary">
-          Video Ad Generator
-        </h3>
-        <span className="text-xs text-text-muted bg-background px-2 py-1 rounded">
+      <div className="flex items-center justify-between mb-2">
+        <div>
+          <h3 className="text-lg font-semibold text-text-primary">
+            Photo → Video
+          </h3>
+          <p className="text-xs text-text-muted mt-1">
+            Turn beautiful product photos into engaging lifestyle videos
+          </p>
+        </div>
+        <span className="flex items-center gap-1 text-xs text-accent bg-accent/10 px-2 py-1 rounded-full">
+          <Sparkles size={12} />
           AI-powered
         </span>
       </div>
 
-      {/* Video Preview */}
-      <div className="relative aspect-video rounded-xl bg-gradient-to-br from-zinc-900 to-zinc-800 overflow-hidden border border-border">
-        {/* Fake video content */}
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="text-center">
-            <div className="w-48 h-28 mx-auto bg-gradient-to-br from-amber-900/40 to-amber-800/40 rounded-lg mb-4 flex items-center justify-center relative">
-              <span className="text-amber-500/50 text-xs">Product Shot</span>
-              {/* Animated elements */}
-              <motion.div
-                className="absolute top-2 right-2 w-6 h-6 rounded-full bg-accent/30"
-                animate={{ scale: [1, 1.2, 1], opacity: [0.5, 1, 0.5] }}
-                transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY }}
-              />
-            </div>
-            <motion.p
-              className="text-white text-lg font-medium"
-              animate={{ opacity: [0.7, 1, 0.7] }}
-              transition={{ duration: 3, repeat: Number.POSITIVE_INFINITY }}
-            >
-              &quot;The perfect addition to any living space&quot;
-            </motion.p>
+      {/* Before/After Transformation */}
+      <div className="grid md:grid-cols-2 gap-4">
+        {/* Before: Beautiful Product Photo */}
+        <div className="relative">
+          <div className="absolute -top-2 left-3 z-10">
+            <span className="text-[10px] font-medium text-text-muted bg-surface px-2 py-0.5 rounded border border-border">
+              YOUR PHOTO
+            </span>
+          </div>
+          <div className="relative aspect-[4/3] rounded-xl overflow-hidden border border-border bg-background">
+            <Image
+              src="/before.png"
+              alt="Beautiful product photo"
+              fill
+              className="object-cover"
+            />
           </div>
         </div>
 
-        {/* Play button overlay */}
-        <button
-          className="absolute inset-0 flex items-center justify-center bg-black/20 hover:bg-black/30 transition-colors group"
-          aria-label="Play video preview"
-          tabIndex={0}
-        >
-          <div className="w-16 h-16 rounded-full bg-white/90 flex items-center justify-center group-hover:scale-110 transition-transform">
-            <Play size={24} className="text-background ml-1" fill="currentColor" />
+        {/* Arrow for mobile */}
+        <div className="flex md:hidden items-center justify-center -my-2">
+          <div className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center">
+            <span className="text-accent text-lg">↓</span>
           </div>
-        </button>
+        </div>
 
-        {/* Timeline */}
-        <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/50 to-transparent">
-          <div className="flex items-center gap-3">
-            <span className="text-white text-xs font-mono">0:00</span>
-            <div className="flex-1 h-1 bg-white/30 rounded-full overflow-hidden">
-              <motion.div
-                className="h-full bg-accent rounded-full"
-                animate={{ width: ["0%", "100%"] }}
-                transition={{ duration: 15, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
-              />
-            </div>
-            <span className="text-white text-xs font-mono">0:15</span>
+        {/* After: Engaging Lifestyle Video */}
+        <div className="relative">
+          <div className="absolute -top-2 left-3 z-10">
+            <span className="text-[10px] font-medium text-white bg-accent px-2 py-0.5 rounded">
+              GENERATED VIDEO
+            </span>
+          </div>
+          <div className="relative aspect-[4/3] rounded-xl overflow-hidden border border-accent/30 bg-zinc-900">
+            <video
+              src="/aftervid.mov"
+              autoPlay
+              loop
+              muted
+              playsInline
+              className="w-full h-full object-cover"
+              aria-label="AI-generated lifestyle video with family enjoying the sofa"
+            />
           </div>
         </div>
       </div>
 
-      {/* Controls */}
-      <div className="flex flex-wrap gap-2">
-        <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-accent text-white text-sm font-medium hover:bg-accent/90 transition-colors">
-          <Play size={14} />
-          Generate Video
-        </button>
-        <button className="px-4 py-2 rounded-lg bg-background border border-border text-text-secondary text-sm font-medium hover:text-text-primary hover:border-text-muted transition-colors">
-          Add Voiceover
-        </button>
-        <button className="px-4 py-2 rounded-lg bg-background border border-border text-text-secondary text-sm font-medium hover:text-text-primary hover:border-text-muted transition-colors">
-          Choose Music
-        </button>
+      {/* Simple value prop */}
+      <div className="flex items-center justify-center gap-6 py-3 px-4 rounded-lg bg-accent/5 border border-accent/20">
+        <div className="flex items-center gap-2 text-sm text-text-secondary">
+          <Zap size={14} className="text-accent" />
+          <span><span className="text-text-primary font-medium">15-second</span> video ads</span>
+        </div>
+        <div className="w-px h-4 bg-border" />
+        <div className="flex items-center gap-2 text-sm text-text-secondary">
+          <Sparkles size={14} className="text-accent" />
+          <span><span className="text-text-primary font-medium">Music + voiceover</span> included</span>
+        </div>
       </div>
     </div>
   );
