@@ -45,15 +45,15 @@ export const ToolCard = ({
       animate={
         isExiting
           ? {
-              opacity: 0.12,
-              scale: 0.9,
-              filter: "grayscale(1)",
+              opacity: 0.5,
+              scale: 0.85,
+              filter: "grayscale(0.8)",
               x: exitX,
               y: exitY,
               rotate: exitRotation,
-              backgroundColor: "transparent",
-              borderColor: "rgba(39, 39, 42, 0.3)",
-              boxShadow: "none",
+              backgroundColor: "rgba(24, 24, 27, 0.8)",
+              borderColor: "rgba(39, 39, 42, 0.5)",
+              boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.2)",
             }
           : {
               opacity: 1,
