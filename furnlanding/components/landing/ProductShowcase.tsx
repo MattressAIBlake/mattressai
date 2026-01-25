@@ -489,7 +489,7 @@ const VideoDemo = () => {
       <div className="flex items-center justify-center gap-6 py-3 px-4 rounded-lg bg-accent/5 border border-accent/20">
         <div className="flex items-center gap-2 text-sm text-text-secondary">
           <Zap size={14} className="text-accent" />
-          <span><span className="text-text-primary font-medium">15-second</span> video ads</span>
+          <span><span className="text-text-primary font-medium">8-second</span> video ads</span>
         </div>
         <div className="w-px h-4 bg-border" />
         <div className="flex items-center gap-2 text-sm text-text-secondary">
