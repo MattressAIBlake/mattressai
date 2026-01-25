@@ -101,20 +101,21 @@ export const ALL_TOOLS = TOOL_CATEGORIES.flatMap((category) =>
 );
 
 // Get a representative sample of tools for the hero animation (one from each category + some extras)
+// Cards at the end fall last and land on top of the pile (most visible)
 export const HERO_TOOLS = [
   { name: "Canva Pro", price: "$15-30/mo" },
   { name: "Adobe CC", price: "$55-85/mo" },
-  { name: "Photoroom", price: "$9-90/mo" },
   { name: "ChatGPT Plus", price: "$20/mo" },
   { name: "Jasper AI", price: "$49-125/mo" },
   { name: "Midjourney", price: "$10-30/mo" },
-  { name: "Marketer.com", price: "$99-299/mo" },
   { name: "Hootsuite", price: "$99-249/mo" },
   { name: "Sprout Social", price: "$249-499/mo" },
   { name: "Klaviyo", price: "$45-700/mo" },
   { name: "Salsify", price: "$2,000+/mo" },
   { name: "Roomvo", price: "$200-1K/mo" },
   { name: "Triple Whale", price: "$129-279/mo" },
+  { name: "Photoroom", price: "$9-90/mo" },
+  { name: "Marketer.com", price: "$99-299/mo" },
 ];
 
 // Tool stack cost breakdown by category
