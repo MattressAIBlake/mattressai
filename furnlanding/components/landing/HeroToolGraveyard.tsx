@@ -36,12 +36,12 @@ const generatePositions = () => {
     
     // Fallen pile position - cards fall to the bottom and pile up
     // Spread horizontally with some randomness for natural pile look
-    const pileSpread = 250; // How wide the pile spreads
+    const pileSpread = 380; // How wide the pile spreads
     const exitX = (Math.random() - 0.5) * pileSpread;
     // Stack slightly with some Y variation for depth
-    const exitY = groundY + (Math.random() - 0.5) * 30;
+    const exitY = groundY + (Math.random() - 0.5) * 40;
     // Random rotation for fallen cards look
-    const exitRotation = (Math.random() - 0.5) * 40;
+    const exitRotation = (Math.random() - 0.5) * 25;
 
     positions.push({
       x,

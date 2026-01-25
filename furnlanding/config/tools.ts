@@ -104,9 +104,11 @@ export const ALL_TOOLS = TOOL_CATEGORIES.flatMap((category) =>
 export const HERO_TOOLS = [
   { name: "Canva Pro", price: "$15-30/mo" },
   { name: "Adobe CC", price: "$55-85/mo" },
+  { name: "Photoroom", price: "$9-90/mo" },
   { name: "ChatGPT Plus", price: "$20/mo" },
   { name: "Jasper AI", price: "$49-125/mo" },
   { name: "Midjourney", price: "$10-30/mo" },
+  { name: "Marketer.com", price: "$99-299/mo" },
   { name: "Hootsuite", price: "$99-249/mo" },
   { name: "Sprout Social", price: "$249-499/mo" },
   { name: "Klaviyo", price: "$45-700/mo" },
