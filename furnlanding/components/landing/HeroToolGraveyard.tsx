@@ -212,7 +212,7 @@ export const HeroToolGraveyard = () => {
         transition={{ duration: 0.7, ease: "easeOut" }}
       >
         <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold text-text-primary tracking-tight mb-6">
-          Your {TOOL_STACK_COST.display} tool stack.
+          <span className="md:whitespace-nowrap">Your {TOOL_STACK_COST.display} tool stack.</span>
           <br />
           <span className="text-accent">One replacement.</span>
         </h1>
