@@ -83,8 +83,42 @@ export const loader = async ({ request }) => {
       // Load saved recommendations
       this.loadSavedRecommendations();
       
+      // Hijack existing quiz buttons on the page
+      this.hijackQuizButtons();
+      
       this.initialized = true;
       console.log('MattressAI Widget initialized (WooCommerce mode)');
+    },
+    
+    hijackQuizButtons: function() {
+      // Find all links/buttons that should open the quiz
+      const selectors = [
+        'a[href*="mattressai"]',
+        'a[href*="quiz"]',
+        'a[href*="match"]'
+      ];
+      const keywords = ['quiz', 'match', 'find your'];
+      
+      document.querySelectorAll('a, button').forEach(el => {
+        if (el.id === 'mattressai-chat-bubble') return; // Skip our own button
+        
+        const text = (el.textContent || '').toLowerCase();
+        const href = (el.href || '').toLowerCase();
+        
+        // Check if element matches our criteria
+        const matchesKeyword = keywords.some(kw => text.includes(kw));
+        const matchesHref = href.includes('mattressai') || href.includes('quiz');
+        
+        if (matchesKeyword || matchesHref) {
+          el.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            window.MattressAI.openChat();
+          });
+          el.style.cursor = 'pointer';
+          console.log('MattressAI: Hijacked button -', el.textContent.trim());
+        }
+      });
     },
     
     loadStyles: function() {
