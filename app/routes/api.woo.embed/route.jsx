@@ -299,6 +299,10 @@ export const loader = async ({ request }) => {
       input.style.height = 'auto';
       sendBtn.disabled = true;
       
+      // Track conversation history
+      if (!this.conversationHistory) this.conversationHistory = [];
+      this.conversationHistory.push({ role: 'user', content: message });
+      
       this.addMessage('user', message);
       
       // Add loading indicator
@@ -312,7 +316,7 @@ export const loader = async ({ request }) => {
             'X-API-Key': this.config.apiKey
           },
           body: JSON.stringify({
-            message: message,
+            messages: this.conversationHistory,
             conversation_id: this.getConversationId()
           })
         });
@@ -373,6 +377,10 @@ export const loader = async ({ request }) => {
               } else if (data.type === 'product_results' && data.products) {
                 this.displayProducts(data.products);
               } else if (data.type === 'end_turn') {
+                // Save assistant response to history
+                if (currentText && window.MattressAI.conversationHistory) {
+                  window.MattressAI.conversationHistory.push({ role: 'assistant', content: currentText });
+                }
                 currentEl = null;
                 currentText = '';
               }

@@ -48,9 +48,12 @@ export const action = async ({ request }) => {
 
     // Parse request body
     const body = await request.json();
-    const { message, conversation_id } = body;
+    const { messages, message, conversation_id } = body;
 
-    if (!message) {
+    // Support both single message and full history
+    const conversationMessages = messages || (message ? [{ role: 'user', content: message }] : null);
+
+    if (!conversationMessages || conversationMessages.length === 0) {
       return json({ error: 'Message required' }, { 
         status: 400, 
         headers: getCorsHeaders(request) 
@@ -101,7 +104,7 @@ Keep responses concise (2-3 sentences max unless listing products).`;
             stream: true,
             messages: [
               { role: 'system', content: systemPrompt },
-              { role: 'user', content: message }
+              ...conversationMessages
             ]
           });
 
