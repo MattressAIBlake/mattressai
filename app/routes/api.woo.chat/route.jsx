@@ -81,9 +81,13 @@ Help customers find the perfect mattress based on their sleep preferences.
 Available products:
 ${productList}
 
-Be friendly and conversational. Ask about sleep position, firmness preference, and budget.
-When recommending, mention 1-3 specific products and explain why they're a good fit.
-Keep responses concise (2-3 sentences max unless listing products).`;
+RULES:
+- Be friendly and conversational
+- Ask about sleep position, firmness preference, and budget
+- When recommending products, ALWAYS include clickable links using markdown format: [Product Name](URL)
+- Format recommendations like: **Product Name** - $price - [View Product](url)
+- Keep responses concise
+- Always include the product link so customers can click through`;
 
     // Initialize OpenAI
     const openai = new OpenAI({
