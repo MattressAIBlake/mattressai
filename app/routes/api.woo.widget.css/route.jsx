@@ -121,15 +121,17 @@ export const loader = async ({ request }) => {
 }
 
 .mattressai-widget__title {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 600;
+  margin: 0 !important;
+  font-size: 24px !important;
+  font-weight: 700 !important;
+  color: white !important;
 }
 
 .mattressai-widget__subtitle {
-  margin: 4px 0 0;
-  font-size: 13px;
+  margin: 4px 0 0 !important;
+  font-size: 14px !important;
   opacity: 0.9;
+  color: white !important;
 }
 
 .mattressai-widget__close {
