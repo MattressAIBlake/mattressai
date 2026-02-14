@@ -357,3 +357,68 @@ model LifecycleEmailSettings {
 
   @@index([tenantId])
 }
+
+// ============================================
+// WooCommerce Support (Platform-Agnostic)
+// ============================================
+
+model WooStore {
+  id              String    @id @default(cuid())
+  domain          String    @unique  // e.g., "mattresswarehousetx.com"
+  name            String?
+  consumerKey     String    // WooCommerce REST API consumer key
+  consumerSecret  String    // WooCommerce REST API consumer secret
+  apiUrl          String?   // Custom API URL if not standard /wp-json/wc/v3
+  widgetApiKey    String    @unique @default(cuid())  // API key for widget auth
+  status          String    @default("pending")  // pending, active, suspended
+  lastSyncAt      DateTime?
+  productCount    Int       @default(0)
+  planName        String    @default("starter")
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  products        WooProduct[]
+
+  @@index([domain])
+  @@index([widgetApiKey])
+  @@index([status])
+}
+
+model WooProduct {
+  id                String    @id @default(cuid())
+  storeId           String
+  wooProductId      String    // WooCommerce product ID
+  title             String
+  description       String?
+  shortDescription  String?
+  permalink         String?   // Full product URL
+  imageUrl          String?
+  price             Float?
+  regularPrice      Float?
+  salePrice         Float?
+  sku               String?
+  stockStatus       String?
+  categories        String?   // JSON array of category names
+  tags              String?   // JSON array of tag names
+  attributes        String?   // JSON of product attributes
+  
+  // AI-enriched fields (same as ProductProfile)
+  firmness          String?
+  height            String?
+  material          String?
+  certifications    String?
+  features          String?
+  supportFeatures   String?
+  enrichedAt        DateTime?
+  enrichmentMethod  String?
+  confidence        Float?
+  
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  store             WooStore  @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@unique([storeId, wooProductId])
+  @@index([storeId])
+  @@index([wooProductId])
+}
