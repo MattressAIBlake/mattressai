@@ -141,6 +141,10 @@ export const loader = async ({ request }) => {
     parseMarkdown: function(text) {
       if (!text) return '';
       let html = text;
+      // Convert markdown images ![alt](url) to HTML - must come before links
+      html = html.replace(/!\\[([^\\]]*)\\]\\(([^\\)]+)\\)/g, function(match, alt, url) {
+        return '<img src="' + url + '" alt="' + alt + '" style="max-width: 100%; border-radius: 8px; margin: 8px 0; display: block;">';
+      });
       // Convert markdown links [text](url) to HTML
       html = html.replace(/\\[([^\\]]+)\\]\\(([^\\)]+)\\)/g, function(match, linkText, url) {
         return '<a href="' + url + '" target="_blank" style="color: #3B82F6; text-decoration: underline;">' + linkText + '</a>';

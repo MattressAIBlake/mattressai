@@ -69,9 +69,9 @@ export const action = async ({ request }) => {
       orderBy: { updatedAt: 'desc' }
     });
 
-    // Build product context
+    // Build product context with images
     const productList = products.map(p => 
-      `- ${p.title} | $${p.price} | ${p.firmness || 'N/A'} firmness | URL: ${p.permalink}`
+      `- ${p.title} | $${p.price} | URL: ${p.permalink} | Image: ${p.imageUrl || 'none'}`
     ).join('\n');
 
     // System prompt
@@ -84,10 +84,14 @@ ${productList}
 RULES:
 - Be friendly and conversational
 - Ask about sleep position, firmness preference, and budget
-- When recommending products, ALWAYS include clickable links using markdown format: [Product Name](URL)
-- Format recommendations like: **Product Name** - $price - [View Product](url)
-- Keep responses concise
-- Always include the product link so customers can click through`;
+- When recommending products, format EACH product like this:
+
+![Product](IMAGE_URL)
+**Product Name** - $price
+[View Product](PRODUCT_URL)
+
+- Always include the product image, name, price, and link
+- Keep explanations brief (1 sentence per product)`;
 
     // Initialize OpenAI
     const openai = new OpenAI({
