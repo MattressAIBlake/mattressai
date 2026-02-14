@@ -148,6 +148,11 @@ export const loader = async ({ request }) => {
       this.clearUnread();
       document.body.classList.add('mattressai-chat-open');
       this.createChatWidget();
+      // Focus input after widget opens
+      setTimeout(() => {
+        const input = document.querySelector('#mattressai-input');
+        if (input) input.focus();
+      }, 100);
     },
     
     closeChat: function() {
@@ -315,6 +320,9 @@ export const loader = async ({ request }) => {
         loadingDiv.remove();
         this.addMessage('assistant', 'Sorry, something went wrong. Please try again.');
       }
+      
+      // Refocus input after sending
+      input.focus();
     },
     
     handleStream: async function(response) {
@@ -340,6 +348,7 @@ export const loader = async ({ request }) => {
               const data = JSON.parse(line.slice(6));
               
               if (data.type === 'chunk') {
+                const container = document.querySelector('#mattressai-messages');
                 if (!currentEl) {
                   currentEl = this.addMessage('assistant', data.chunk);
                   currentText = data.chunk;
@@ -347,6 +356,8 @@ export const loader = async ({ request }) => {
                   currentText += data.chunk;
                   currentEl.querySelector('.mattressai-message__content').textContent = currentText;
                 }
+                // Auto-scroll to bottom
+                if (container) container.scrollTop = container.scrollHeight;
               } else if (data.type === 'product_results' && data.products) {
                 this.displayProducts(data.products);
               } else if (data.type === 'end_turn') {
