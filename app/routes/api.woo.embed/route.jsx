@@ -105,10 +105,16 @@ export const loader = async ({ request }) => {
     },
     
     parseMarkdown: function(text) {
+      if (!text) return '';
+      let html = text;
       // Convert markdown links [text](url) to HTML
-      let html = text.replace(/\\[([^\\]]+)\\]\\(([^)]+)\\)/g, '<a href="\$2" target="_blank" style="color: var(--mattress-primary); text-decoration: underline;">\$1</a>');
+      html = html.replace(/\\[([^\\]]+)\\]\\(([^\\)]+)\\)/g, function(match, linkText, url) {
+        return '<a href="' + url + '" target="_blank" style="color: #3B82F6; text-decoration: underline;">' + linkText + '</a>';
+      });
       // Convert **bold** to <strong>
-      html = html.replace(/\\*\\*([^*]+)\\*\\*/g, '<strong>\$1</strong>');
+      html = html.replace(/\\*\\*([^\\*]+)\\*\\*/g, function(match, boldText) {
+        return '<strong>' + boldText + '</strong>';
+      });
       // Convert newlines to <br>
       html = html.replace(/\\n/g, '<br>');
       return html;
