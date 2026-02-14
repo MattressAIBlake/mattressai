@@ -23,25 +23,28 @@ export const loader = async ({ request }) => {
 /* Chat Bubble */
 .mattressai-chat-bubble {
   position: fixed !important;
-  bottom: 20px !important;
-  right: 20px !important;
-  left: auto !important;
+  bottom: 24px !important;
+  left: 24px !important;
+  right: auto !important;
   z-index: 999999 !important;
   background: var(--mattress-primary) !important;
   color: white !important;
   border: none !important;
   border-radius: 50px !important;
-  padding: 12px 24px !important;
-  font-size: 14px !important;
+  padding: 16px 32px !important;
+  font-size: 16px !important;
   font-weight: 600 !important;
   cursor: pointer !important;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2) !important;
   transition: transform 0.2s, box-shadow 0.2s !important;
   width: auto !important;
-  max-width: 200px !important;
+  max-width: 220px !important;
   min-width: auto !important;
-  display: inline-block !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
   text-align: center !important;
+  line-height: 1.2 !important;
 }
 
 .mattressai-chat-bubble:hover {
@@ -67,13 +70,14 @@ export const loader = async ({ request }) => {
 
 /* Widget Container */
 .mattressai-widget {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  width: 380px;
-  height: 600px;
-  max-height: calc(100vh - 40px);
-  background: white;
+  position: fixed !important;
+  bottom: 20px !important;
+  left: 20px !important;
+  right: auto !important;
+  width: 380px !important;
+  height: 600px !important;
+  max-height: calc(100vh - 40px) !important;
+  background: white !important;
   border-radius: 16px;
   box-shadow: 0 8px 32px rgba(0,0,0,0.15);
   display: none;

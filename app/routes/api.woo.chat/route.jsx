@@ -5,9 +5,8 @@
  * Authenticates via X-API-Key header (widgetApiKey from WooStore).
  */
 import { json } from '@remix-run/node';
+import { Anthropic } from '@anthropic-ai/sdk';
 import prisma from '~/db.server.js';
-import { createSseStream } from '~/services/streaming.server';
-import { createOpenAIService } from '~/services/openai.server';
 
 export const action = async ({ request }) => {
   // Handle CORS preflight
@@ -60,17 +59,67 @@ export const action = async ({ request }) => {
 
     const conversationId = conversation_id || `woo_${Date.now()}`;
 
-    // Create SSE stream for response
-    const responseStream = createSseStream(async (stream) => {
-      await handleWooChat({
-        store,
-        message,
-        conversationId,
-        stream
-      });
+    // Get products for context
+    const products = await prisma.wooProduct.findMany({
+      where: { storeId: store.id },
+      take: 30,
+      orderBy: { updatedAt: 'desc' }
     });
 
-    return new Response(responseStream, {
+    // Build product context
+    const productList = products.map(p => 
+      `- ${p.title} | $${p.price} | ${p.firmness || 'N/A'} firmness | URL: ${p.permalink}`
+    ).join('\n');
+
+    // System prompt
+    const systemPrompt = `You are a helpful mattress shopping assistant for ${store.name || store.domain}. 
+Help customers find the perfect mattress based on their sleep preferences.
+
+Available products:
+${productList}
+
+Be friendly and conversational. Ask about sleep position, firmness preference, and budget.
+When recommending, mention 1-3 specific products and explain why they're a good fit.
+Keep responses concise.`;
+
+    // Initialize Anthropic
+    const anthropic = new Anthropic({
+      apiKey: process.env.ANTHROPIC_API_KEY || process.env.CLAUDE_API_KEY
+    });
+
+    // Create streaming response
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream({
+      async start(controller) {
+        try {
+          // Send conversation ID
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'id', conversation_id: conversationId })}\n\n`));
+
+          const response = await anthropic.messages.stream({
+            model: 'claude-3-haiku-20240307',
+            max_tokens: 1024,
+            system: systemPrompt,
+            messages: [{ role: 'user', content: message }]
+          });
+
+          for await (const event of response) {
+            if (event.type === 'content_block_delta' && event.delta?.text) {
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'chunk', chunk: event.delta.text })}\n\n`));
+            }
+          }
+
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'end_turn' })}\n\n`));
+        } catch (error) {
+          console.error('Chat stream error:', error);
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'chunk', chunk: 'Sorry, I encountered an error. Please try again.' })}\n\n`));
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'end_turn' })}\n\n`));
+        } finally {
+          controller.close();
+        }
+      }
+    });
+
+    return new Response(stream, {
       headers: getSseHeaders(request)
     });
 
@@ -83,123 +132,12 @@ export const action = async ({ request }) => {
   }
 };
 
-/**
- * Handle WooCommerce chat session
- */
-async function handleWooChat({ store, message, conversationId, stream }) {
-  // Initialize OpenAI service
-  const openaiService = createOpenAIService();
-
-  // Get conversation history from session storage (simplified for now)
-  let conversationHistory = [];
-
-  // Get products from the WooCommerce store for context
-  const products = await prisma.wooProduct.findMany({
-    where: { storeId: store.id },
-    take: 50, // Limit for context window
-    orderBy: { updatedAt: 'desc' }
+// Also handle GET for testing
+export const loader = async ({ request }) => {
+  return json({ status: 'WooCommerce Chat API', method: 'POST required' }, {
+    headers: getCorsHeaders(request)
   });
-
-  // Build product context
-  const productContext = products.map(p => ({
-    id: p.id,
-    title: p.title,
-    description: p.shortDescription || p.description,
-    price: p.price,
-    firmness: p.firmness,
-    material: p.material,
-    features: p.features,
-    url: p.permalink,
-    imageUrl: p.imageUrl
-  }));
-
-  // Create system prompt with product knowledge
-  const systemPrompt = `You are a helpful mattress shopping assistant for ${store.name || store.domain}. 
-You help customers find the perfect mattress based on their sleep preferences, body type, and budget.
-
-Available products:
-${JSON.stringify(productContext, null, 2)}
-
-Guidelines:
-- Be friendly and conversational
-- Ask clarifying questions about sleep preferences (position, firmness preference, any pain issues)
-- When you have enough info, recommend 1-3 specific products from the available inventory
-- Always explain WHY a product is a good fit
-- If asked about a product not in inventory, politely say it's not currently available
-
-When recommending products, use this exact JSON format in your response:
-[PRODUCTS]
-{"products": [{"id": "...", "title": "...", "fitScore": 85, "url": "...", "imageUrl": "...", "firmness": "...", "whyItFits": ["reason1", "reason2"]}]}
-[/PRODUCTS]`;
-
-  // Add user message
-  conversationHistory.push({
-    role: 'user',
-    content: message
-  });
-
-  // Send conversation ID
-  stream.sendMessage({ type: 'id', conversation_id: conversationId });
-
-  try {
-    let fullResponse = '';
-
-    await openaiService.streamConversation(
-      {
-        messages: conversationHistory,
-        systemPrompt,
-        tools: [] // No MCP tools for WooCommerce yet
-      },
-      {
-        onText: (textDelta) => {
-          fullResponse += textDelta;
-          
-          // Don't stream the [PRODUCTS] block - extract it after
-          if (!fullResponse.includes('[PRODUCTS]')) {
-            stream.sendMessage({
-              type: 'chunk',
-              chunk: textDelta
-            });
-          }
-        },
-
-        onMessage: (msg) => {
-          // Check for product recommendations in the response
-          const productMatch = fullResponse.match(/\[PRODUCTS\]([\s\S]*?)\[\/PRODUCTS\]/);
-          if (productMatch) {
-            try {
-              const productData = JSON.parse(productMatch[1].trim());
-              if (productData.products && productData.products.length > 0) {
-                stream.sendMessage({
-                  type: 'product_results',
-                  products: productData.products
-                });
-              }
-            } catch (e) {
-              console.error('Failed to parse product recommendations:', e);
-            }
-          }
-        },
-
-        onToolUse: async () => {
-          // No tools for WooCommerce yet
-        },
-
-        onContentBlock: () => {}
-      }
-    );
-
-    stream.sendMessage({ type: 'end_turn' });
-
-  } catch (error) {
-    console.error('Chat stream error:', error);
-    stream.sendMessage({
-      type: 'chunk',
-      chunk: 'Sorry, I encountered an error. Please try again.'
-    });
-    stream.sendMessage({ type: 'end_turn' });
-  }
-}
+};
 
 function getCorsHeaders(request) {
   const origin = request.headers.get('Origin') || '*';
