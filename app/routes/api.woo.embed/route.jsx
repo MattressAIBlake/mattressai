@@ -90,7 +90,7 @@ export const loader = async ({ request }) => {
     loadStyles: function() {
       const link = document.createElement('link');
       link.rel = 'stylesheet';
-      link.href = this.config.apiBase + '/api/woo/widget.css';
+      link.href = this.config.apiBase + '/api/woo/widget/css';
       document.head.appendChild(link);
       
       // Set CSS custom properties
