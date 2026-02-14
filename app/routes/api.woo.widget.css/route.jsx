@@ -22,20 +22,26 @@ export const loader = async ({ request }) => {
 
 /* Chat Bubble */
 .mattressai-chat-bubble {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  z-index: 999999;
-  background: var(--mattress-primary);
-  color: white;
-  border: none;
-  border-radius: 50px;
-  padding: 12px 24px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-  transition: transform 0.2s, box-shadow 0.2s;
+  position: fixed !important;
+  bottom: 20px !important;
+  right: 20px !important;
+  left: auto !important;
+  z-index: 999999 !important;
+  background: var(--mattress-primary) !important;
+  color: white !important;
+  border: none !important;
+  border-radius: 50px !important;
+  padding: 12px 24px !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+  transition: transform 0.2s, box-shadow 0.2s !important;
+  width: auto !important;
+  max-width: 200px !important;
+  min-width: auto !important;
+  display: inline-block !important;
+  text-align: center !important;
 }
 
 .mattressai-chat-bubble:hover {
