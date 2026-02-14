@@ -104,6 +104,16 @@ export const loader = async ({ request }) => {
       return this.conversationId;
     },
     
+    parseMarkdown: function(text) {
+      // Convert markdown links [text](url) to HTML
+      let html = text.replace(/\\[([^\\]]+)\\]\\(([^)]+)\\)/g, '<a href="\$2" target="_blank" style="color: var(--mattress-primary); text-decoration: underline;">\$1</a>');
+      // Convert **bold** to <strong>
+      html = html.replace(/\\*\\*([^*]+)\\*\\*/g, '<strong>\$1</strong>');
+      // Convert newlines to <br>
+      html = html.replace(/\\n/g, '<br>');
+      return html;
+    },
+    
     loadSavedRecommendations: function() {
       try {
         const saved = localStorage.getItem('mattressai_saved_recommendations');
@@ -354,7 +364,9 @@ export const loader = async ({ request }) => {
                   currentText = data.chunk;
                 } else {
                   currentText += data.chunk;
-                  currentEl.querySelector('.mattressai-message__content').textContent = currentText;
+                  // Parse markdown links and render as HTML
+                  const contentEl = currentEl.querySelector('.mattressai-message__content');
+                  contentEl.innerHTML = this.parseMarkdown(currentText);
                 }
                 // Auto-scroll to bottom
                 if (container) container.scrollTop = container.scrollHeight;
