@@ -11,6 +11,7 @@
 export const loader = async ({ request }) => {
   const url = new URL(request.url);
   const apiKey = url.searchParams.get('key');
+  const position = url.searchParams.get('position') || 'right'; // left or right
   
   // The API base URL for the widget to communicate with
   const apiBase = `${url.protocol}//${url.host}`;
@@ -34,6 +35,7 @@ export const loader = async ({ request }) => {
   const MATTRESSAI_CONFIG = {
     apiKey: '${apiKey || ''}',
     apiBase: '${apiBase}',
+    position: '${position}',
     version: '1.0.0'
   };
 
@@ -60,7 +62,7 @@ export const loader = async ({ request }) => {
         welcomeMessage: 'Hi! Looking for the perfect mattress? Tell me about your sleep preferences.',
         bubbleText: 'Find Your Match',
         bubbleStyle: 'text',
-        position: 'right',
+        position: MATTRESSAI_CONFIG.position || 'right',
         positionBottom: 20,
         positionSide: 20,
         autoOpen: false
