@@ -11,14 +11,14 @@
 export const loader = async ({ request }) => {
   const url = new URL(request.url);
   const apiKey = url.searchParams.get('key');
-  const position = url.searchParams.get('position') || 'right'; // left or right
+  const position = url.searchParams.get('position') || 'left'; // left or right - default left
   
   // The API base URL for the widget to communicate with
   const apiBase = `${url.protocol}//${url.host}`;
   
   const headers = {
     'Content-Type': 'application/javascript; charset=utf-8',
-    'Cache-Control': 'public, max-age=3600', // Cache for 1 hour
+    'Cache-Control': 'no-cache, no-store, must-revalidate', // No caching during dev
     'Access-Control-Allow-Origin': '*',
   };
 
@@ -118,10 +118,13 @@ export const loader = async ({ request }) => {
       bubble.id = 'mattressai-chat-bubble';
       bubble.className = 'mattressai-chat-bubble mattressai-bubble-' + this.config.bubbleStyle;
       bubble.style.cssText = \`
-        position: fixed;
-        bottom: \${this.config.positionBottom}px;
-        \${this.config.position}: \${this.config.positionSide}px;
-        z-index: 999999;
+        position: fixed !important;
+        bottom: 24px !important;
+        \${this.config.position}: 24px !important;
+        \${this.config.position === 'left' ? 'right: auto !important;' : 'left: auto !important;'}
+        z-index: 999999 !important;
+        padding: 16px 32px !important;
+        font-size: 16px !important;
       \`;
       
       if (this.config.bubbleStyle === 'text') {

@@ -5,7 +5,7 @@
  * Authenticates via X-API-Key header (widgetApiKey from WooStore).
  */
 import { json } from '@remix-run/node';
-import { Anthropic } from '@anthropic-ai/sdk';
+import OpenAI from 'openai';
 import prisma from '~/db.server.js';
 
 export const action = async ({ request }) => {
@@ -80,11 +80,11 @@ ${productList}
 
 Be friendly and conversational. Ask about sleep position, firmness preference, and budget.
 When recommending, mention 1-3 specific products and explain why they're a good fit.
-Keep responses concise.`;
+Keep responses concise (2-3 sentences max unless listing products).`;
 
-    // Initialize Anthropic
-    const anthropic = new Anthropic({
-      apiKey: process.env.ANTHROPIC_API_KEY || process.env.CLAUDE_API_KEY
+    // Initialize OpenAI
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY
     });
 
     // Create streaming response
@@ -95,16 +95,20 @@ Keep responses concise.`;
           // Send conversation ID
           controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'id', conversation_id: conversationId })}\n\n`));
 
-          const response = await anthropic.messages.stream({
-            model: 'claude-3-haiku-20240307',
-            max_tokens: 1024,
-            system: systemPrompt,
-            messages: [{ role: 'user', content: message }]
+          const response = await openai.chat.completions.create({
+            model: 'gpt-4o-mini',
+            max_tokens: 512,
+            stream: true,
+            messages: [
+              { role: 'system', content: systemPrompt },
+              { role: 'user', content: message }
+            ]
           });
 
-          for await (const event of response) {
-            if (event.type === 'content_block_delta' && event.delta?.text) {
-              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'chunk', chunk: event.delta.text })}\n\n`));
+          for await (const chunk of response) {
+            const text = chunk.choices[0]?.delta?.content;
+            if (text) {
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'chunk', chunk: text })}\n\n`));
             }
           }
 
