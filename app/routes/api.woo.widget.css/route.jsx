@@ -2,10 +2,8 @@
  * WooCommerce Widget CSS
  * 
  * Serves the widget styles for WooCommerce stores.
- * Identical to the Shopify widget CSS but served from a public route.
+ * This is standalone CSS designed for the WooCommerce widget specifically.
  */
-import { readFileSync } from 'fs';
-import { resolve } from 'path';
 
 export const loader = async ({ request }) => {
   const headers = {
@@ -14,14 +12,8 @@ export const loader = async ({ request }) => {
     'Access-Control-Allow-Origin': '*',
   };
 
-  // Try to load the existing widget CSS
-  try {
-    const cssPath = resolve(process.cwd(), 'public/widget/widget.css');
-    const css = readFileSync(cssPath, 'utf-8');
-    return new Response(css, { headers });
-  } catch (e) {
-    // Fallback to inline CSS if file not found
-    const fallbackCss = `
+  // WooCommerce widget CSS (standalone, not using Shopify widget styles)
+  const widgetCss = `
 /* MattressAI Widget Styles */
 :root {
   --mattress-primary: #3B82F6;
@@ -379,6 +371,6 @@ export const loader = async ({ request }) => {
   opacity: 0.9;
 }
 `;
-    return new Response(fallbackCss, { headers });
-  }
+
+  return new Response(widgetCss, { headers });
 };
